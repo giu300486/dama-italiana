@@ -6,9 +6,9 @@
 ## Stato corrente
 
 - **Fase roadmap**: Fase 0 — Setup infrastruttura.
-- **Sotto-fase**: REVIEW (in corso, in attesa di decisione utente sui findings).
-- **Ultimo task completato**: REVIEW Fase 0 — file `reviews/REVIEW-fase-0.md` redatto (13 findings, nessuno bloccante per closure).
-- **Prossimo passo**: discutere i findings con l'utente, applicare i fix concordati, chiudere review e passare a sotto-fase TEST.
+- **Sotto-fase**: REVIEW chiusa il 2026-04-28. Prossima sotto-fase: TEST.
+- **Ultimo task completato**: REVIEW Fase 0 chiusa. 6 findings risolti (F-001 ÷ F-004, F-007, F-008), 7 ACKNOWLEDGED (deferred a fasi successive con tracciamento). `mvn verify` post-fix verde.
+- **Prossimo passo**: sotto-fase TEST (CLAUDE.md §2.4) → `tests/TEST-PLAN-fase-0.md`.
 - **Ultimo commit**: in corso (revisione post-feedback).
 - **mvn clean verify**: BUILD SUCCESS in ~50s (parent + 4 moduli).
 - **Smoke test eseguiti**: 1 per modulo, tutti verdi.

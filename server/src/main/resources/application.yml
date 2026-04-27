@@ -11,7 +11,10 @@ spring:
     # Il database `dama_italiana` deve esistere; lo schema è gestito da Flyway.
     url: ${DB_URL:jdbc:mysql://localhost:3306/dama_italiana}
     username: ${DB_USERNAME:dama}
-    password: ${DB_PASSWORD:}
+    # Nessun default: se manca DB_PASSWORD Spring fallisce con messaggio chiaro
+    # ("Could not resolve placeholder 'DB_PASSWORD'") invece di tentare la
+    # connessione con password vuota (errore meno diagnostico).
+    password: ${DB_PASSWORD}
   jpa:
     open-in-view: false
     hibernate:

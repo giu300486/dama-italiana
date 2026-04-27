@@ -33,6 +33,13 @@ Il formato è basato su [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1
 - Workflow GitHub Actions rinominato in `.github/workflows/ci.yml.disabled` (ADR-019). GitHub Actions ignora estensioni diverse da `.yml`/`.yaml`: il workflow è preservato ma non viene eseguito anche in caso di push remoto. Riattivabile via `git mv ci.yml.disabled ci.yml`.
 - README riscritto: rimossa sezione Docker Compose; aggiunta sezione "Continuous Integration" con stato CI disattivata, validazione locale equivalente via `mvn verify`, e proposte per CI/CD self-hosted future (Gitea Actions, Drone/Woodpecker).
 - ARCHITECTURE.md: aggiunti **ADR-018** (MySQL locale come ambiente dev, Docker rimosso) e **ADR-019** (CI disattivata).
+- Chiusura REVIEW Fase 0: 6 fix applicati ai findings (F-001, F-002, F-003, F-004, F-007, F-008).
+  - F-001 (CODE_QUALITY Medium): aggiunta regola `<dependencyConvergence/>` al maven-enforcer-plugin.
+  - F-002 (Low): rimossa configurazione vestigiale Lombok da `spring-boot-maven-plugin` in `server/pom.xml`.
+  - F-003 (Low): rimosso default vuoto da `${DB_PASSWORD:}` in `application.yml`; commento esplicativo aggiunto.
+  - F-004 (Low): SpotBugs attivato a livello parent `<build><plugins>` (gating globale per moduli futuri).
+  - F-007 (Low): commento `TODO Fase 3` aggiunto a `javafx-maven-plugin` in `client/pom.xml` per chiarire `mainClass` mancante.
+  - F-008 (Low): rimossa voce ridondante `jacoco.exec` da `.gitignore` (già coperta da `*.exec`).
 
 ### Removed
 

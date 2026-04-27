@@ -129,7 +129,8 @@
       <!-- javafx-maven-plugin: only declared (not bound to verify lifecycle).
            In Fase 0 there is no main class yet; it will be wired in Fase 3
            (FR-SP-* and SPEC §13). Invocable manually via `mvn javafx:run`
-           once the bootstrap class exists. -->
+           once the bootstrap class exists.
+           TODO Fase 3: add <configuration><mainClass>com.damaitaliana.client.ClientApplication</mainClass></configuration>. -->
       <plugin>
         <groupId>org.openjfx</groupId>
         <artifactId>javafx-maven-plugin</artifactId>

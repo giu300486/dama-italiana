@@ -55,7 +55,7 @@ Riferimento: `plans/PLAN-fase-0.md` §2.
 - **SPEC reference**: nessuna diretta. PLAN sez. 4, Task 0.2: la regola era esplicitamente prevista.
 - **Descrizione**: Le regole attive sono solo `requireMavenVersion` e `requireJavaVersion`. La regola `dependencyConvergence` documentata nel PLAN non è stata implementata. La sua assenza permette a versioni transitive divergenti (es. due librerie che chiedono Jackson 2.17 vs 2.18) di convivere senza warning. Con il BOM Spring Boot ben gestito è raro che si presentino problemi reali a Fase 0, ma in Fase 5+ (server con molte dipendenze native) o in Fase 7 (client + Jetty) può nascondere regressioni di compatibilità.
 - **Proposta di fix**: aggiungere `<dependencyConvergence/>` come terza regola nell'execution `enforce-build-environment`. Eseguire `mvn verify`: se emergono divergenze, esplicitarle in `<dependencyManagement>` del parent.
-- **Status**: OPEN
+- **Status**: RESOLVED in commit di chiusura review. Aggiunto `<dependencyConvergence/>` alle regole Enforcer; `mvn verify` passa pulito senza divergenze (Spring Boot BOM gestisce correttamente).
 
 ---
 
@@ -65,7 +65,7 @@ Riferimento: `plans/PLAN-fase-0.md` §2.
 - **SPEC reference**: nessuna.
 - **Descrizione**: Il plugin esclude `org.projectlombok:lombok` dal repackage, ma Lombok non è dichiarato come dipendenza in nessun modulo e il progetto non lo usa (Records + sealed types coprono lo use case secondo CLAUDE.md §4.1). Configurazione copia-incolla "ricordo del template Spring Initializr".
 - **Proposta di fix**: rimuovere il blocco `<configuration><excludes>...</excludes></configuration>` dal plugin. Il plugin resta dichiarato per ereditare il binding `repackage` dal Spring Boot BOM.
-- **Status**: OPEN
+- **Status**: RESOLVED in commit di chiusura review.
 
 ---
 
@@ -75,7 +75,7 @@ Riferimento: `plans/PLAN-fase-0.md` §2.
 - **SPEC reference**: nessuna diretta. NFR-S generale (no secret in chiaro).
 - **Descrizione**: `password: ${DB_PASSWORD:}` con stringa vuota come default. Se un developer avvia il server senza esportare `DB_PASSWORD`, il datasource prova a connettersi con password vuota e MySQL restituisce `Access denied for user 'dama'@'localhost'`, errore poco diagnostico che fa pensare a un problema di credenziali piuttosto che di setup. Meglio omettere il default così Spring fallisce con `Could not resolve placeholder 'DB_PASSWORD'`, che indica chiaramente il problema. Il README documenta già la necessità dell'env var, quindi nessun impatto sulla DX corretta.
 - **Proposta di fix**: `password: ${DB_PASSWORD}` (senza `:`).
-- **Status**: OPEN
+- **Status**: RESOLVED in commit di chiusura review. Commento esplicativo aggiunto sopra la riga.
 
 ---
 
@@ -92,7 +92,7 @@ Riferimento: `plans/PLAN-fase-0.md` §2.
   </plugin>
   ```
   Sul parent (packaging=pom) non gira nulla perché manca `target/classes`, quindi nessun side effect.
-- **Status**: OPEN
+- **Status**: RESOLVED in commit di chiusura review. SpotBugs ora ereditato globalmente; build passa pulito.
 
 ---
 
@@ -122,7 +122,7 @@ Riferimento: `plans/PLAN-fase-0.md` §2.
 - **SPEC reference**: SPEC §13 (UI), Fase 3 roadmap.
 - **Descrizione**: Il plugin è dichiarato con tag vuoto. Eseguire `mvn -pl client javafx:run` ora fallisce perché manca `<mainClass>`. Il README in tabella "comandi standard" annota "(da Fase 3)" ma il significato può sfuggire a un nuovo lettore.
 - **Proposta di fix**: aggiungere un commento XML accanto al plugin: `<!-- mainClass added in Fase 3 (com.damaitaliana.client.ClientApplication). -->`. Nessuna modifica al README.
-- **Status**: OPEN
+- **Status**: RESOLVED in commit di chiusura review. Commento `TODO Fase 3` aggiunto al plugin in `client/pom.xml`.
 
 ---
 
@@ -132,7 +132,7 @@ Riferimento: `plans/PLAN-fase-0.md` §2.
 - **SPEC reference**: nessuna.
 - **Descrizione**: `*.exec` (riga 53) cattura già `jacoco.exec` (riga 54). La voce specifica è ridondante. Rumore minimale.
 - **Proposta di fix**: rimuovere la riga `jacoco.exec`.
-- **Status**: OPEN
+- **Status**: RESOLVED in commit di chiusura review.
 
 ---
 
@@ -217,7 +217,9 @@ Condizioni richieste da CLAUDE.md §2.3 per chiudere la review:
 - [x] Tutti i `Critical/High` `SECURITY` risolti (0 finding)
 - [x] `PERFORMANCE` che violano NFR risolti (0 finding)
 - [x] SPEC change requests con stato non-PENDING (nessuna CR)
-- [ ] Findings Medium/Low concordati con utente: applicati o esplicitamente deferred
+- [x] Findings Medium/Low concordati con utente: F-001 ÷ F-004, F-007, F-008 → RESOLVED. F-005, F-006, F-009 ÷ F-013 → ACKNOWLEDGED (deferred a fasi successive con tracciamento esplicito).
 
-**Review chiusa il**: _(in attesa di decisione utente sui findings F-001 ÷ F-008)_
-**Commit di chiusura**: _(verrà aggiornato dopo i fix concordati)_
+**Esito post-fix**: `mvn clean verify` → `BUILD SUCCESS` in 38s con `dependencyConvergence` attivo, SpotBugs ereditato globalmente, 0 warning.
+
+**Review chiusa il**: 2026-04-28
+**Commit di chiusura**: aggiornato sotto.
