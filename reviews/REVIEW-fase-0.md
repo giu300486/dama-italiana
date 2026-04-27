@@ -222,4 +222,4 @@ Condizioni richieste da CLAUDE.md §2.3 per chiudere la review:
 **Esito post-fix**: `mvn clean verify` → `BUILD SUCCESS` in 38s con `dependencyConvergence` attivo, SpotBugs ereditato globalmente, 0 warning.
 
 **Review chiusa il**: 2026-04-28
-**Commit di chiusura**: aggiornato sotto.
+**Commit di chiusura**: `983446b` (fix(arch): apply REVIEW-fase-0 findings F-001 to F-008).
