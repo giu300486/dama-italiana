@@ -403,14 +403,51 @@ Body opzionale ma consigliato per fix non triviali e per spiegare il "perché".
 
 ### 4.3 Branch
 
-- Trunk-based: branch principale `main`.
-- Feature branch: `feature/<fase>-<topic>`. Es. `feature/3-board-view`, `feature/8-bracket-generator`.
-- Fix da review: `fix/review-N-F-<id>`. Es. `fix/review-3-F-002`.
-- Merge solo dopo CI verde.
+Modello: **GitFlow leggero**, due branch a vita lunga + branch effimeri.
+
+```
+main      ──●─────────────────────────●───────────●──── (production / tag)
+            ↓ (una tantum)            ↑           ↑
+develop   ──●──●──●──●──●──●──●──●──●──●──────●──●──── (integrazione, default branch GitHub)
+                  ↑     ↑     ↑           ↑
+                  │     │     │           │
+feature/X ────────●──●──●     │           │
+fix/Y ────────────────────────●           │
+feature/Z ────────────────────────────────●
+```
+
+- **`main`**: solo commit production-ready. Ogni merge in `main` è candidato al tag `v0.<fase>.0`. Niente push diretti su `main` se non per merge da `develop` (vedi §4.4).
+- **`develop`**: branch di integrazione. È il **default branch su GitHub** (configurato in Fase 0): clone, PR, lavoro corrente avvengono qui.
+- **Feature branch**: `feature/<fase>-<topic>`. Staccati da `develop`, mergiati su `develop`. Es. `feature/1-rule-engine`, `feature/3-board-view`, `feature/8-bracket-generator`.
+- **Fix da review**: `fix/review-N-F-<id>`. Stesso modello, staccati e mergiati su `develop`. Es. `fix/review-3-F-002`.
+
+**Merge strategy**: `git merge --no-ff` (merge commit, niente fast-forward). Preserva la storia del feature branch come "bolla" visibile nella history di `develop`. Niente squash di default — riduce la traceability del lavoro per task.
+
+**Pull Request**: opzionale per single-developer. Merge locale è accettato, purché:
+1. Il branch sorgente abbia `mvn verify` verde sull'ultimo commit.
+2. Il commit di merge abbia messaggio nel formato `merge: <branch> -> develop` o equivalente Conventional Commits (`merge(feature/<topic>): merge feature/X into develop`).
+
+**Quando la CI verrà riattivata** (vedi `ARCHITECTURE.md` ADR-019): "merge solo dopo build CI verde sul branch sorgente".
 
 ### 4.4 Versioning del progetto
 
 SemVer applicato a release pubbliche (post fase 11). Pre-release: tag `v0.<fase>.0` ad ogni fase chiusa.
+
+**Workflow di chiusura fase con GitFlow**:
+
+```bash
+# A fase chiusa (tutti i feature/fix mergiati su develop, mvn verify verde):
+git checkout main
+git merge --no-ff develop -m "release: chiusura Fase N"
+git tag -a v0.<fase>.0 -m "Fase N — <titolo> completata"
+git push origin main
+git push origin v0.<fase>.0
+git checkout develop                       # torna su develop per la fase successiva
+```
+
+Il tag risiede sul commit di merge in `main`, **non** sul commit corrispondente in `develop`. Questo allinea i tag al branch production e li rende il riferimento autoritativo per le release.
+
+**Eccezione Fase 0**: il tag `v0.0.0` è stato applicato direttamente su `main` (commit `e68335f`) prima dell'introduzione del modello GitFlow. Coincide col commit a cui poi `develop` è stato staccato. Conserva la sua validità.
 
 ---
 

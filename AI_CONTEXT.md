@@ -5,6 +5,7 @@
 
 ## Stato corrente
 
+- **Branch corrente**: `develop` (default branch GitHub).
 - **Fase roadmap**: Fase 0 — Setup infrastruttura.
 - **Sotto-fase**: TEST chiusa il 2026-04-28. Tutte e 4 le sotto-fasi della Fase 0 completate.
 - **Ultimo task completato**: sotto-fase TEST della Fase 0. Creato `tests/TEST-PLAN-fase-0.md` (sintetico: nessun FR/NFR coperto in fase infrastrutturale; 4 smoke test verdi; TRACEABILITY vuota e coerente).
@@ -29,6 +30,7 @@
   - **ADR-018**: Docker Compose rimosso. L'ambiente di sviluppo usa il MySQL locale dell'utente (porta 3306, gestito via Workbench/DBeaver).
   - **ADR-019**: workflow GitHub Actions rinominato in `ci.yml.disabled` (non eseguibile). Verrà riattivato quando un repository remoto sarà disponibile.
   - `application.yml` server: default `jdbc:mysql://localhost:3306/dama_italiana`.
+- Adozione **GitFlow leggero** (2026-04-28): `main` = production / tag, `develop` = integrazione e default branch GitHub, branch effimeri `feature/<fase>-<topic>` e `fix/review-N-F-<id>` staccati da `develop`, mergiati `--no-ff`. Tag delle fasi (`v0.<fase>.0`) sul commit di merge in `main`. Aggiornato `CLAUDE.md` §4.3-§4.4.
 
 ## SPEC clarifications needed
 

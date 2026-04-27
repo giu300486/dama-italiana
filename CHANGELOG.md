@@ -8,44 +8,58 @@ Il formato è basato su [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1
 
 ### Added
 
+### Changed
+
+- **Modello branch git**: adozione di **GitFlow leggero** (`CLAUDE.md` §4.3-§4.4). `main` = production / tag, `develop` = integrazione e default branch su GitHub, branch effimeri `feature/<fase>-<topic>` e `fix/review-N-F-<id>` staccati da `develop` e mergiati `--no-ff`. Tag delle fasi (`v0.<fase>.0`) sul commit di merge in `main` (eccezione: `v0.0.0` taggato direttamente su `main` prima dell'introduzione del modello GitFlow).
+- README sezione "Convenzioni": riflette il nuovo modello branch.
+
+### Removed
+
+### Fixed
+
+---
+
+## [0.0.0] — 2026-04-28
+
+Tag git: `v0.0.0` (commit `e68335f`). Chiusura della **Fase 0 — Setup infrastruttura** della roadmap (`SPEC.md` §16).
+
+### Added
+
 - File di workflow SDD: `AI_CONTEXT.md`, `ARCHITECTURE.md`, `CHANGELOG.md`, `README.md` (Fase 0, Task 0.1).
 - Skeleton matrice di tracciabilità `tests/TRACEABILITY.md` (vuota, popolata dalla Fase 1).
 - Struttura directory di workflow `plans/`, `reviews/`, `tests/` con `.gitkeep`.
 - `.gitignore` per Java/Maven/IDE/OS, `.editorconfig` con preset 2-spazi Java, `.gitattributes` con normalizzazione LF.
-- Parent POM `pom.xml` con BOM Spring Boot 3.4.5 + Testcontainers + Ikonli + JJWT (Fase 0, Task 0.2).
-- `dependencyManagement` per JavaFX 21.0.5, JmDNS 3.5.12, springdoc 2.6.0, TestFX 4.0.18, logstash-logback-encoder 7.4.
-- `pluginManagement` con maven-compiler 3.13 (release=21), Spotless 2.43 con google-java-format 1.22 (style GOOGLE, 2 spazi), JaCoCo 0.8.12 (`haltOnFailure=false` in Fase 0), SpotBugs 4.8 (threshold High), Enforcer 3.5 (Maven ≥3.9, Java 21).
-- Plugin Enforcer e Spotless attivi a livello parent (ereditati da tutti i moduli).
-- Modulo `shared` (Fase 0, Task 0.3): solo Jackson + JUnit 5 + AssertJ. Vincolo "no Spring/JavaFX/JPA/WebSocket" documentato nel POM.
-- Modulo `core-server` (Fase 0, Task 0.4): `shared` + `spring-context` (DI) + `spring-messaging` (DTO STOMP) + Mockito. Vincolo "no Tomcat/Jetty/JPA" documentato nel POM.
-- Modulo `client` (Fase 0, Task 0.5): `shared` + `core-server` + Spring Boot starter (no -web) + Spring Boot WebSocket starter con **Tomcat escluso e Jetty incluso** + JavaFX 21 (controls/fxml/graphics/media) + Ikonli (Material 2 + FontAwesome 5) + JmDNS + TestFX.
-- Modulo `server` (Fase 0, Task 0.6): Spring Boot completo (web/websocket/security/data-jpa/validation/actuator) + MySQL connector + Flyway + Caffeine + JJWT + springdoc-openapi + micrometer-registry-prometheus + logstash-logback-encoder + Testcontainers MySQL + H2 (test).
-- `application.yml` minimal del server con datasource via env var (default → MySQL Docker su porta 3307).
+- Parent POM `pom.xml` con BOM Spring Boot 3.4.5 + Testcontainers + Ikonli (Fase 0, Task 0.2).
+- `dependencyManagement` per JavaFX 21.0.5, JmDNS 3.5.12, springdoc 2.6.0, TestFX 4.0.18, logstash-logback-encoder 7.4, JJWT 0.12.6.
+- `pluginManagement` con maven-compiler 3.13 (release=21), Spotless 2.43 con google-java-format 1.22 (style GOOGLE, 2 spazi), JaCoCo 0.8.12 (`haltOnFailure=false` in Fase 0), SpotBugs 4.8 (threshold High), Enforcer 3.5 (Maven ≥3.9, Java 21, dependencyConvergence).
+- Plugin Enforcer, Spotless e SpotBugs attivi a livello parent (ereditati da tutti i moduli).
+- Modulo `shared` (Task 0.3): solo Jackson + JUnit 5 + AssertJ. Vincolo "no Spring/JavaFX/JPA/WebSocket" documentato nel POM.
+- Modulo `core-server` (Task 0.4): `shared` + `spring-context` (DI) + `spring-messaging` (DTO STOMP) + Mockito. Vincolo "no Tomcat/Jetty/JPA" documentato nel POM.
+- Modulo `client` (Task 0.5): `shared` + `core-server` + Spring Boot starter (no -web) + Spring Boot WebSocket starter con **Tomcat escluso e Jetty incluso** + JavaFX 21 (controls/fxml/graphics/media) + Ikonli (Material 2 + FontAwesome 5) + JmDNS + TestFX.
+- Modulo `server` (Task 0.6): Spring Boot completo (web/websocket/security/data-jpa/validation/actuator) + MySQL connector + Flyway + Caffeine + JJWT + springdoc-openapi + micrometer-registry-prometheus + logstash-logback-encoder + Testcontainers MySQL + H2 (test).
+- `application.yml` minimal del server con datasource via env var (default `localhost:3306`).
 - Smoke test per ogni modulo (`<Modulo>SmokeTest`), da rimuovere quando ogni modulo avrà test reali.
-- `docker-compose.yml` (Fase 0, Task 0.7): MySQL 8.0 (porta host **3307** per non confliggere col MySQL locale dell'utente) con healthcheck e volume persistente; Adminer su 8081 con `ADMINER_DEFAULT_SERVER=mysql`. `.env.example` committato; `.env` in gitignore.
-- CI GitHub Actions `.github/workflows/ci.yml` (Fase 0, Task 0.8): job `build` (mvn clean verify + upload JaCoCo HTML), `lint` (spotless:check), `sast` (SpotBugs via verify -DskipTests + upload report). Trigger su push/PR su `main` e `workflow_dispatch`. Cache Maven attiva. Concurrency cancella run obsoleti.
-- `package-info.java` per ogni modulo (Fase 0, Task 0.9): garantisce che `target/classes` esista e che JaCoCo generi il report; documenta i sotto-package previsti dalle fasi successive e i vincoli architetturali (CLAUDE.md §8). Sostituisce i `.gitkeep` precedenti in `src/main/java`.
+- `package-info.java` per ogni modulo (Task 0.9): garantisce `target/classes` per JaCoCo report; documenta i sotto-package previsti dalle fasi successive e i vincoli architetturali (CLAUDE.md §8).
+- ADR-018 (MySQL locale come ambiente dev, Docker Compose rimosso).
+- ADR-019 (CI GitHub Actions disattivata per scelta in questa fase).
+- `plans/PLAN-fase-0.md` (sotto-fase PIANIFICA).
+- `reviews/REVIEW-fase-0.md` (sotto-fase REVIEW): 13 finding totali, 6 RESOLVED, 7 ACKNOWLEDGED, nessuno bloccante.
+- `tests/TEST-PLAN-fase-0.md` (sotto-fase TEST): documenta la natura infrastrutturale della fase e la validazione della Definition of Done.
 
 ### Changed
 
-- Parent POM: rimosso `<dependency>jjwt-bom</dependency>` (BOM JJWT non esiste); le tre artifact `jjwt-api`/`jjwt-impl`/`jjwt-jackson` sono ora dichiarate singolarmente in `dependencyManagement` con `${jjwt.version}`.
-- `application.yml` server: default `DB_URL` ora `jdbc:mysql://localhost:3306/dama_italiana` (era `:3307`); allineato all'uso di MySQL locale.
-- Workflow GitHub Actions rinominato in `.github/workflows/ci.yml.disabled` (ADR-019). GitHub Actions ignora estensioni diverse da `.yml`/`.yaml`: il workflow è preservato ma non viene eseguito anche in caso di push remoto. Riattivabile via `git mv ci.yml.disabled ci.yml`.
-- README riscritto: rimossa sezione Docker Compose; aggiunta sezione "Continuous Integration" con stato CI disattivata, validazione locale equivalente via `mvn verify`, e proposte per CI/CD self-hosted future (Gitea Actions, Drone/Woodpecker).
-- ARCHITECTURE.md: aggiunti **ADR-018** (MySQL locale come ambiente dev, Docker rimosso) e **ADR-019** (CI disattivata).
-- Chiusura REVIEW Fase 0: 6 fix applicati ai findings (F-001, F-002, F-003, F-004, F-007, F-008).
+- REVIEW closure: 6 fix applicati ai findings:
   - F-001 (CODE_QUALITY Medium): aggiunta regola `<dependencyConvergence/>` al maven-enforcer-plugin.
   - F-002 (Low): rimossa configurazione vestigiale Lombok da `spring-boot-maven-plugin` in `server/pom.xml`.
-  - F-003 (Low): rimosso default vuoto da `${DB_PASSWORD:}` in `application.yml`; commento esplicativo aggiunto.
-  - F-004 (Low): SpotBugs attivato a livello parent `<build><plugins>` (gating globale per moduli futuri).
-  - F-007 (Low): commento `TODO Fase 3` aggiunto a `javafx-maven-plugin` in `client/pom.xml` per chiarire `mainClass` mancante.
-  - F-008 (Low): rimossa voce ridondante `jacoco.exec` da `.gitignore` (già coperta da `*.exec`).
-- `tests/TEST-PLAN-fase-0.md` (sotto-fase TEST della Fase 0): documenta la natura infrastrutturale della fase, l'inventario dei 4 smoke test, lo stato vuoto e coerente di `tests/TRACEABILITY.md`, il rinvio del corpus regole italiane alla Fase 1, la validazione completa della Definition of Done della Fase 0.
+  - F-003 (Low): rimosso default vuoto da `${DB_PASSWORD:}` in `application.yml`.
+  - F-004 (Low): SpotBugs attivato a livello parent `<build><plugins>` (gating globale).
+  - F-007 (Low): commento `TODO Fase 3` aggiunto a `javafx-maven-plugin` in `client/pom.xml`.
+  - F-008 (Low): rimossa voce ridondante `jacoco.exec` da `.gitignore`.
 
 ### Removed
 
-- `docker-compose.yml` e `.env.example` (ADR-018). Il developer attuale usa il MySQL locale gestito via Workbench/DBeaver. I file sono recuperabili dalla git history (commit `b355823`).
+- `docker-compose.yml` e `.env.example` durante revisione post-feedback utente (ADR-018).
 
 ### Fixed
 
-_(nessuna voce in Fase 0)_
+- Parent POM: import non valido `io.jsonwebtoken:jjwt-bom` (artifact non pubblicato) sostituito con dichiarazione esplicita di `jjwt-api`, `jjwt-impl`, `jjwt-jackson` in `dependencyManagement`.
