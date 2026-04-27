@@ -1,0 +1,47 @@
+# Dama Italiana — server centrale
+# Profilo default: ambiente di sviluppo locale. La configurazione di produzione
+# arriva via env var (12-factor) e profilo dedicato (Fase 5+).
+
+spring:
+  application:
+    name: dama-italiana-server
+  datasource:
+    # Default punta al MySQL Docker Compose mappato sulla porta host 3307
+    # (vedi docker-compose.yml). Override via env var DB_URL/DB_USERNAME/DB_PASSWORD.
+    url: ${DB_URL:jdbc:mysql://localhost:3307/dama_italiana}
+    username: ${DB_USERNAME:dama}
+    password: ${DB_PASSWORD:}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        format_sql: true
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+
+server:
+  port: ${SERVER_PORT:8080}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info, prometheus
+  endpoint:
+    health:
+      show-details: when-authorized
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui
+
+logging:
+  level:
+    root: INFO
+    com.damaitaliana: DEBUG

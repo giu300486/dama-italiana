@@ -7,9 +7,9 @@
 
 - **Fase roadmap**: Fase 0 — Setup infrastruttura.
 - **Sotto-fase**: IMPLEMENTA.
-- **Ultimo task completato**: Task 0.2 — Parent POM.
-- **Prossimo task**: Task 0.3 — Modulo `shared`.
-- **Ultimo commit**: in corso (Task 0.2).
+- **Ultimo task completato**: Task 0.6 — Modulo `server`.
+- **Prossimo task**: Task 0.7 — Docker Compose dev.
+- **Ultimo commit**: in corso (Task 0.6).
 - **Piano di riferimento**: [`plans/PLAN-fase-0.md`](plans/PLAN-fase-0.md).
 
 ## Decisioni recenti
