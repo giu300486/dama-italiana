@@ -6,9 +6,9 @@
 ## Stato corrente
 
 - **Fase roadmap**: Fase 0 — Setup infrastruttura.
-- **Sotto-fase**: REVIEW chiusa il 2026-04-28. Prossima sotto-fase: TEST.
-- **Ultimo task completato**: REVIEW Fase 0 chiusa. 6 findings risolti (F-001 ÷ F-004, F-007, F-008), 7 ACKNOWLEDGED (deferred a fasi successive con tracciamento). `mvn verify` post-fix verde.
-- **Prossimo passo**: sotto-fase TEST (CLAUDE.md §2.4) → `tests/TEST-PLAN-fase-0.md`.
+- **Sotto-fase**: TEST chiusa il 2026-04-28. Tutte e 4 le sotto-fasi della Fase 0 completate.
+- **Ultimo task completato**: sotto-fase TEST della Fase 0. Creato `tests/TEST-PLAN-fase-0.md` (sintetico: nessun FR/NFR coperto in fase infrastrutturale; 4 smoke test verdi; TRACEABILITY vuota e coerente).
+- **Prossimo passo**: chiusura Fase 0 → tag git `v0.0.0` (in attesa conferma utente) → PIANIFICA Fase 1 (dominio + RuleEngine).
 - **Ultimo commit**: in corso (revisione post-feedback).
 - **mvn clean verify**: BUILD SUCCESS in ~50s (parent + 4 moduli).
 - **Smoke test eseguiti**: 1 per modulo, tutti verdi.

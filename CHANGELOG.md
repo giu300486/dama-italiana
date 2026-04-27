@@ -40,6 +40,7 @@ Il formato è basato su [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1
   - F-004 (Low): SpotBugs attivato a livello parent `<build><plugins>` (gating globale per moduli futuri).
   - F-007 (Low): commento `TODO Fase 3` aggiunto a `javafx-maven-plugin` in `client/pom.xml` per chiarire `mainClass` mancante.
   - F-008 (Low): rimossa voce ridondante `jacoco.exec` da `.gitignore` (già coperta da `*.exec`).
+- `tests/TEST-PLAN-fase-0.md` (sotto-fase TEST della Fase 0): documenta la natura infrastrutturale della fase, l'inventario dei 4 smoke test, lo stato vuoto e coerente di `tests/TRACEABILITY.md`, il rinvio del corpus regole italiane alla Fase 1, la validazione completa della Definition of Done della Fase 0.
 
 ### Removed
 
