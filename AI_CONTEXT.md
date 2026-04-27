@@ -7,9 +7,9 @@
 
 - **Fase roadmap**: Fase 0 — Setup infrastruttura.
 - **Sotto-fase**: IMPLEMENTA.
-- **Ultimo task completato**: Task 0.6 — Modulo `server`.
-- **Prossimo task**: Task 0.7 — Docker Compose dev.
-- **Ultimo commit**: in corso (Task 0.6).
+- **Ultimo task completato**: Task 0.8 — CI GitHub Actions.
+- **Prossimo task**: Task 0.9 — Smoke verify (validare acceptance A0.1 ÷ A0.11).
+- **Ultimo commit**: in corso (Task 0.7 + 0.8).
 - **Piano di riferimento**: [`plans/PLAN-fase-0.md`](plans/PLAN-fase-0.md).
 
 ## Decisioni recenti

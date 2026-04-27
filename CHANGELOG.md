@@ -22,6 +22,8 @@ Il formato è basato su [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1
 - Modulo `server` (Fase 0, Task 0.6): Spring Boot completo (web/websocket/security/data-jpa/validation/actuator) + MySQL connector + Flyway + Caffeine + JJWT + springdoc-openapi + micrometer-registry-prometheus + logstash-logback-encoder + Testcontainers MySQL + H2 (test).
 - `application.yml` minimal del server con datasource via env var (default → MySQL Docker su porta 3307).
 - Smoke test per ogni modulo (`<Modulo>SmokeTest`), da rimuovere quando ogni modulo avrà test reali.
+- `docker-compose.yml` (Fase 0, Task 0.7): MySQL 8.0 (porta host **3307** per non confliggere col MySQL locale dell'utente) con healthcheck e volume persistente; Adminer su 8081 con `ADMINER_DEFAULT_SERVER=mysql`. `.env.example` committato; `.env` in gitignore.
+- CI GitHub Actions `.github/workflows/ci.yml` (Fase 0, Task 0.8): job `build` (mvn clean verify + upload JaCoCo HTML), `lint` (spotless:check), `sast` (SpotBugs via verify -DskipTests + upload report). Trigger su push/PR su `main` e `workflow_dispatch`. Cache Maven attiva. Concurrency cancella run obsoleti.
 
 ### Changed
 
