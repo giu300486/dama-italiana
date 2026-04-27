@@ -17,12 +17,12 @@ Stato runtime corrente: vedi [`AI_CONTEXT.md`](AI_CONTEXT.md).
 
 ## Prerequisiti
 
-| Tool                      | Versione minima | Note                                                              |
-|---------------------------|-----------------|-------------------------------------------------------------------|
-| JDK                       | 21 LTS          | Adoptium Temurin raccomandato                                     |
-| Maven                     | 3.9             | Verificato dal plugin `maven-enforcer`                            |
-| Docker + Docker Compose   | Recente         | Solo per ambiente dev locale (MySQL)                              |
-| Git                       | 2.x             |                                                                   |
+| Tool      | Versione minima | Note                                                                                  |
+|-----------|-----------------|---------------------------------------------------------------------------------------|
+| JDK       | 21 LTS          | Adoptium Temurin raccomandato                                                          |
+| Maven     | 3.9             | Verificato dal plugin `maven-enforcer`                                                 |
+| MySQL     | 8.0+            | Istanza locale o di rete; richiesta dal `server` (Internet) a partire dalla Fase 5    |
+| Git       | 2.x             |                                                                                        |
 
 Per Windows è richiesto **Bash** (Git Bash o WSL) se si desidera replicare i comandi descritti qui letteralmente.
 
@@ -44,68 +44,95 @@ Dettagli architetturali: [`ARCHITECTURE.md`](ARCHITECTURE.md) e `SPEC.md` sezion
 
 ## Comandi standard
 
-| Comando                                          | Scopo                                                              |
-|--------------------------------------------------|--------------------------------------------------------------------|
-| `mvn clean verify`                               | Build completo + test + coverage check su tutti i moduli           |
-| `mvn -pl shared verify`                          | Verify modulo specifico                                            |
-| `mvn -pl core-server verify`                     | Verify core-server                                                 |
-| `mvn -pl client javafx:run`                      | Lancia il client desktop (da Fase 3)                               |
-| `mvn -pl server spring-boot:run`                 | Lancia il server centrale (richiede MySQL attivo)                  |
-| `mvn spotless:apply`                             | Applica il formato Google Java Style                                |
-| `mvn spotless:check`                             | Verifica formato senza modificare                                   |
-| `mvn jacoco:report`                              | Genera report HTML coverage in `target/site/jacoco/`                |
-| `mvn dependency:tree`                            | Visualizza grafo dipendenze                                         |
-| `docker compose up -d`                           | Avvia infrastruttura dev (MySQL + Adminer)                          |
-| `docker compose down`                            | Ferma infrastruttura dev (volumi mantenuti)                         |
-| `docker compose down -v`                         | Ferma e cancella i volumi (reset totale del DB dev)                 |
+| Comando                              | Scopo                                                              |
+|--------------------------------------|--------------------------------------------------------------------|
+| `mvn clean verify`                   | Build completo + test + coverage + Spotless + SpotBugs             |
+| `mvn -pl shared verify`              | Verify modulo specifico                                            |
+| `mvn -pl core-server verify`         | Verify core-server                                                 |
+| `mvn -pl client javafx:run`          | Lancia il client desktop (da Fase 3)                               |
+| `mvn -pl server spring-boot:run`     | Lancia il server centrale (richiede MySQL attivo)                  |
+| `mvn spotless:apply`                 | Applica il formato Google Java Style                               |
+| `mvn spotless:check`                 | Verifica formato senza modificare                                  |
+| `mvn jacoco:report`                  | Genera report HTML coverage in `target/site/jacoco/`               |
+| `mvn dependency:tree`                | Visualizza grafo dipendenze                                        |
 
 ---
 
 ## Setup ambiente di sviluppo
 
-### 1. Configurazione `.env`
+### 1. Database MySQL locale
 
-```bash
-cp .env.example .env
-# Modifica i valori se necessario (default OK per dev locale)
+Il `server` (modulo central server, Internet) si connette a un'istanza MySQL già installata sulla macchina, gestita con MySQL Workbench / DBeaver. Il client offline (single-player) e LAN **non** richiedono MySQL.
+
+Setup una tantum:
+
+```sql
+-- Da Workbench / DBeaver / mysql CLI, come utente con privilegi sufficienti:
+CREATE DATABASE dama_italiana CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE USER 'dama'@'localhost' IDENTIFIED BY 'una-password-robusta';
+GRANT ALL PRIVILEGES ON dama_italiana.* TO 'dama'@'localhost';
+FLUSH PRIVILEGES;
 ```
 
-### 2. Database MySQL
+> Lo schema delle tabelle è gestito da **Flyway** (vedi `server/src/main/resources/db/migration/`). Le migrazioni gireranno automaticamente all'avvio del server a partire dalla Fase 5.
 
-#### Opzione A — MySQL via Docker Compose (consigliata)
+Configurazione applicativa via env var (sovrascrivono i default in `server/src/main/resources/application.yml`):
 
 ```bash
-docker compose up -d
+export DB_URL=jdbc:mysql://localhost:3306/dama_italiana
+export DB_USERNAME=dama
+export DB_PASSWORD=una-password-robusta
 ```
 
-Servizi avviati:
+I default `application.yml` puntano già a `localhost:3306`, db `dama_italiana`, utente `dama`. Solo la password è obbligatoria via env (vincolo NFR-S — niente secret committati).
 
-- **MySQL 8.0** sulla porta host **3307** (mappata su 3306 del container).
-  > La porta 3307 è scelta deliberatamente per non confliggere con un eventuale MySQL già in esecuzione localmente sulla 3306.
-- **Adminer** su [http://localhost:8081](http://localhost:8081) per ispezionare il DB via browser (alternativa minimale a MySQL Workbench / DBeaver).
-
-Connessione applicativa: `jdbc:mysql://localhost:3307/dama_italiana`.
-
-#### Opzione B — MySQL locale già installato
-
-Se preferisci usare un'istanza MySQL già installata sulla tua macchina (es. accessibile da MySQL Workbench / DBeaver sulla porta 3306):
-
-1. Crea il database: `CREATE DATABASE dama_italiana CHARACTER SET utf8mb4;`.
-2. Crea utente o usa root.
-3. Esporta le variabili d'ambiente puntando alla 3306:
-   ```bash
-   export DB_URL=jdbc:mysql://localhost:3306/dama_italiana
-   export DB_USERNAME=...
-   export DB_PASSWORD=...
-   ```
-
-### 3. Build
+### 2. Build
 
 ```bash
 mvn clean verify
 ```
 
-Atteso: `BUILD SUCCESS` su tutti e 4 i moduli.
+Atteso: `BUILD SUCCESS` su parent + 4 moduli (`shared`, `core-server`, `client`, `server`). Tempo indicativo primo run: 1–2 minuti (download dipendenze).
+
+---
+
+## Continuous Integration
+
+Lo stato attuale del progetto **non prevede una macchina remota** né un repository Git remoto: il workflow GitHub Actions è quindi **disattivato** per default.
+
+### Stato del file CI
+
+Il workflow è preservato come [`.github/workflows/ci.yml.disabled`](.github/workflows/ci.yml.disabled). GitHub Actions ignora i file con estensione diversa da `.yml`/`.yaml`, quindi non viene eseguito anche se il repository fosse pushato. Per riattivarlo:
+
+```bash
+git mv .github/workflows/ci.yml.disabled .github/workflows/ci.yml
+```
+
+### Validazione locale equivalente al CI
+
+Finché non c'è un runner remoto, i tre quality gate del workflow sono validabili in locale via Maven:
+
+| Job CI                | Comando equivalente in locale                  |
+|-----------------------|------------------------------------------------|
+| `build` (mvn verify)  | `mvn -B clean verify`                          |
+| `lint` (Spotless)     | `mvn spotless:check`                           |
+| `sast` (SpotBugs)     | `mvn -DskipTests verify`                       |
+
+Il comando `mvn clean verify` da solo copre tutti e tre, perché Spotless e SpotBugs sono legati alla phase `verify` nel parent POM.
+
+### Proposte per CI/CD locale (futuro)
+
+Quando avrai una macchina di staging/CI ma vuoi restare self-hosted senza dipendere da GitHub, ci sono due alternative pratiche:
+
+1. **Gitea (o Forgejo) self-hosted + Gitea Actions**.
+   - Server Git completo installabile come servizio Windows o standalone su una macchina Linux.
+   - **Gitea Actions** è compatibile con la sintassi GitHub Actions: il file `ci.yml` esistente girerebbe quasi senza modifiche.
+   - Ottimo trade-off: hai un repo remoto + CI in casa tua.
+2. **Drone CI / Woodpecker CI** con runner installati direttamente sulla tua macchina.
+   - Più leggeri di Jenkins.
+   - Sintassi pipeline diversa rispetto a GitHub Actions (richiede riscrittura del workflow).
+
+> Non installiamo niente di tutto questo ora. La proposta resta come riferimento per quando deciderai di aggiungere una macchina di build.
 
 ---
 
@@ -126,7 +153,7 @@ Output di ogni sotto-fase:
 
 - Identificatori e Javadoc: **inglese**.
 - Stringhe UI: solo via `ResourceBundle` (`messages_it.properties`, `messages_en.properties`).
-- Stile codice: Google Java Style Guide via Spotless (verificato in CI).
+- Stile codice: Google Java Style Guide via Spotless (verificato in `mvn verify`).
 - Commit: [Conventional Commits](https://www.conventionalcommits.org/).
 - Branch: trunk-based, feature branch `feature/<fase>-<topic>`.
 

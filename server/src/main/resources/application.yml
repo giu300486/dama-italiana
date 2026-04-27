@@ -6,9 +6,10 @@ spring:
   application:
     name: dama-italiana-server
   datasource:
-    # Default punta al MySQL Docker Compose mappato sulla porta host 3307
-    # (vedi docker-compose.yml). Override via env var DB_URL/DB_USERNAME/DB_PASSWORD.
-    url: ${DB_URL:jdbc:mysql://localhost:3307/dama_italiana}
+    # Default punta al MySQL locale dell'utente (porta standard 3306).
+    # Override via env var DB_URL/DB_USERNAME/DB_PASSWORD per altri ambienti.
+    # Il database `dama_italiana` deve esistere; lo schema è gestito da Flyway.
+    url: ${DB_URL:jdbc:mysql://localhost:3306/dama_italiana}
     username: ${DB_USERNAME:dama}
     password: ${DB_PASSWORD:}
   jpa:

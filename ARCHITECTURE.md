@@ -45,7 +45,34 @@ Riferimento autoritativo: `SPEC.md` Appendice B.
 > - **Conseguenze**: trade-off, vincoli, rischi residui.
 > - **Alternative considerate**: opzioni scartate e perché.
 
-_(nessun ADR ancora aggiunto)_
+### ADR-018 — Ambiente di sviluppo MySQL locale, Docker Compose rimosso
+
+- **Data**: 2026-04-27
+- **Stato**: Accepted
+- **Contesto**: Il progetto era partito con un `docker-compose.yml` per fornire MySQL 8 + Adminer come ambiente di sviluppo standardizzato. L'unico developer attuale dispone già di un'istanza MySQL in esecuzione localmente, gestita via MySQL Workbench / DBeaver. Mantenere Docker come prerequisito introdurrebbe attrito (avvio container, conflitto porte, gestione volumi) senza beneficio reale per il singolo developer.
+- **Decisione**: Rimuoviamo `docker-compose.yml` e `.env.example`. L'ambiente di sviluppo richiede un MySQL 8.0+ già installato sulla macchina del developer, raggiungibile su `localhost:3306`. Lo schema viene comunque gestito da Flyway, che è agnostico rispetto a come MySQL è stato avviato.
+- **Conseguenze**:
+  - Prerequisito Docker rimosso dal README.
+  - `application.yml` ha default coerenti con un MySQL locale standard (porta 3306, db `dama_italiana`, utente `dama`).
+  - Il setup di DB e utente è ora una procedura SQL manuale documentata nel README (eseguibile da Workbench/DBeaver in pochi secondi).
+  - Quando il progetto avrà più contributor o un ambiente CI/CD, sarà opportuno reintrodurre Docker Compose (eventualmente come opzione in un altro PR). Non c'è perdita di lavoro: il file precedente è recuperabile da git history (commit `b355823` e `9432e44`).
+- **Alternative considerate**:
+  - Tenere `docker-compose.yml` come "fallback opzionale" → rumore non utilizzato.
+  - Tenere Docker e disabilitare MySQL locale → richiederebbe uno spegnimento del processo nativo o una mappatura porta non standard.
+
+### ADR-019 — CI GitHub Actions predisposta ma disattivata fino a disponibilità repository remoto
+
+- **Data**: 2026-04-27
+- **Stato**: Accepted
+- **Contesto**: Il workflow `.github/workflows/ci.yml` era stato creato in Fase 0 (Task 0.8). Il developer non dispone attualmente di una macchina remota né intende pushare il repository su un hosting Git pubblico/privato. GitHub Actions richiede repository remoto per girare; tenerlo "attivo" non produce alcun valore.
+- **Decisione**: Rinominiamo `.github/workflows/ci.yml` → `.github/workflows/ci.yml.disabled`. GitHub Actions ignora workflow con estensione non `.yml`/`.yaml`, quindi non gira anche in caso di push futuro accidentale. Quando il developer avrà accesso a un repository remoto (GitHub, Gitea, Forgejo), basta un `git mv` per riattivarlo.
+- **Conseguenze**:
+  - I tre quality gate (build/lint/sast) restano completamente verificabili in locale via `mvn clean verify` (il parent POM lega Spotless e SpotBugs alla phase `verify`).
+  - Acceptance A0.6 della Fase 0 resta tecnicamente "deferred" finché non c'è un repo remoto su cui validarla.
+- **Alternative considerate**:
+  - Eliminare `ci.yml`: meno attrito ma perde il lavoro fatto e l'allineamento del workflow con i comandi locali.
+  - Spostarlo in `docs/`: meno scopribile, perde l'immediatezza di "rinomina e attiva".
+  - Adottare subito un sistema CI self-hosted (Gitea Actions / Drone / Woodpecker): richiederebbe installazione e configurazione di nuova infrastruttura non strettamente necessaria per ora. Documentato nel README come proposta per il futuro.
 
 ---
 

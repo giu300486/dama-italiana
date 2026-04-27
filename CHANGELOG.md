@@ -29,9 +29,15 @@ Il formato è basato su [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1
 ### Changed
 
 - Parent POM: rimosso `<dependency>jjwt-bom</dependency>` (BOM JJWT non esiste); le tre artifact `jjwt-api`/`jjwt-impl`/`jjwt-jackson` sono ora dichiarate singolarmente in `dependencyManagement` con `${jjwt.version}`.
+- `application.yml` server: default `DB_URL` ora `jdbc:mysql://localhost:3306/dama_italiana` (era `:3307`); allineato all'uso di MySQL locale.
+- Workflow GitHub Actions rinominato in `.github/workflows/ci.yml.disabled` (ADR-019). GitHub Actions ignora estensioni diverse da `.yml`/`.yaml`: il workflow è preservato ma non viene eseguito anche in caso di push remoto. Riattivabile via `git mv ci.yml.disabled ci.yml`.
+- README riscritto: rimossa sezione Docker Compose; aggiunta sezione "Continuous Integration" con stato CI disattivata, validazione locale equivalente via `mvn verify`, e proposte per CI/CD self-hosted future (Gitea Actions, Drone/Woodpecker).
+- ARCHITECTURE.md: aggiunti **ADR-018** (MySQL locale come ambiente dev, Docker rimosso) e **ADR-019** (CI disattivata).
 
-### Changed
+### Removed
+
+- `docker-compose.yml` e `.env.example` (ADR-018). Il developer attuale usa il MySQL locale gestito via Workbench/DBeaver. I file sono recuperabili dalla git history (commit `b355823`).
 
 ### Fixed
 
-### Removed
+_(nessuna voce in Fase 0)_

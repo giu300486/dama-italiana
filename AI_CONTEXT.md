@@ -7,16 +7,16 @@
 
 - **Fase roadmap**: Fase 0 — Setup infrastruttura.
 - **Sotto-fase**: IMPLEMENTA.
-- **Ultimo task completato**: Task 0.9 — Smoke verify.
+- **Ultimo task completato**: Task 0.9 — Smoke verify + revisione post-feedback utente (Docker rimosso, CI disattivata, default MySQL su 3306).
 - **Prossimo passo**: chiusura sotto-fase IMPLEMENTA → passaggio a sotto-fase REVIEW (CLAUDE.md §2.3).
-- **Ultimo commit**: in corso (Task 0.9 fix + package-info).
-- **mvn clean verify**: BUILD SUCCESS in 50s (parent + 4 moduli).
+- **Ultimo commit**: in corso (revisione post-feedback).
+- **mvn clean verify**: BUILD SUCCESS in ~50s (parent + 4 moduli).
 - **Smoke test eseguiti**: 1 per modulo, tutti verdi.
 - **JaCoCo report**: presenti in `target/site/jacoco/` per tutti i moduli.
 - **SpotBugs**: 0 warning High.
 - **Acceptance A0.1 ÷ A0.5, A0.8 ÷ A0.11**: verificati ✓.
-- **Acceptance A0.6 (CI verde)**: da verificare al primo push remoto (workflow file presente e syntactically valido).
-- **Acceptance A0.7 (docker compose up)**: da verificare manualmente dall'utente — Docker non disponibile/non in PATH in questa sessione di sviluppo.
+- **Acceptance A0.6 (CI verde)**: marcata **deferred** in ADR-019 (no repository remoto disponibile; workflow disattivato).
+- **Acceptance A0.7 (docker compose up)**: marcata **superata** in ADR-018 (Docker rimosso; il developer usa MySQL locale).
 - **Piano di riferimento**: [`plans/PLAN-fase-0.md`](plans/PLAN-fase-0.md).
 
 ## Decisioni recenti
@@ -25,9 +25,10 @@
   - Spotless: indentazione **2 spazi** (Google standard, conforme a NFR-M-04).
   - Maven `groupId`: `com.damaitaliana`.
   - Tag chiusura Fase 0: `v0.0.0`.
-  - `docker-compose.yml`: include Adminer come servizio comodità di dev.
-  - CI: include upload artifact JaCoCo HTML su PR/push.
-  - MySQL container mappato su porta host **3307** (non 3306) per non confliggere col MySQL locale dell'utente, gestito via Workbench/DBeaver.
+- Revisione post-implementazione (2026-04-27, dopo feedback utente):
+  - **ADR-018**: Docker Compose rimosso. L'ambiente di sviluppo usa il MySQL locale dell'utente (porta 3306, gestito via Workbench/DBeaver).
+  - **ADR-019**: workflow GitHub Actions rinominato in `ci.yml.disabled` (non eseguibile). Verrà riattivato quando un repository remoto sarà disponibile.
+  - `application.yml` server: default `jdbc:mysql://localhost:3306/dama_italiana`.
 
 ## SPEC clarifications needed
 
