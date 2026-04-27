@@ -7,9 +7,16 @@
 
 - **Fase roadmap**: Fase 0 — Setup infrastruttura.
 - **Sotto-fase**: IMPLEMENTA.
-- **Ultimo task completato**: Task 0.8 — CI GitHub Actions.
-- **Prossimo task**: Task 0.9 — Smoke verify (validare acceptance A0.1 ÷ A0.11).
-- **Ultimo commit**: in corso (Task 0.7 + 0.8).
+- **Ultimo task completato**: Task 0.9 — Smoke verify.
+- **Prossimo passo**: chiusura sotto-fase IMPLEMENTA → passaggio a sotto-fase REVIEW (CLAUDE.md §2.3).
+- **Ultimo commit**: in corso (Task 0.9 fix + package-info).
+- **mvn clean verify**: BUILD SUCCESS in 50s (parent + 4 moduli).
+- **Smoke test eseguiti**: 1 per modulo, tutti verdi.
+- **JaCoCo report**: presenti in `target/site/jacoco/` per tutti i moduli.
+- **SpotBugs**: 0 warning High.
+- **Acceptance A0.1 ÷ A0.5, A0.8 ÷ A0.11**: verificati ✓.
+- **Acceptance A0.6 (CI verde)**: da verificare al primo push remoto (workflow file presente e syntactically valido).
+- **Acceptance A0.7 (docker compose up)**: da verificare manualmente dall'utente — Docker non disponibile/non in PATH in questa sessione di sviluppo.
 - **Piano di riferimento**: [`plans/PLAN-fase-0.md`](plans/PLAN-fase-0.md).
 
 ## Decisioni recenti

@@ -88,13 +88,21 @@
         <scope>import</scope>
       </dependency>
 
-      <!-- JJWT BOM -->
+      <!-- JJWT (no official BOM): declare each artifact with the same version. -->
       <dependency>
         <groupId>io.jsonwebtoken</groupId>
-        <artifactId>jjwt-bom</artifactId>
+        <artifactId>jjwt-api</artifactId>
         <version>${jjwt.version}</version>
-        <type>pom</type>
-        <scope>import</scope>
+      </dependency>
+      <dependency>
+        <groupId>io.jsonwebtoken</groupId>
+        <artifactId>jjwt-impl</artifactId>
+        <version>${jjwt.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.jsonwebtoken</groupId>
+        <artifactId>jjwt-jackson</artifactId>
+        <version>${jjwt.version}</version>
       </dependency>
 
       <!-- JavaFX (no BOM available) -->

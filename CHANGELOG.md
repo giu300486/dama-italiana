@@ -24,6 +24,11 @@ Il formato è basato su [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1
 - Smoke test per ogni modulo (`<Modulo>SmokeTest`), da rimuovere quando ogni modulo avrà test reali.
 - `docker-compose.yml` (Fase 0, Task 0.7): MySQL 8.0 (porta host **3307** per non confliggere col MySQL locale dell'utente) con healthcheck e volume persistente; Adminer su 8081 con `ADMINER_DEFAULT_SERVER=mysql`. `.env.example` committato; `.env` in gitignore.
 - CI GitHub Actions `.github/workflows/ci.yml` (Fase 0, Task 0.8): job `build` (mvn clean verify + upload JaCoCo HTML), `lint` (spotless:check), `sast` (SpotBugs via verify -DskipTests + upload report). Trigger su push/PR su `main` e `workflow_dispatch`. Cache Maven attiva. Concurrency cancella run obsoleti.
+- `package-info.java` per ogni modulo (Fase 0, Task 0.9): garantisce che `target/classes` esista e che JaCoCo generi il report; documenta i sotto-package previsti dalle fasi successive e i vincoli architetturali (CLAUDE.md §8). Sostituisce i `.gitkeep` precedenti in `src/main/java`.
+
+### Changed
+
+- Parent POM: rimosso `<dependency>jjwt-bom</dependency>` (BOM JJWT non esiste); le tre artifact `jjwt-api`/`jjwt-impl`/`jjwt-jackson` sono ora dichiarate singolarmente in `dependencyManagement` con `${jjwt.version}`.
 
 ### Changed
 

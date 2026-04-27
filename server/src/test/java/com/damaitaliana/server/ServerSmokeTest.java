@@ -8,8 +8,8 @@ import org.junit.jupiter.api.Test;
  * Smoke test for the server module build pipeline.
  *
  * <p>Verifies that the test classpath resolves (Spring Boot Test, AssertJ). Does NOT bootstrap a
- * Spring context — that requires the configuration classes added in Fase 5. Will be removed in
- * Fase 5 once real auth/match tests exist.
+ * Spring context — that requires the configuration classes added in Fase 5. Will be removed in Fase
+ * 5 once real auth/match tests exist.
  */
 class ServerSmokeTest {
 
