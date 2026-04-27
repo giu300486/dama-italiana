@@ -6,9 +6,9 @@
 ## Stato corrente
 
 - **Fase roadmap**: Fase 0 — Setup infrastruttura.
-- **Sotto-fase**: IMPLEMENTA.
-- **Ultimo task completato**: Task 0.9 — Smoke verify + revisione post-feedback utente (Docker rimosso, CI disattivata, default MySQL su 3306).
-- **Prossimo passo**: chiusura sotto-fase IMPLEMENTA → passaggio a sotto-fase REVIEW (CLAUDE.md §2.3).
+- **Sotto-fase**: REVIEW (in corso, in attesa di decisione utente sui findings).
+- **Ultimo task completato**: REVIEW Fase 0 — file `reviews/REVIEW-fase-0.md` redatto (13 findings, nessuno bloccante per closure).
+- **Prossimo passo**: discutere i findings con l'utente, applicare i fix concordati, chiudere review e passare a sotto-fase TEST.
 - **Ultimo commit**: in corso (revisione post-feedback).
 - **mvn clean verify**: BUILD SUCCESS in ~50s (parent + 4 moduli).
 - **Smoke test eseguiti**: 1 per modulo, tutti verdi.
