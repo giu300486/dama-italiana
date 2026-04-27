@@ -7,9 +7,9 @@
 
 - **Fase roadmap**: Fase 0 — Setup infrastruttura.
 - **Sotto-fase**: IMPLEMENTA.
-- **Ultimo task completato**: nessuno (inizio progetto).
-- **Prossimo task**: Task 0.1 — File workflow SDD.
-- **Ultimo commit**: `028d16d first commit` (CLAUDE.md + SPEC.md).
+- **Ultimo task completato**: Task 0.2 — Parent POM.
+- **Prossimo task**: Task 0.3 — Modulo `shared`.
+- **Ultimo commit**: in corso (Task 0.2).
 - **Piano di riferimento**: [`plans/PLAN-fase-0.md`](plans/PLAN-fase-0.md).
 
 ## Decisioni recenti
