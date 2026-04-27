@@ -60,19 +60,24 @@ Riferimento autoritativo: `SPEC.md` Appendice B.
   - Tenere `docker-compose.yml` come "fallback opzionale" → rumore non utilizzato.
   - Tenere Docker e disabilitare MySQL locale → richiederebbe uno spegnimento del processo nativo o una mappatura porta non standard.
 
-### ADR-019 — CI GitHub Actions predisposta ma disattivata fino a disponibilità repository remoto
+### ADR-019 — CI GitHub Actions predisposta ma disattivata per scelta in Fase 0
 
-- **Data**: 2026-04-27
+- **Data**: 2026-04-27 (rivista 2026-04-28)
 - **Stato**: Accepted
-- **Contesto**: Il workflow `.github/workflows/ci.yml` era stato creato in Fase 0 (Task 0.8). Il developer non dispone attualmente di una macchina remota né intende pushare il repository su un hosting Git pubblico/privato. GitHub Actions richiede repository remoto per girare; tenerlo "attivo" non produce alcun valore.
-- **Decisione**: Rinominiamo `.github/workflows/ci.yml` → `.github/workflows/ci.yml.disabled`. GitHub Actions ignora workflow con estensione non `.yml`/`.yaml`, quindi non gira anche in caso di push futuro accidentale. Quando il developer avrà accesso a un repository remoto (GitHub, Gitea, Forgejo), basta un `git mv` per riattivarlo.
+- **Contesto**: Il workflow `.github/workflows/ci.yml` era stato creato in Fase 0 (Task 0.8). Il repository remoto `origin` su GitHub esiste (`github.com/giu300486/dama-italiana`) e i commit verranno pushati regolarmente. Tuttavia, in questa fase del progetto:
+  - Non c'è ancora una macchina dedicata al deploy/staging.
+  - La codebase è quasi vuota e i test sono smoke; far girare la CI ad ogni push produrrebbe rumore senza catturare regressioni reali.
+  - Il developer preferisce non consumare minuti CI gratuiti del piano GitHub finché il quality gate locale (`mvn verify`) basta da solo.
+- **Decisione**: Rinominiamo `.github/workflows/ci.yml` → `.github/workflows/ci.yml.disabled`. GitHub Actions ignora workflow con estensione non `.yml`/`.yaml`: anche dopo `git push`, la pipeline non viene eseguita. Quando le motivazioni sopra cesseranno (es. dominio sostanzioso da Fase 1+, oppure desiderio di un badge verde/rosso pubblico), basta `git mv ci.yml.disabled ci.yml` per riattivarla.
 - **Conseguenze**:
   - I tre quality gate (build/lint/sast) restano completamente verificabili in locale via `mvn clean verify` (il parent POM lega Spotless e SpotBugs alla phase `verify`).
-  - Acceptance A0.6 della Fase 0 resta tecnicamente "deferred" finché non c'è un repo remoto su cui validarla.
+  - Push e pull verso `origin/main` continuano normalmente; cambia solo l'esecuzione automatizzata del workflow.
+  - Acceptance A0.6 della Fase 0 (CI verde) resta marcato come "DEFERRED": sarà rivalutato al momento della riattivazione.
 - **Alternative considerate**:
-  - Eliminare `ci.yml`: meno attrito ma perde il lavoro fatto e l'allineamento del workflow con i comandi locali.
-  - Spostarlo in `docs/`: meno scopribile, perde l'immediatezza di "rinomina e attiva".
-  - Adottare subito un sistema CI self-hosted (Gitea Actions / Drone / Woodpecker): richiederebbe installazione e configurazione di nuova infrastruttura non strettamente necessaria per ora. Documentato nel README come proposta per il futuro.
+  - **Lasciare CI attiva**: produce run su ogni push con codebase quasi vuota → rumore + consumo minuti gratuiti.
+  - **Trigger solo `workflow_dispatch`** (manuale): meno rumore ma fragile (è facile dimenticarsi). La rinomina in `.disabled` è più esplicita.
+  - **Eliminare `ci.yml`**: perde il lavoro fatto. Riattivare richiederebbe ricreare il workflow.
+  - **Adottare CI self-hosted (Gitea Actions, Drone, Woodpecker)**: richiede infrastruttura nuova non strettamente necessaria. Documentato nel README come proposta futura.
 
 ---
 

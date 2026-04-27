@@ -98,19 +98,21 @@ Atteso: `BUILD SUCCESS` su parent + 4 moduli (`shared`, `core-server`, `client`,
 
 ## Continuous Integration
 
-Lo stato attuale del progetto **non prevede una macchina remota** né un repository Git remoto: il workflow GitHub Actions è quindi **disattivato** per default.
+Il repository remoto su GitHub esiste e i commit vengono pushati regolarmente, ma il workflow GitHub Actions è **disattivato per scelta** in questa fase del progetto (vedi `ARCHITECTURE.md` ADR-019). La codebase è ancora minimale e i test sono smoke: far girare la pipeline ad ogni push consumerebbe minuti CI senza catturare regressioni reali. La riattivazione è prevista quando il dominio (Fase 1+) sarà sostanzioso.
 
 ### Stato del file CI
 
-Il workflow è preservato come [`.github/workflows/ci.yml.disabled`](.github/workflows/ci.yml.disabled). GitHub Actions ignora i file con estensione diversa da `.yml`/`.yaml`, quindi non viene eseguito anche se il repository fosse pushato. Per riattivarlo:
+Il workflow è preservato come [`.github/workflows/ci.yml.disabled`](.github/workflows/ci.yml.disabled). GitHub Actions ignora i file con estensione diversa da `.yml`/`.yaml`, quindi anche dopo `git push` la pipeline non viene eseguita. Per riattivarla:
 
 ```bash
 git mv .github/workflows/ci.yml.disabled .github/workflows/ci.yml
+git commit -m "chore(arch): re-enable CI workflow"
+git push
 ```
 
 ### Validazione locale equivalente al CI
 
-Finché non c'è un runner remoto, i tre quality gate del workflow sono validabili in locale via Maven:
+Finché la pipeline è disattivata, i tre quality gate del workflow sono validabili in locale via Maven:
 
 | Job CI                | Comando equivalente in locale                  |
 |-----------------------|------------------------------------------------|
@@ -120,9 +122,9 @@ Finché non c'è un runner remoto, i tre quality gate del workflow sono validabi
 
 Il comando `mvn clean verify` da solo copre tutti e tre, perché Spotless e SpotBugs sono legati alla phase `verify` nel parent POM.
 
-### Proposte per CI/CD locale (futuro)
+### Proposte per CI/CD self-hosted (futuro)
 
-Quando avrai una macchina di staging/CI ma vuoi restare self-hosted senza dipendere da GitHub, ci sono due alternative pratiche:
+Se in futuro si vorrà CI completamente self-hosted (senza dipendere dai runner GitHub-hosted), ci sono due alternative pratiche:
 
 1. **Gitea (o Forgejo) self-hosted + Gitea Actions**.
    - Server Git completo installabile come servizio Windows o standalone su una macchina Linux.
