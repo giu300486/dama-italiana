@@ -7,10 +7,10 @@
 
 - **Branch corrente**: `feature/1-domain-and-rules` (staccato da `develop`, GitFlow leggero).
 - **Fase roadmap**: Fase 1 — Dominio e regole (`shared`).
-- **Sotto-fase**: IMPLEMENTA. PIANIFICA chiusa il 2026-04-28 con `plans/PLAN-fase-1.md` approvato.
-- **Ultimo task completato**: Task 1.1 — FID notation utility (`Square` minimal + `FidNotation` con bijezione 1↔32, parsing/format mosse, ParsedMove record). 59 test verdi.
-- **Prossimo task**: Task 1.2 — Modello di dominio completo (`Color`, `PieceKind`, `Piece`, `Board`, `Move` sealed + `SimpleMove` + `CaptureSequence`, `GameStatus` 6 voci, `GameState`).
-- **Ultimo commit (su `develop`)**: `e4f788d docs(claude): add PLAN for Fase 1 (domain + RuleEngine)`.
+- **Sotto-fase**: IMPLEMENTA chiusa il 2026-04-28 (12/12 task completati). Prossima sotto-fase: **REVIEW**.
+- **Ultimo task completato**: Task 1.12 — package-info per `shared`/`domain`/`rules`/`notation`, ADR-020/021/022 in `ARCHITECTURE.md`, matrice di tracciabilità popolata, `CHANGELOG.md` aggiornato.
+- **Prossimo passo**: REVIEW Fase 1 → `reviews/REVIEW-fase-1.md` (CLAUDE.md §2.3). Stop point dopo redazione: presentare findings all'utente prima di applicare fix.
+- **Stato test (`mvn -pl shared verify`)**: BUILD SUCCESS, **245 test verdi**, JaCoCo 90% modulo + 90% package `rules` (`haltOnFailure=true`), SpotBugs 0 High, Spotless OK.
 - **mvn clean verify**: BUILD SUCCESS in ~50s (parent + 4 moduli).
 - **Smoke test eseguiti**: 1 per modulo, tutti verdi.
 - **JaCoCo report**: presenti in `target/site/jacoco/` per tutti i moduli.
@@ -38,6 +38,7 @@ Nessuna al momento.
 
 ## Note operative
 
-- Rappresentazione del board (FEN-like vs explicit) per il corpus regole: **decisione rinviata alla Fase 1** (CLAUDE.md §2.4.4).
-- I test smoke `<Modulo>SmokeTest` introdotti in Fase 0 vanno **rimossi** appena ogni modulo ha test reali (Fase 1 per `shared`, Fase 4 per `core-server`, Fase 3 per `client`, Fase 5 per `server`).
-- JaCoCo `haltOnFailure=false` in Fase 0; passa a `true` con soglie reali a partire dalla Fase 1.
+- Rappresentazione del board per il corpus regole **decisa in Fase 1** (ADR-022): JSON con quattro liste disgiunte `whiteMen`/`whiteKings`/`blackMen`/`blackKings` indicizzate in FID 1-32 (ADR-020).
+- Smoke test `SharedSmokeTest` **rimosso** in Task 1.11. Restano `CoreServerSmokeTest`, `ClientSmokeTest`, `ServerSmokeTest`: da rimuovere quando i rispettivi moduli ricevono test reali (Fase 4 / 3 / 5 rispettivamente).
+- JaCoCo `haltOnFailure=true` da Fase 1 sul modulo `shared` con soglie 90% bundle + 90% package `rules`. Per `client`/`core-server`/`server` il gate resta lasco fino alle rispettive fasi.
+- `isThreefoldRepetition` (ADR-021) replay-based: assume `history` consistente con `GameState.initial()`. Stati costruiti a mano con history arbitrarie possono dare falsi negativi (documentato nel Javadoc). Possibile ottimizzazione futura: hash Zobrist (Fase 2 con transposition table).
