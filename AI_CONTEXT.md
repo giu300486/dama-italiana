@@ -7,9 +7,9 @@
 
 - **Branch corrente**: `feature/2-ai` (staccato da `develop` il 2026-04-28).
 - **Fase roadmap**: Fase 2 — IA (`shared.ai`).
-- **Sotto-fase**: **REVIEW chiusa** il 2026-04-28. 7 finding totali (nessuno bloccante): F-004 + F-005 RESOLVED via mini-fix Javadoc; F-001 + F-002 + F-003 + F-006 + F-007 ACKNOWLEDGED (F-001/F-002 deferred-F4, F-003 deferred-F3 by design, F-006/F-007 design intentional).
-- **Ultimo task completato**: closure `reviews/REVIEW-fase-2.md` con disposizione finale di tutti i finding e gating A2.2 ✅ PASSED.
-- **Prossimo passo**: sotto-fase **TEST** (CLAUDE.md §2.4) → produrre `tests/TEST-PLAN-fase-2.md`, validare coverage finale, garantire la traceability matrix completa per FR/NFR/AC della Fase 2, eseguire `mvn clean verify` (root) per la regressione.
+- **Sotto-fase**: **TEST chiusa** il 2026-04-28. `tests/TEST-PLAN-fase-2.md` redatto. Coverage finale: modulo 97.3%, `rules` 96.2%, `ai` 97.7%. `mvn clean verify` root BUILD SUCCESS (default exclude `slow,performance`). Gating A2.2 ✅ PASSED. Tutti i Definition of Done della sotto-fase TEST checkati.
+- **Ultimo task completato**: TEST-PLAN-fase-2 + closure checklist verde.
+- **Prossimo passo**: ⏸️ **stop point** — chiusura formale della Fase 2 (CLAUDE.md §11 step 10): merge `feature/2-ai` → `develop`, merge `develop` → `main`, tag `v0.2.0`. In attesa di conferma utente.
 - **Stato test**: 387/387 verdi con `-DexcludedGroups=slow,performance` sul modulo `shared` in `mvn -pl shared verify`. JaCoCo gate raggiunto (modulo ≥ 90%, `rules` ≥ 90%, `ai` ≥ 85%). SpotBugs 0 High. Spotless clean.
 - **Test gating A2.2 (slow)**: ✅ PASSED il 2026-04-28 in 16:02 min (`mvn -pl shared test -Dtest=AiTournamentSimulationTest#campionWinsAtLeast95OutOf100AgainstPrincipiante -Dgroups=slow` → BUILD SUCCESS, 1 test green). Campione ≥ 95/100 vs Principiante confermato.
 - **Task 2.14 (deferred)**: ottimizzazione `isThreefoldRepetition` con Zobrist — rinviata a F4 come da §7.9 del piano. È stata applicata in F2 una hardening fix non-Zobrist (catch `IllegalMoveException` → `false`) per supportare il search su stati hand-built.
