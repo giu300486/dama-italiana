@@ -5,12 +5,15 @@
 
 ## Stato corrente
 
-- **Branch corrente**: `feature/1-domain-and-rules` (staccato da `develop`, GitFlow leggero).
-- **Fase roadmap**: Fase 1 — Dominio e regole (`shared`), **tutte le 4 sotto-fasi completate**.
-- **Sotto-fase**: TEST chiusa il 2026-04-28 con `tests/TEST-PLAN-fase-1.md`.
-- **Ultimo task completato**: redazione e chiusura TEST PLAN. Coverage `shared`: 96.7% line modulo, 95.7% line `rules` (entrambi sopra il gate 90%).
-- **Prossimo passo**: chiusura Fase 1 → merge `feature/1-domain-and-rules` → `develop` (--no-ff) → merge `develop` → `main` → tag `v0.1.0`. **Stop point** (richiede conferma utente prima di taggare).
-- **Stato test (`mvn -pl shared verify`)**: BUILD SUCCESS, **245 test verdi**, JaCoCo 96.7% modulo + 95.7% package `rules` (`haltOnFailure=true` con minimo 90%), SpotBugs 0 High, Spotless OK.
+- **Branch corrente**: `feature/2-ai` (staccato da `develop` il 2026-04-28).
+- **Fase roadmap**: Fase 2 — IA (`shared.ai`).
+- **Sotto-fase**: **TEST chiusa** il 2026-04-28. `tests/TEST-PLAN-fase-2.md` redatto. Coverage finale: modulo 97.3%, `rules` 96.2%, `ai` 97.7%. `mvn clean verify` root BUILD SUCCESS (default exclude `slow,performance`). Gating A2.2 ✅ PASSED. Tutti i Definition of Done della sotto-fase TEST checkati.
+- **Ultimo task completato**: TEST-PLAN-fase-2 + closure checklist verde.
+- **Prossimo passo**: ⏸️ **stop point** — chiusura formale della Fase 2 (CLAUDE.md §11 step 10): merge `feature/2-ai` → `develop`, merge `develop` → `main`, tag `v0.2.0`. In attesa di conferma utente.
+- **Stato test**: 387/387 verdi con `-DexcludedGroups=slow,performance` sul modulo `shared` in `mvn -pl shared verify`. JaCoCo gate raggiunto (modulo ≥ 90%, `rules` ≥ 90%, `ai` ≥ 85%). SpotBugs 0 High. Spotless clean.
+- **Test gating A2.2 (slow)**: ✅ PASSED il 2026-04-28 in 16:02 min (`mvn -pl shared test -Dtest=AiTournamentSimulationTest#campionWinsAtLeast95OutOf100AgainstPrincipiante -Dgroups=slow` → BUILD SUCCESS, 1 test green). Campione ≥ 95/100 vs Principiante confermato.
+- **Task 2.14 (deferred)**: ottimizzazione `isThreefoldRepetition` con Zobrist — rinviata a F4 come da §7.9 del piano. È stata applicata in F2 una hardening fix non-Zobrist (catch `IllegalMoveException` → `false`) per supportare il search su stati hand-built.
+- **Stato test**: `mvn clean verify` (root) BUILD SUCCESS — `shared` 245 test, JaCoCo 96.7% modulo + 95.7% package `rules`, SpotBugs 0 High, Spotless OK; `core-server`/`client`/`server` ancora con il singolo smoke test ciascuno.
 - **mvn clean verify**: BUILD SUCCESS in ~50s (parent + 4 moduli).
 - **Smoke test eseguiti**: 1 per modulo, tutti verdi.
 - **JaCoCo report**: presenti in `target/site/jacoco/` per tutti i moduli.
@@ -34,7 +37,11 @@
 
 ## SPEC clarifications needed
 
-Nessuna al momento.
+Nessuna ambiguità SPEC bloccante. Il piano F2 contiene 10 stop point su scelte di design interne (architettura `AiEngine`, schema di valutazione, Zobrist/TT, modello cancellazione, rumore Principiante, esecuzione test simulazione, tolleranza performance, soglia coverage, inclusione Task 2.14, naming branch). Tutti hanno una proposta motivata (opzione A) — l'utente può confermare in blocco oppure indicare i punti su cui preferisce un'opzione diversa.
+
+## Note operative — deviazioni dal piano
+
+- **Task 2.4 vs 2.5**: la primitive minimale di `CancellationToken` (interface + `never()` + `MutableCancellationToken`) e `SearchCancelledException` sono state introdotte in Task 2.4 anziché in Task 2.5 perché necessarie per testare la cancellazione di `MinimaxSearch`. Task 2.5 aggiungerà `CancellationToken.deadline(Instant)` + `composite(...)` come previsto, oltre a `IterativeDeepeningSearch`. Deviazione minore, motivata dalla coesione test-codice (CLAUDE.md §2.2).
 
 ## Note operative
 
