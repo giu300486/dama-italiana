@@ -21,14 +21,28 @@ import java.util.Set;
 /**
  * Reference Italian Draughts rule engine.
  *
- * <p>Implements the rules of SPEC §3 — and ONLY those.
+ * <p>Implements the rules of SPEC §3 — and ONLY those (CLAUDE.md §1 forbids mixing in the
+ * International or English-American variants).
  *
  * <ul>
- *   <li>Task 1.3 — non-capturing movement of men and kings.
- *   <li>Task 1.4 — single captures with the man-cannot-capture-king rule (SPEC §3.3) and the
- *       mandatory-capture rule.
- *   <li>Task 1.5+ — multi-jump capture sequences and the four laws of precedence.
+ *   <li>Movement of men (forward only) and kings (one square in any of the four diagonals) (§3.2).
+ *   <li>Single and multi-jump captures via DFS, with the same enemy piece never re-jumped (§3.3,
+ *       §3.4).
+ *   <li>"A man cannot capture a king" rule (§3.3) enforced at every leg.
+ *   <li>"Capture is mandatory" rule (§3.3): when at least one capture exists, simple moves are
+ *       excluded from the legal set.
+ *   <li>The four laws of precedence (§3.4) applied as a strict filter pipeline: quantity → quality
+ *       → king precedence → first king.
+ *   <li>Promotion at end of move and the stop-at-promotion-row mid-sequence rule for men (§3.5).
+ *   <li>Halfmove clock with reset on captures and on man moves (§3.6).
+ *   <li>Game status: ongoing, win-by-no-pieces, win-by-stalemate (Italian variant: stalemate is a
+ *       loss for the side to move), draw by 40-move rule, draw by threefold repetition via
+ *       replay-from-initial counting on a {@link PositionKey} (§3.6). {@link
+ *       com.damaitaliana.shared.domain.GameStatus#DRAW_AGREEMENT} is reserved for the UI/network
+ *       layer (later phases).
  * </ul>
+ *
+ * <p>Stateless and thread-safe.
  */
 public final class ItalianRuleEngine implements RuleEngine {
 
@@ -43,14 +57,15 @@ public final class ItalianRuleEngine implements RuleEngine {
     Board board = state.board();
     Color side = state.sideToMove();
 
+    // Materialise our pieces once: legalMoves can re-use the same list for both the capture
+    // pass and the fall-back simple-move pass without re-iterating the underlying array.
+    List<Square> ourSquares = board.occupiedBy(side).toList();
+
     List<CaptureSequence> captures = new ArrayList<>();
-    board
-        .occupiedBy(side)
-        .forEach(
-            from -> {
-              Piece p = board.at(from).orElseThrow();
-              captures.addAll(generateCaptureSequencesFor(board, from, p));
-            });
+    for (Square from : ourSquares) {
+      Piece p = board.at(from).orElseThrow();
+      captures.addAll(generateCaptureSequencesFor(board, from, p));
+    }
 
     if (!captures.isEmpty()) {
       // SPEC §3.3: capture is mandatory whenever possible. Simple moves are excluded.
@@ -62,13 +77,10 @@ public final class ItalianRuleEngine implements RuleEngine {
     }
 
     List<Move> simpleMoves = new ArrayList<>();
-    board
-        .occupiedBy(side)
-        .forEach(
-            from -> {
-              Piece p = board.at(from).orElseThrow();
-              simpleMoves.addAll(generateSimpleMovesFor(board, from, p));
-            });
+    for (Square from : ourSquares) {
+      Piece p = board.at(from).orElseThrow();
+      simpleMoves.addAll(generateSimpleMovesFor(board, from, p));
+    }
     return List.copyOf(simpleMoves);
   }
 
