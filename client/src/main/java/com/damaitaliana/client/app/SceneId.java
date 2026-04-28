@@ -11,6 +11,7 @@ public enum SceneId {
   SPLASH,
   MAIN_MENU,
   SP_SETUP,
+  BOARD,
   RULES,
   SETTINGS
 }
