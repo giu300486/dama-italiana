@@ -10,7 +10,7 @@
            fx:controller="com.damaitaliana.client.ui.splash.SplashController"
            prefWidth="1024" prefHeight="768">
     <VBox alignment="CENTER" spacing="16">
-        <FontIcon iconLiteral="mdi2-checkerboard" iconSize="96"/>
+        <FontIcon iconLiteral="mdi2c-checkerboard" iconSize="96"/>
         <Label text="Dama Italiana" styleClass="label-title"/>
         <Label fx:id="loadingLabel" styleClass="label-secondary"/>
         <ProgressIndicator/>
