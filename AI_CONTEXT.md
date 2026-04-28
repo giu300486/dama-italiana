@@ -6,11 +6,11 @@
 ## Stato corrente
 
 - **Branch corrente**: `develop` (default branch GitHub).
-- **Fase roadmap**: Fase 0 — Setup infrastruttura.
-- **Sotto-fase**: TEST chiusa il 2026-04-28. Tutte e 4 le sotto-fasi della Fase 0 completate.
-- **Ultimo task completato**: sotto-fase TEST della Fase 0. Creato `tests/TEST-PLAN-fase-0.md` (sintetico: nessun FR/NFR coperto in fase infrastrutturale; 4 smoke test verdi; TRACEABILITY vuota e coerente).
-- **Prossimo passo**: chiusura Fase 0 → tag git `v0.0.0` (in attesa conferma utente) → PIANIFICA Fase 1 (dominio + RuleEngine).
-- **Ultimo commit**: in corso (revisione post-feedback).
+- **Fase roadmap**: Fase 0 — Setup infrastruttura, **chiusa**.
+- **Sotto-fase**: nessuna in corso. Tutte e 4 le sotto-fasi della Fase 0 (PIANIFICA / IMPLEMENTA / REVIEW / TEST) completate; chiusura formalizzata col tag `v0.0.0` (commit `e68335f` su `main`).
+- **Ultimo task completato**: chiusura della Fase 0 e successiva adozione di GitFlow leggero (`CLAUDE.md` §4.3-§4.4 aggiornato).
+- **Prossimo passo**: PIANIFICA Fase 1 — Dominio e regole nel modulo `shared` (`Square`, `Piece`, `Board`, `Move`, `GameState`, `RuleEngine` con le 4 leggi italiane). Output atteso: `plans/PLAN-fase-1.md`.
+- **Ultimo commit (su `develop`)**: `1c882bb docs(claude): adopt develop+feature git flow`.
 - **mvn clean verify**: BUILD SUCCESS in ~50s (parent + 4 moduli).
 - **Smoke test eseguiti**: 1 per modulo, tutti verdi.
 - **JaCoCo report**: presenti in `target/site/jacoco/` per tutti i moduli.
