@@ -8,6 +8,14 @@ Il formato è basato su [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1
 
 ### Added
 
+---
+
+## [0.2.0] — 2026-04-28
+
+Tag git: `v0.2.0`. Chiusura della **Fase 2 — IA nel modulo `shared.ai`** della roadmap (`SPEC.md` §16). Tutte e 4 le sotto-fasi (PIANIFICA / IMPLEMENTA / REVIEW / TEST) chiuse. Gating SPEC §16 Fase 2 ✅ PASSED (Campione ≥ 95/100 vs Principiante in 16:02 min). Branch `feature/2-ai` mergiato `--no-ff` in `develop` e poi in `main`.
+
+### Added
+
 - `plans/PLAN-fase-2.md` (sotto-fase PIANIFICA Fase 2, approvata in blocco 2026-04-28).
 - **Fase 2 — IA nel modulo `shared.ai`** (sotto-fase IMPLEMENTA conclusa). Tre livelli funzionanti, virtual-thread cancellabile, transposition table, ~125 nuovi test. Branch di lavoro `feature/2-ai`, sequenza Tasks 2.1 ÷ 2.13 + 2.15.
   - **Task 2.1** — `com.damaitaliana.shared.ai.evaluation`: `Evaluator` interface, `EvaluationTerm` interface, `MaterialTerm` (man=100, king=300 cp per SPEC §12.1), `WeightedSumEvaluator` con record `WeightedTerm` e factory `defaultEvaluator()` (15 test).
@@ -27,6 +35,8 @@ Il formato è basato su [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1
 ### Changed
 
 - **F1 hardening (`ItalianRuleEngine.isThreefoldRepetition`)**: replay-from-initial ora cattura `IllegalMoveException` e ritorna `false` quando la history non è coerente con `GameState.initial()` (es. stati hand-built per test fixture o esplorazione AI). Conservativo: "no repetition" è la risposta sicura per il chiamante. Coerente con la limitazione documentata in ADR-021. Necessario perché il search di F2 esplora stati hand-built fino a depth 8 e ne calcola lo status ricorsivamente.
+- **REVIEW-fase-2 closure**: 7 finding chiusi — 2 RESOLVED (F-004 Javadoc su `ZobristHasher.hashAfterMove` non implementato, F-005 Javadoc su `MoveOrderer.order(state)` parametro intenzionalmente unused), 5 ACKNOWLEDGED (F-001 + F-002 deferred-F4 con la futura ottimizzazione Zobrist-incremental di `isThreefoldRepetition`, F-003 deferred-F3 by design — AC §17.1.1 richiede UI E2E, F-006 + F-007 design intentional).
+- **TEST-PLAN-fase-2 closure**: 391 test totali (387 default + 1 `slow` + 3 `performance`); coverage modulo 97.3% line / 95.5% branch, package `rules` 96.2% / 95.7%, package `ai` 97.7% / 96.2%, tutti sopra i gate (90% / 90% / 85%). Gating A2.2 PASSED in 16:02 min. Limiti tracciati per F4 (Zobrist-incremental).
 
 ---
 
