@@ -157,7 +157,7 @@ Output di ogni sotto-fase:
 - Stringhe UI: solo via `ResourceBundle` (`messages_it.properties`, `messages_en.properties`).
 - Stile codice: Google Java Style Guide via Spotless (verificato in `mvn verify`).
 - Commit: [Conventional Commits](https://www.conventionalcommits.org/).
-- Branch: trunk-based, feature branch `feature/<fase>-<topic>`.
+- **Branch model**: GitFlow leggero (`main` = production / tag, `develop` = integrazione / default branch GitHub, `feature/<fase>-<topic>` e `fix/review-N-F-<id>` da `develop`). Merge `--no-ff`.
 
 Dettaglio: `CLAUDE.md` §4.
 

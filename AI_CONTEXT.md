@@ -5,11 +5,12 @@
 
 ## Stato corrente
 
-- **Fase roadmap**: Fase 0 — Setup infrastruttura.
-- **Sotto-fase**: TEST chiusa il 2026-04-28. Tutte e 4 le sotto-fasi della Fase 0 completate.
-- **Ultimo task completato**: sotto-fase TEST della Fase 0. Creato `tests/TEST-PLAN-fase-0.md` (sintetico: nessun FR/NFR coperto in fase infrastrutturale; 4 smoke test verdi; TRACEABILITY vuota e coerente).
-- **Prossimo passo**: chiusura Fase 0 → tag git `v0.0.0` (in attesa conferma utente) → PIANIFICA Fase 1 (dominio + RuleEngine).
-- **Ultimo commit**: in corso (revisione post-feedback).
+- **Branch corrente**: `feature/1-domain-and-rules` (staccato da `develop`, GitFlow leggero).
+- **Fase roadmap**: Fase 1 — Dominio e regole (`shared`), **tutte le 4 sotto-fasi completate**.
+- **Sotto-fase**: TEST chiusa il 2026-04-28 con `tests/TEST-PLAN-fase-1.md`.
+- **Ultimo task completato**: redazione e chiusura TEST PLAN. Coverage `shared`: 96.7% line modulo, 95.7% line `rules` (entrambi sopra il gate 90%).
+- **Prossimo passo**: chiusura Fase 1 → merge `feature/1-domain-and-rules` → `develop` (--no-ff) → merge `develop` → `main` → tag `v0.1.0`. **Stop point** (richiede conferma utente prima di taggare).
+- **Stato test (`mvn -pl shared verify`)**: BUILD SUCCESS, **245 test verdi**, JaCoCo 96.7% modulo + 95.7% package `rules` (`haltOnFailure=true` con minimo 90%), SpotBugs 0 High, Spotless OK.
 - **mvn clean verify**: BUILD SUCCESS in ~50s (parent + 4 moduli).
 - **Smoke test eseguiti**: 1 per modulo, tutti verdi.
 - **JaCoCo report**: presenti in `target/site/jacoco/` per tutti i moduli.
@@ -29,6 +30,7 @@
   - **ADR-018**: Docker Compose rimosso. L'ambiente di sviluppo usa il MySQL locale dell'utente (porta 3306, gestito via Workbench/DBeaver).
   - **ADR-019**: workflow GitHub Actions rinominato in `ci.yml.disabled` (non eseguibile). Verrà riattivato quando un repository remoto sarà disponibile.
   - `application.yml` server: default `jdbc:mysql://localhost:3306/dama_italiana`.
+- Adozione **GitFlow leggero** (2026-04-28): `main` = production / tag, `develop` = integrazione e default branch GitHub, branch effimeri `feature/<fase>-<topic>` e `fix/review-N-F-<id>` staccati da `develop`, mergiati `--no-ff`. Tag delle fasi (`v0.<fase>.0`) sul commit di merge in `main`. Aggiornato `CLAUDE.md` §4.3-§4.4.
 
 ## SPEC clarifications needed
 
@@ -36,6 +38,7 @@ Nessuna al momento.
 
 ## Note operative
 
-- Rappresentazione del board (FEN-like vs explicit) per il corpus regole: **decisione rinviata alla Fase 1** (CLAUDE.md §2.4.4).
-- I test smoke `<Modulo>SmokeTest` introdotti in Fase 0 vanno **rimossi** appena ogni modulo ha test reali (Fase 1 per `shared`, Fase 4 per `core-server`, Fase 3 per `client`, Fase 5 per `server`).
-- JaCoCo `haltOnFailure=false` in Fase 0; passa a `true` con soglie reali a partire dalla Fase 1.
+- Rappresentazione del board per il corpus regole **decisa in Fase 1** (ADR-022): JSON con quattro liste disgiunte `whiteMen`/`whiteKings`/`blackMen`/`blackKings` indicizzate in FID 1-32 (ADR-020).
+- Smoke test `SharedSmokeTest` **rimosso** in Task 1.11. Restano `CoreServerSmokeTest`, `ClientSmokeTest`, `ServerSmokeTest`: da rimuovere quando i rispettivi moduli ricevono test reali (Fase 4 / 3 / 5 rispettivamente).
+- JaCoCo `haltOnFailure=true` da Fase 1 sul modulo `shared` con soglie 90% bundle + 90% package `rules`. Per `client`/`core-server`/`server` il gate resta lasco fino alle rispettive fasi.
+- `isThreefoldRepetition` (ADR-021) replay-based: assume `history` consistente con `GameState.initial()`. Stati costruiti a mano con history arbitrarie possono dare falsi negativi (documentato nel Javadoc). Possibile ottimizzazione futura: hash Zobrist (Fase 2 con transposition table).
