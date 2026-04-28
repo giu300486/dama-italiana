@@ -126,14 +126,15 @@
         <groupId>com.github.spotbugs</groupId>
         <artifactId>spotbugs-maven-plugin</artifactId>
       </plugin>
-      <!-- javafx-maven-plugin: only declared (not bound to verify lifecycle).
-           In Fase 0 there is no main class yet; it will be wired in Fase 3
-           (FR-SP-* and SPEC §13). Invocable manually via `mvn javafx:run`
-           once the bootstrap class exists.
-           TODO Fase 3: add <configuration><mainClass>com.damaitaliana.client.ClientApplication</mainClass></configuration>. -->
+      <!-- javafx-maven-plugin: invocable via `mvn -pl client javafx:run`.
+           Not bound to the verify lifecycle: launching the UI is a developer action,
+           not part of automated builds. -->
       <plugin>
         <groupId>org.openjfx</groupId>
         <artifactId>javafx-maven-plugin</artifactId>
+        <configuration>
+          <mainClass>com.damaitaliana.client.ClientApplication</mainClass>
+        </configuration>
       </plugin>
     </plugins>
   </build>
