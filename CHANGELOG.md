@@ -8,6 +8,10 @@ Il formato è basato su [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1
 
 ### Added
 
+- `plans/PLAN-fase-1.md` (sotto-fase PIANIFICA Fase 1, approvata 2026-04-28).
+- Fase 1 / Task 1.1 — `com.damaitaliana.shared.notation.FidNotation`: bijezione `Square ↔ 1..32` in orientamento standard FID (ADR-020), parsing/format mosse (`12-16`, `12x19`, `12x19x26`), record interno `ParsedMove`. 59 test in `FidNotationTest`.
+- Fase 1 / Task 1.1 — `com.damaitaliana.shared.domain.Square` (minimal): record `(file, rank)` con validazione `[0,7]` e `isDark()`. Sarà esteso al Task 1.2.
+
 ### Changed
 
 - **Modello branch git**: adozione di **GitFlow leggero** (`CLAUDE.md` §4.3-§4.4). `main` = production / tag, `develop` = integrazione e default branch su GitHub, branch effimeri `feature/<fase>-<topic>` e `fix/review-N-F-<id>` staccati da `develop` e mergiati `--no-ff`. Tag delle fasi (`v0.<fase>.0`) sul commit di merge in `main` (eccezione: `v0.0.0` taggato direttamente su `main` prima dell'introduzione del modello GitFlow).

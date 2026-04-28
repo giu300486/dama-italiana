@@ -5,12 +5,12 @@
 
 ## Stato corrente
 
-- **Branch corrente**: `develop` (default branch GitHub).
-- **Fase roadmap**: Fase 0 — Setup infrastruttura, **chiusa**.
-- **Sotto-fase**: nessuna in corso. Tutte e 4 le sotto-fasi della Fase 0 (PIANIFICA / IMPLEMENTA / REVIEW / TEST) completate; chiusura formalizzata col tag `v0.0.0` (commit `e68335f` su `main`).
-- **Ultimo task completato**: chiusura della Fase 0 e successiva adozione di GitFlow leggero (`CLAUDE.md` §4.3-§4.4 aggiornato).
-- **Prossimo passo**: PIANIFICA Fase 1 — Dominio e regole nel modulo `shared` (`Square`, `Piece`, `Board`, `Move`, `GameState`, `RuleEngine` con le 4 leggi italiane). Output atteso: `plans/PLAN-fase-1.md`.
-- **Ultimo commit (su `develop`)**: `1c882bb docs(claude): adopt develop+feature git flow`.
+- **Branch corrente**: `feature/1-domain-and-rules` (staccato da `develop`, GitFlow leggero).
+- **Fase roadmap**: Fase 1 — Dominio e regole (`shared`).
+- **Sotto-fase**: IMPLEMENTA. PIANIFICA chiusa il 2026-04-28 con `plans/PLAN-fase-1.md` approvato.
+- **Ultimo task completato**: Task 1.1 — FID notation utility (`Square` minimal + `FidNotation` con bijezione 1↔32, parsing/format mosse, ParsedMove record). 59 test verdi.
+- **Prossimo task**: Task 1.2 — Modello di dominio completo (`Color`, `PieceKind`, `Piece`, `Board`, `Move` sealed + `SimpleMove` + `CaptureSequence`, `GameStatus` 6 voci, `GameState`).
+- **Ultimo commit (su `develop`)**: `e4f788d docs(claude): add PLAN for Fase 1 (domain + RuleEngine)`.
 - **mvn clean verify**: BUILD SUCCESS in ~50s (parent + 4 moduli).
 - **Smoke test eseguiti**: 1 per modulo, tutti verdi.
 - **JaCoCo report**: presenti in `target/site/jacoco/` per tutti i moduli.
