@@ -17,9 +17,14 @@ import java.util.Optional;
 /**
  * Reference Italian Draughts rule engine.
  *
- * <p>Implements the rules of SPEC §3 — and ONLY those. Captures, multi-jumps and the four laws of
- * precedence are added in subsequent tasks of Fase 1; this Task 1.3 commit covers non-capturing
- * movement of men and kings.
+ * <p>Implements the rules of SPEC §3 — and ONLY those.
+ *
+ * <ul>
+ *   <li>Task 1.3 — non-capturing movement of men and kings.
+ *   <li>Task 1.4 — single captures with the man-cannot-capture-king rule (SPEC §3.3) and the
+ *       mandatory-capture rule.
+ *   <li>Task 1.5+ — multi-jump capture sequences and the four laws of precedence.
+ * </ul>
  */
 public final class ItalianRuleEngine implements RuleEngine {
 
@@ -33,25 +38,38 @@ public final class ItalianRuleEngine implements RuleEngine {
     }
     Board board = state.board();
     Color side = state.sideToMove();
-    List<Move> moves = new ArrayList<>();
+
+    List<CaptureSequence> captures = new ArrayList<>();
     board
         .occupiedBy(side)
         .forEach(
             from -> {
               Piece p = board.at(from).orElseThrow();
-              moves.addAll(generateSimpleMovesFor(board, from, p));
+              captures.addAll(generateCaptureSequencesFor(board, from, p));
             });
-    return List.copyOf(moves);
+
+    if (!captures.isEmpty()) {
+      // SPEC §3.3: capture is mandatory whenever possible. Simple moves are excluded.
+      List<Move> moves = new ArrayList<>(captures.size());
+      moves.addAll(captures);
+      return List.copyOf(moves);
+    }
+
+    List<Move> simpleMoves = new ArrayList<>();
+    board
+        .occupiedBy(side)
+        .forEach(
+            from -> {
+              Piece p = board.at(from).orElseThrow();
+              simpleMoves.addAll(generateSimpleMovesFor(board, from, p));
+            });
+    return List.copyOf(simpleMoves);
   }
 
   @Override
   public GameState applyMove(GameState state, Move move) {
     Objects.requireNonNull(state, "state");
     Objects.requireNonNull(move, "move");
-    if (move instanceof CaptureSequence) {
-      throw new IllegalMoveException(
-          "capture sequences not yet supported by the rule engine (Fase 1 Task 1.4+)");
-    }
     List<Move> legal = legalMoves(state);
     if (!legal.contains(move)) {
       throw new IllegalMoveException("move not legal in current position: " + move);
@@ -61,8 +79,14 @@ public final class ItalianRuleEngine implements RuleEngine {
             .board()
             .at(move.from())
             .orElseThrow(() -> new IllegalMoveException("source square is empty: " + move.from()));
-    Board newBoard = state.board().without(move.from()).with(move.to(), piece);
-    int newClock = piece.isMan() ? 0 : state.halfmoveClock() + 1;
+
+    Board newBoard = state.board().without(move.from());
+    for (Square captured : move.capturedSquares()) {
+      newBoard = newBoard.without(captured);
+    }
+    newBoard = newBoard.with(move.to(), piece);
+
+    int newClock = (move.isCapture() || piece.isMan()) ? 0 : state.halfmoveClock() + 1;
     List<Move> history = new ArrayList<>(state.history());
     history.add(move);
     Color nextSide = state.sideToMove().opposite();
@@ -90,6 +114,37 @@ public final class ItalianRuleEngine implements RuleEngine {
       }
     }
     return moves;
+  }
+
+  /**
+   * Generates every legal capture sequence starting at {@code from}.
+   *
+   * <p>Task 1.4: only single jumps. Task 1.5 will extend this with the multi-jump DFS.
+   */
+  private static List<CaptureSequence> generateCaptureSequencesFor(
+      Board board, Square from, Piece piece) {
+    int[][] dirs = piece.isKing() ? KING_DIRS : manDirs(piece.color());
+    List<CaptureSequence> captures = new ArrayList<>();
+    for (int[] d : dirs) {
+      Optional<Square> adj = offset(from, d[0], d[1]);
+      if (adj.isEmpty()) {
+        continue;
+      }
+      Optional<Piece> adjPiece = board.at(adj.get());
+      if (adjPiece.isEmpty() || adjPiece.get().color() == piece.color()) {
+        continue;
+      }
+      // SPEC §3.3 — Italian variant: a man cannot capture a king.
+      if (piece.isMan() && adjPiece.get().isKing()) {
+        continue;
+      }
+      Optional<Square> landing = offset(adj.get(), d[0], d[1]);
+      if (landing.isEmpty() || !board.isEmpty(landing.get())) {
+        continue;
+      }
+      captures.add(new CaptureSequence(from, List.of(landing.get()), List.of(adj.get())));
+    }
+    return captures;
   }
 
   private static int[][] manDirs(Color color) {

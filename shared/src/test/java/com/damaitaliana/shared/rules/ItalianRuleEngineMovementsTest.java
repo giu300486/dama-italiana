@@ -4,7 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.damaitaliana.shared.domain.Board;
-import com.damaitaliana.shared.domain.CaptureSequence;
 import com.damaitaliana.shared.domain.Color;
 import com.damaitaliana.shared.domain.GameState;
 import com.damaitaliana.shared.domain.GameStatus;
@@ -188,17 +187,6 @@ class ItalianRuleEngineMovementsTest {
     assertThatThrownBy(() -> engine.applyMove(before, backward))
         .isInstanceOf(IllegalMoveException.class)
         .hasMessageContaining("not legal");
-  }
-
-  @Test
-  void applyMoveRejectsCaptureSequenceUntilTask14() {
-    Board b = Board.empty().with(new Square(4, 4), white(PieceKind.MAN));
-    GameState before = new GameState(b, Color.WHITE, 0, List.of(), GameStatus.ONGOING);
-    Move cap =
-        new CaptureSequence(new Square(4, 4), List.of(new Square(2, 2)), List.of(new Square(3, 3)));
-    assertThatThrownBy(() -> engine.applyMove(before, cap))
-        .isInstanceOf(IllegalMoveException.class)
-        .hasMessageContaining("capture sequences not yet supported");
   }
 
   @Test
