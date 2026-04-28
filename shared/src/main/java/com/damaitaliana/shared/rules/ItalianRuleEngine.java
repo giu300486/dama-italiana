@@ -178,6 +178,12 @@ public final class ItalianRuleEngine implements RuleEngine {
    * recomputation, no recursion) and counts occurrences of each {@link PositionKey}. The caller is
    * responsible for guaranteeing that {@code current.history()} is consistent with the standard
    * initial position.
+   *
+   * <p>If the replay encounters an inconsistency — e.g. the state was built by hand with a
+   * non-initial board (test fixtures, AI-search exploration of synthetic positions) — the method
+   * returns {@code false}. This preserves the conservative "no repetition" answer the caller needs:
+   * an exception escaping all the way to {@link #applyMove} would crash legitimate searches over
+   * hand-built states (ADR-021 documented limitation).
    */
   private boolean isThreefoldRepetition(GameState current) {
     List<Move> history = current.history();
@@ -188,9 +194,14 @@ public final class ItalianRuleEngine implements RuleEngine {
     Map<PositionKey, Integer> counts = new HashMap<>();
     GameState st = GameState.initial();
     counts.merge(new PositionKey(st.board(), st.sideToMove()), 1, Integer::sum);
-    for (Move m : history) {
-      st = applyCore(st, m);
-      counts.merge(new PositionKey(st.board(), st.sideToMove()), 1, Integer::sum);
+    try {
+      for (Move m : history) {
+        st = applyCore(st, m);
+        counts.merge(new PositionKey(st.board(), st.sideToMove()), 1, Integer::sum);
+      }
+    } catch (IllegalMoveException replayInconsistency) {
+      // History inconsistent with GameState.initial() — see Javadoc above.
+      return false;
     }
     Integer occurrences = counts.get(new PositionKey(current.board(), current.sideToMove()));
     return occurrences != null && occurrences >= 3;
