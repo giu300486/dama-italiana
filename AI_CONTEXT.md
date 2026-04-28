@@ -5,14 +5,15 @@
 
 ## Stato corrente
 
-- **Branch corrente**: `develop` (default branch). Fase 2 chiusa, branch `feature/2-ai` eliminato (locale; il branch non era mai stato pushato sul remote, quindi nessuna eliminazione remota necessaria).
-- **Fase roadmap**: Fase 2 — IA (`shared.ai`), **chiusa**.
-- **Sotto-fase**: nessuna in corso. Le 4 sotto-fasi della Fase 2 (PIANIFICA / IMPLEMENTA / REVIEW / TEST) sono tutte chiuse; chiusura formalizzata col tag `v0.2.0` (commit `4839149` su `main`, merge `91fa9d3` su `develop`).
-- **Ultimo task completato**: chiusura Fase 2 con merge `feature/2-ai` → `develop` (`91fa9d3`) → `main` (`4839149`), tag `v0.2.0` applicato e pushato (push fast-forward `main` `2f6a14e..4839149`, `develop` `0dabe6f..94390d2`, nuovo tag `v0.2.0`). Il remote `origin` (https://github.com/giu300486/dama-italiana) ora riflette lo stato locale fino al tag `v0.2.0`.
-- **Prossimo passo**: PIANIFICA Fase 3 — Client UI single-player (JavaFX + design system CSS, schermate splash/menu/board/settings, rendering damiera + animazioni, salvataggio multi-slot, autosave, localizzazione IT/EN, schermata regole). Output atteso: `plans/PLAN-fase-3.md`.
-- **Stato test**: `mvn clean verify` (root) BUILD SUCCESS in ~2 min — `shared` 391 test (387 default + 1 slow + 3 performance), JaCoCo 97.3% modulo + 96.2% package `rules` + 97.7% package `ai`, SpotBugs 0 High, Spotless OK. `core-server`/`client`/`server` ancora con il singolo smoke test ciascuno.
-- **Test gating A2.2 (slow)**: ✅ PASSED il 2026-04-28 in 16:02 min (Campione ≥ 95/100 vs Principiante).
-- **Piano di riferimento Fase 2**: [`plans/PLAN-fase-2.md`](plans/PLAN-fase-2.md). Closure REVIEW: [`reviews/REVIEW-fase-2.md`](reviews/REVIEW-fase-2.md). Closure TEST: [`tests/TEST-PLAN-fase-2.md`](tests/TEST-PLAN-fase-2.md).
+- **Branch corrente**: `feature/3-ui-singleplayer`, staccato da `develop` al commit `d6168ad`. Modello GitFlow leggero (CLAUDE.md §4.3): merge `--no-ff` su `develop` a chiusura fase, poi `develop → main` con tag `v0.3.0` sul commit di merge in `main`.
+- **Fase roadmap**: Fase 3 — Client UI single-player.
+- **Sotto-fase**: **IMPLEMENTA** (PIANIFICA chiusa il 2026-04-28 con approvazione utente in blocco opzione A su tutti gli stop point §7.1-§7.14 di `plans/PLAN-fase-3.md`).
+- **Ultimo task completato**: PIANIFICA Fase 3 (`plans/PLAN-fase-3.md` scritto e approvato). Tag `v0.2.0` rimane il riferimento di production corrente.
+- **Prossimo task**: Task 3.1 — Bootstrap JavaFX + Spring Boot DI (`ClientApplication`, `JavaFxApp`, `JavaFxAppContextHolder`, `SceneRouter`, `application.yml`, rimozione `ClientSmokeTest`).
+- **Stato test (baseline pre-Fase 3)**: `mvn clean verify` (root) BUILD SUCCESS in ~2 min — `shared` 391 test (387 default + 1 slow + 3 performance), JaCoCo 97.3% modulo + 96.2% package `rules` + 97.7% package `ai`, SpotBugs 0 High, Spotless OK. `core-server`/`client`/`server` ancora con il singolo smoke test ciascuno (lo smoke `client` verrà rimosso in Task 3.1).
+- **Test gating A2.2 (slow)**: ✅ PASSED il 2026-04-28 in 16:02 min (Campione ≥ 95/100 vs Principiante). Da rieseguire on demand a chiusura Fase 3 (regression).
+- **Piano di riferimento Fase 3**: [`plans/PLAN-fase-3.md`](plans/PLAN-fase-3.md).
+- **Piani precedenti**: [`plans/PLAN-fase-2.md`](plans/PLAN-fase-2.md), [`reviews/REVIEW-fase-2.md`](reviews/REVIEW-fase-2.md), [`tests/TEST-PLAN-fase-2.md`](tests/TEST-PLAN-fase-2.md).
 
 ## Decisioni recenti
 
@@ -26,6 +27,21 @@
 - Adozione **GitFlow leggero** (2026-04-28): `main` = production / tag, `develop` = integrazione e default branch GitHub, branch effimeri `feature/<fase>-<topic>` e `fix/review-N-F-<id>` staccati da `develop`, mergiati `--no-ff`. Tag delle fasi (`v0.<fase>.0`) sul commit di merge in `main`.
 - Approvati dall'utente in data 2026-04-28 (Task PIANIFICA Fase 2): tutti gli stop point §7.1-§7.10 in opzione A in blocco. Task 2.14 (Zobrist-based threefold repetition) deferred-F4. Si è applicata in F2 una hardening fix non-Zobrist (catch `IllegalMoveException` → `false`) per supportare il search su stati hand-built (REVIEW finding F-001/F-002, ACKNOWLEDGED).
 - ADR-024 ÷ ADR-028 registrati durante Fase 2 (architettura `AiEngine` sealed + 3 livelli, Evaluator modulare, Zobrist + TT, cancellation cooperativa, rumore Principiante deterministico).
+- Approvati dall'utente in data 2026-04-28 (Task PIANIFICA Fase 3): tutti gli stop point §7.1-§7.14 in opzione A in blocco. Riepilogo decisioni:
+  - §7.1 Bootstrap: `ClientApplication` Spring Boot non-web + `JavaFxApp.launch` + `JavaFxAppContextHolder` (ADR-029).
+  - §7.2 FXML per layout schermate, `setControllerFactory(context::getBean)` (ADR-030); board view custom programmatica.
+  - §7.3 Tema F3: solo light selezionabile; `theme-dark.css` come stub presente non collegato; toggle dark in F11.
+  - §7.4 Schema saves v1: JSON con `currentState` materializzato + lista `moves` FID; rifiuto schemaVersion ignota (ADR-031).
+  - §7.5 Autosave atomico: tmp + `Files.move(ATOMIC_MOVE, REPLACE_EXISTING)` con fallback log WARN (ADR-032).
+  - §7.6 Mini-animazioni regole: incluse (Task 3.19), candidate primo slip se la fase si gonfia.
+  - §7.7 Audio: escluso da F3, riservato a F11.
+  - §7.8 Coverage gate `client` 60% line+branch su pkg non-view, esclusioni esplicite tracciate nel POM.
+  - §7.9 Chiavi i18n hierarchiche `screen.element.role`, bundle unico `messages_*.properties` (ADR-033).
+  - §7.10 Cambio lingua richiede riavvio in F3; runtime dynamic in F11.
+  - §7.11 Card LAN/Online visibili e disabilitate con tooltip "Disponibile in Fase X".
+  - §7.12 Solo click-to-select; drag-and-drop valutabile in F11.
+  - §7.13 Undo/redo annulla la coppia `(mossa umana + risposta IA)` come unità.
+  - §7.14 Branch unico `feature/3-ui-singleplayer`, merge `--no-ff` su `develop`, tag `v0.3.0` sul commit di merge in `main`.
 
 ## SPEC clarifications needed
 
