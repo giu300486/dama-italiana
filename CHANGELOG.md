@@ -10,6 +10,36 @@ Il formato è basato su [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1
 
 ---
 
+## [0.2.0] — 2026-04-28
+
+Tag git: `v0.2.0`. Chiusura della **Fase 2 — IA nel modulo `shared.ai`** della roadmap (`SPEC.md` §16). Tutte e 4 le sotto-fasi (PIANIFICA / IMPLEMENTA / REVIEW / TEST) chiuse. Gating SPEC §16 Fase 2 ✅ PASSED (Campione ≥ 95/100 vs Principiante in 16:02 min). Branch `feature/2-ai` mergiato `--no-ff` in `develop` e poi in `main`.
+
+### Added
+
+- `plans/PLAN-fase-2.md` (sotto-fase PIANIFICA Fase 2, approvata in blocco 2026-04-28).
+- **Fase 2 — IA nel modulo `shared.ai`** (sotto-fase IMPLEMENTA conclusa). Tre livelli funzionanti, virtual-thread cancellabile, transposition table, ~125 nuovi test. Branch di lavoro `feature/2-ai`, sequenza Tasks 2.1 ÷ 2.13 + 2.15.
+  - **Task 2.1** — `com.damaitaliana.shared.ai.evaluation`: `Evaluator` interface, `EvaluationTerm` interface, `MaterialTerm` (man=100, king=300 cp per SPEC §12.1), `WeightedSumEvaluator` con record `WeightedTerm` e factory `defaultEvaluator()` (15 test).
+  - **Task 2.2** — `MobilityTerm` (×5), `AdvancementTerm` (×2), `EdgeSafetyTerm` (×8), `CenterControlTerm` (×10) — i 4 termini residui SPEC §12.1; `defaultEvaluator()` ora compone tutti e 5 (19 test).
+  - **Task 2.3** — `com.damaitaliana.shared.ai.search.MoveOrderer` interface + `StandardMoveOrderer` (capture-first → longer-capture-first → center-destination-first → FID-from-ascending) (7 test).
+  - **Task 2.4** — `MinimaxSearch` (negamax con alpha-beta), `SearchResult`, mate-distance scoring `±(MATE_SCORE − plyFromRoot)`. Introdotti anche `CancellationToken` (interface + `never()`), `MutableCancellationToken`, `SearchCancelledException` (deviazione minore vs piano §2.5: necessari per testare `MinimaxSearch.cancellationStopsSearch`) (18 test).
+  - **Task 2.5** — `IterativeDeepeningSearch` con PV-first (`PvFirstOrderer` package-private) e graceful cancellation; `CancellationToken` esteso con `deadline(Instant)`/`deadline(Instant, Clock)`/`composite(...)` (27 test).
+  - **Task 2.6** — `ZobristHasher` deterministico (seed `0xDA4A172L`), `TranspositionTable` 2^20 entry always-replace, integrazione TT in `MinimaxSearch.negamax` con bound semantics `EXACT`/`LOWER_BOUND`/`UPPER_BOUND` e niente early-return al root. `IterativeDeepeningSearch` con costruttore TT-aware (22 test).
+  - **Task 2.7** — `sealed interface AiEngine permits PrincipianteAi, EspertoAi, CampioneAi`, `AiLevel` enum, factory `forLevel(level, rng)`. Esperto e Principiante deviano dal piano usando `IterativeDeepeningSearch` per cooperative cancellation; Campione usa IDS+TT come da piano. Costanti `DEPTH`/`MAX_DEPTH`/`DEFAULT_TIMEOUT`/`NOISE_PROBABILITY` esposte (19 test).
+  - **Task 2.8** — `VirtualThreadAiExecutor` su `Executors.newVirtualThreadPerTaskExecutor()`, `Submission` con graceful + hard cancel; deadline + thread-interrupt + manual token composti via `CancellationToken.composite(...)` (9 test).
+  - **Task 2.9** — `AiTacticalPositionsTest` con 5 posizioni golden hardcoded in Java (mate-in-1 bianco, mate-in-1 nero via dama, cattura forzata, due-mosse, terminale).
+  - **Task 2.10** — `AiTournamentSimulationTest` con sanity quick (5 partite) + gating `@Tag("slow")` 100 partite Campione vs Principiante (≥ 95 vittorie, A2.2). Determinismo via Principiante seed = `42 + gameIndex`.
+  - **Task 2.11** — `AiPerformanceTest` `@Tag("performance")` per ogni livello: budget × 1.5 tolerance (PLAN-fase-2 §7.7).
+  - **Task 2.13** — `shared/pom.xml` JaCoCo gate aggiunge regola `PACKAGE com.damaitaliana.shared.ai*` ≥ 85 % line + branch (PLAN-fase-2 §7.8). Gate F1 mantenuto.
+  - **Task 2.15** — ADR-024 (architettura `AiEngine` sealed + 3 livelli), ADR-025 (Evaluator modulare), ADR-026 (Zobrist + TT), ADR-027 (cancellation cooperativa), ADR-028 (rumore Principiante deterministico) in `ARCHITECTURE.md`. Matrice tracciabilità popolata con FR-SP-02, NFR-P-02 (perf gate), AC §17.1.1 parziale, e i 13 acceptance criteria operativi della Fase 2.
+
+### Changed
+
+- **F1 hardening (`ItalianRuleEngine.isThreefoldRepetition`)**: replay-from-initial ora cattura `IllegalMoveException` e ritorna `false` quando la history non è coerente con `GameState.initial()` (es. stati hand-built per test fixture o esplorazione AI). Conservativo: "no repetition" è la risposta sicura per il chiamante. Coerente con la limitazione documentata in ADR-021. Necessario perché il search di F2 esplora stati hand-built fino a depth 8 e ne calcola lo status ricorsivamente.
+- **REVIEW-fase-2 closure**: 7 finding chiusi — 2 RESOLVED (F-004 Javadoc su `ZobristHasher.hashAfterMove` non implementato, F-005 Javadoc su `MoveOrderer.order(state)` parametro intenzionalmente unused), 5 ACKNOWLEDGED (F-001 + F-002 deferred-F4 con la futura ottimizzazione Zobrist-incremental di `isThreefoldRepetition`, F-003 deferred-F3 by design — AC §17.1.1 richiede UI E2E, F-006 + F-007 design intentional).
+- **TEST-PLAN-fase-2 closure**: 391 test totali (387 default + 1 `slow` + 3 `performance`); coverage modulo 97.3% line / 95.5% branch, package `rules` 96.2% / 95.7%, package `ai` 97.7% / 96.2%, tutti sopra i gate (90% / 90% / 85%). Gating A2.2 PASSED in 16:02 min. Limiti tracciati per F4 (Zobrist-incremental).
+
+---
+
 ## [0.1.0] — 2026-04-28
 
 Tag git: `v0.1.0` (commit `2f6a14e`). Chiusura della **Fase 1 — Dominio e regole nel modulo `shared`** della roadmap (`SPEC.md` §16). Tutte e 4 le sotto-fasi (PIANIFICA / IMPLEMENTA / REVIEW / TEST) chiuse. Branch `feature/1-domain-and-rules` mergiato `--no-ff` in `develop` (`9fb533f`) e poi in `main` (`2f6a14e`).

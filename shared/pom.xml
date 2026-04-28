@@ -46,9 +46,11 @@
         <artifactId>jacoco-maven-plugin</artifactId>
         <executions>
           <execution>
-            <!-- Fase 1: tighten the gate.
-                 Module: >= 90% line + branch (SPEC §16 Fase 1, exceeds NFR-M-01's 80%).
-                 Package com.damaitaliana.shared.rules: >= 90% line + branch (CLAUDE.md §2.4.2). -->
+            <!-- Module: >= 90% line + branch (SPEC §16 Fase 1, exceeds NFR-M-01's 80%).
+                 Package com.damaitaliana.shared.rules: >= 90% line + branch (Fase 1).
+                 Package com.damaitaliana.shared.ai (and sub-packages): >= 85% line + branch
+                 (PLAN-fase-2 §7.8). The search code has hard-to-cover early-exit branches and
+                 thread-interrupt observers; 85% is realistic. -->
             <id>jacoco-check</id>
             <phase>verify</phase>
             <goals>
@@ -87,6 +89,26 @@
                       <counter>BRANCH</counter>
                       <value>COVEREDRATIO</value>
                       <minimum>0.90</minimum>
+                    </limit>
+                  </limits>
+                </rule>
+                <rule>
+                  <element>PACKAGE</element>
+                  <includes>
+                    <include>com.damaitaliana.shared.ai</include>
+                    <include>com.damaitaliana.shared.ai.evaluation</include>
+                    <include>com.damaitaliana.shared.ai.search</include>
+                  </includes>
+                  <limits>
+                    <limit>
+                      <counter>LINE</counter>
+                      <value>COVEREDRATIO</value>
+                      <minimum>0.85</minimum>
+                    </limit>
+                    <limit>
+                      <counter>BRANCH</counter>
+                      <value>COVEREDRATIO</value>
+                      <minimum>0.85</minimum>
                     </limit>
                   </limits>
                 </rule>
