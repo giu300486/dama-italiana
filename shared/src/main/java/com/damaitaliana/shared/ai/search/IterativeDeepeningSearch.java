@@ -32,15 +32,26 @@ public final class IterativeDeepeningSearch {
   private final RuleEngine ruleEngine;
   private final MinimaxSearch minimax;
 
-  /** Uses a fresh {@link ItalianRuleEngine} for both the fallback and the underlying minimax. */
+  /** Uses a fresh {@link ItalianRuleEngine}; no transposition table. */
   public IterativeDeepeningSearch() {
     this(new ItalianRuleEngine());
   }
 
-  /** Uses an externally provided rule engine for both the fallback and the underlying minimax. */
+  /** Uses an externally provided rule engine; no transposition table. */
   public IterativeDeepeningSearch(RuleEngine ruleEngine) {
     this.ruleEngine = Objects.requireNonNull(ruleEngine, "ruleEngine");
     this.minimax = new MinimaxSearch(ruleEngine);
+  }
+
+  /**
+   * TT-enabled constructor: shares the same {@code tt} and {@code hasher} across every iteration,
+   * so depth {@code k} reuses the work of depth {@code k-1}. This is the configuration used by the
+   * Campione level.
+   */
+  public IterativeDeepeningSearch(
+      RuleEngine ruleEngine, TranspositionTable tt, ZobristHasher hasher) {
+    this.ruleEngine = Objects.requireNonNull(ruleEngine, "ruleEngine");
+    this.minimax = new MinimaxSearch(ruleEngine, tt, hasher);
   }
 
   /**
