@@ -10,9 +10,11 @@ import com.damaitaliana.shared.domain.Piece;
 import com.damaitaliana.shared.domain.SimpleMove;
 import com.damaitaliana.shared.domain.Square;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * Reference Italian Draughts rule engine.
@@ -117,34 +119,95 @@ public final class ItalianRuleEngine implements RuleEngine {
   }
 
   /**
-   * Generates every legal capture sequence starting at {@code from}.
+   * Generates every legal capture sequence starting at {@code from}, exploring multi-jump paths via
+   * DFS.
    *
-   * <p>Task 1.4: only single jumps. Task 1.5 will extend this with the multi-jump DFS.
+   * <p>SPEC §3.3 (man cannot capture king) is enforced at every leg. SPEC §3.5 (a man that reaches
+   * the promotion row mid-sequence stops there) terminates the recursion as soon as the landing
+   * square is on the man's promotion rank.
+   *
+   * <p>The same enemy piece is never jumped twice: the in-flight {@link Set} of captured squares is
+   * consulted before every leg.
    */
   private static List<CaptureSequence> generateCaptureSequencesFor(
       Board board, Square from, Piece piece) {
+    List<CaptureSequence> output = new ArrayList<>();
+    dfsCapture(
+        board, from, piece, from, new ArrayList<>(), new ArrayList<>(), new HashSet<>(), output);
+    return output;
+  }
+
+  private static void dfsCapture(
+      Board board,
+      Square current,
+      Piece piece,
+      Square origin,
+      List<Square> pathSoFar,
+      List<Square> capturedSoFar,
+      Set<Square> capturedSet,
+      List<CaptureSequence> output) {
+
     int[][] dirs = piece.isKing() ? KING_DIRS : manDirs(piece.color());
-    List<CaptureSequence> captures = new ArrayList<>();
     for (int[] d : dirs) {
-      Optional<Square> adj = offset(from, d[0], d[1]);
-      if (adj.isEmpty()) {
+      Optional<Square> adj = offset(current, d[0], d[1]);
+      if (adj.isEmpty() || capturedSet.contains(adj.get())) {
         continue;
       }
       Optional<Piece> adjPiece = board.at(adj.get());
       if (adjPiece.isEmpty() || adjPiece.get().color() == piece.color()) {
         continue;
       }
-      // SPEC §3.3 — Italian variant: a man cannot capture a king.
+      // SPEC §3.3 — a man cannot capture a king.
       if (piece.isMan() && adjPiece.get().isKing()) {
         continue;
       }
       Optional<Square> landing = offset(adj.get(), d[0], d[1]);
-      if (landing.isEmpty() || !board.isEmpty(landing.get())) {
+      if (landing.isEmpty() || !isVirtuallyEmpty(board, landing.get(), origin, capturedSet)) {
         continue;
       }
-      captures.add(new CaptureSequence(from, List.of(landing.get()), List.of(adj.get())));
+
+      pathSoFar.add(landing.get());
+      capturedSoFar.add(adj.get());
+      capturedSet.add(adj.get());
+
+      // SPEC §3.5 — a man that reaches the promotion row mid-sequence stops.
+      boolean stopAtPromotion =
+          piece.isMan() && landing.get().rank() == promotionRank(piece.color());
+
+      if (stopAtPromotion) {
+        output.add(new CaptureSequence(origin, List.copyOf(pathSoFar), List.copyOf(capturedSoFar)));
+      } else {
+        int outputSizeBefore = output.size();
+        dfsCapture(
+            board, landing.get(), piece, origin, pathSoFar, capturedSoFar, capturedSet, output);
+        if (output.size() == outputSizeBefore) {
+          // No further extension was possible: this leaf is a complete sequence.
+          output.add(
+              new CaptureSequence(origin, List.copyOf(pathSoFar), List.copyOf(capturedSoFar)));
+        }
+      }
+
+      pathSoFar.remove(pathSoFar.size() - 1);
+      capturedSoFar.remove(capturedSoFar.size() - 1);
+      capturedSet.remove(adj.get());
     }
-    return captures;
+  }
+
+  private static boolean isVirtuallyEmpty(
+      Board board, Square s, Square origin, Set<Square> capturedSet) {
+    if (s.equals(origin)) {
+      // Origin is "empty" during the sequence because the moving piece left it on jump 1.
+      return true;
+    }
+    if (capturedSet.contains(s)) {
+      // Already captured this leg → square is empty for landing purposes.
+      return true;
+    }
+    return board.isEmpty(s);
+  }
+
+  private static int promotionRank(Color color) {
+    return color == Color.WHITE ? 7 : 0;
   }
 
   private static int[][] manDirs(Color color) {
