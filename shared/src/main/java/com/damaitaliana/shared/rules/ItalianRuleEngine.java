@@ -88,8 +88,14 @@ public final class ItalianRuleEngine implements RuleEngine {
     for (Square captured : move.capturedSquares()) {
       newBoard = newBoard.without(captured);
     }
-    newBoard = newBoard.with(move.to(), piece);
+    // SPEC §3.5 — a man that ends its move on the opponent's last row is promoted to king.
+    Piece pieceAfterMove = piece;
+    if (piece.isMan() && move.to().rank() == promotionRank(piece.color())) {
+      pieceAfterMove = piece.promote();
+    }
+    newBoard = newBoard.with(move.to(), pieceAfterMove);
 
+    // SPEC §3.6 — clock resets on captures and on man moves; otherwise increments.
     int newClock = (move.isCapture() || piece.isMan()) ? 0 : state.halfmoveClock() + 1;
     List<Move> history = new ArrayList<>(state.history());
     history.add(move);
