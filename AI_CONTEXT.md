@@ -5,10 +5,10 @@
 
 ## Stato corrente
 
-- **Branch corrente**: `develop` (default branch). Fase 2 chiusa, branch `feature/2-ai` eliminato.
+- **Branch corrente**: `develop` (default branch). Fase 2 chiusa, branch `feature/2-ai` eliminato (locale; il branch non era mai stato pushato sul remote, quindi nessuna eliminazione remota necessaria).
 - **Fase roadmap**: Fase 2 — IA (`shared.ai`), **chiusa**.
 - **Sotto-fase**: nessuna in corso. Le 4 sotto-fasi della Fase 2 (PIANIFICA / IMPLEMENTA / REVIEW / TEST) sono tutte chiuse; chiusura formalizzata col tag `v0.2.0` (commit `4839149` su `main`, merge `91fa9d3` su `develop`).
-- **Ultimo task completato**: chiusura Fase 2 con merge `feature/2-ai` → `develop` (`91fa9d3`) → `main` (`4839149`), tag `v0.2.0` applicato, branch feature eliminato (locale; remoto non disponibile per ADR-019).
+- **Ultimo task completato**: chiusura Fase 2 con merge `feature/2-ai` → `develop` (`91fa9d3`) → `main` (`4839149`), tag `v0.2.0` applicato e pushato (push fast-forward `main` `2f6a14e..4839149`, `develop` `0dabe6f..94390d2`, nuovo tag `v0.2.0`). Il remote `origin` (https://github.com/giu300486/dama-italiana) ora riflette lo stato locale fino al tag `v0.2.0`.
 - **Prossimo passo**: PIANIFICA Fase 3 — Client UI single-player (JavaFX + design system CSS, schermate splash/menu/board/settings, rendering damiera + animazioni, salvataggio multi-slot, autosave, localizzazione IT/EN, schermata regole). Output atteso: `plans/PLAN-fase-3.md`.
 - **Stato test**: `mvn clean verify` (root) BUILD SUCCESS in ~2 min — `shared` 391 test (387 default + 1 slow + 3 performance), JaCoCo 97.3% modulo + 96.2% package `rules` + 97.7% package `ai`, SpotBugs 0 High, Spotless OK. `core-server`/`client`/`server` ancora con il singolo smoke test ciascuno.
 - **Test gating A2.2 (slow)**: ✅ PASSED il 2026-04-28 in 16:02 min (Campione ≥ 95/100 vs Principiante).
