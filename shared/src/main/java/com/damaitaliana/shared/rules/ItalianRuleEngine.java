@@ -52,8 +52,10 @@ public final class ItalianRuleEngine implements RuleEngine {
 
     if (!captures.isEmpty()) {
       // SPEC §3.3: capture is mandatory whenever possible. Simple moves are excluded.
-      List<Move> moves = new ArrayList<>(captures.size());
-      moves.addAll(captures);
+      // SPEC §3.4: filter captures through the four Italian laws of precedence.
+      List<CaptureSequence> filtered = applyFourLaws(board, captures);
+      List<Move> moves = new ArrayList<>(filtered.size());
+      moves.addAll(filtered);
       return List.copyOf(moves);
     }
 
@@ -208,6 +210,128 @@ public final class ItalianRuleEngine implements RuleEngine {
 
   private static int promotionRank(Color color) {
     return color == Color.WHITE ? 7 : 0;
+  }
+
+  // --- SPEC §3.4 — four Italian laws of precedence ---
+
+  /**
+   * Applies the four Italian laws of precedence in order: quantity, quality, king-precedence,
+   * first-king (SPEC §3.4). Each law is a strict filter: it keeps only the sequences that achieve
+   * the optimum on the dimension it ranks, and never reorders the input.
+   */
+  private static List<CaptureSequence> applyFourLaws(Board board, List<CaptureSequence> all) {
+    if (all.size() <= 1) {
+      return all;
+    }
+    List<CaptureSequence> kept = applyQuantityLaw(all);
+    kept = applyQualityLaw(board, kept);
+    kept = applyKingPrecedenceLaw(board, kept);
+    kept = applyFirstKingLaw(board, kept);
+    return kept;
+  }
+
+  /** Law 1 — keep only the sequences that capture the largest number of pieces. */
+  private static List<CaptureSequence> applyQuantityLaw(List<CaptureSequence> sequences) {
+    int max = 0;
+    for (CaptureSequence s : sequences) {
+      if (s.captureCount() > max) {
+        max = s.captureCount();
+      }
+    }
+    List<CaptureSequence> kept = new ArrayList<>();
+    for (CaptureSequence s : sequences) {
+      if (s.captureCount() == max) {
+        kept.add(s);
+      }
+    }
+    return kept;
+  }
+
+  /**
+   * Law 2 — keep only the sequences that capture the largest number of kings. Tie-breaker applied
+   * after the quantity law, so all candidates already capture the same total number of pieces.
+   */
+  private static List<CaptureSequence> applyQualityLaw(
+      Board board, List<CaptureSequence> sequences) {
+    int max = 0;
+    for (CaptureSequence s : sequences) {
+      int kings = countKingsCaptured(board, s);
+      if (kings > max) {
+        max = kings;
+      }
+    }
+    List<CaptureSequence> kept = new ArrayList<>();
+    for (CaptureSequence s : sequences) {
+      if (countKingsCaptured(board, s) == max) {
+        kept.add(s);
+      }
+    }
+    return kept;
+  }
+
+  /**
+   * Law 3 — if at least one sequence is performed by a king, drop those performed by a man.
+   * Otherwise leave the list unchanged.
+   */
+  private static List<CaptureSequence> applyKingPrecedenceLaw(
+      Board board, List<CaptureSequence> sequences) {
+    boolean anyFromKing = false;
+    for (CaptureSequence s : sequences) {
+      if (board.at(s.from()).map(Piece::isKing).orElse(false)) {
+        anyFromKing = true;
+        break;
+      }
+    }
+    if (!anyFromKing) {
+      return sequences;
+    }
+    List<CaptureSequence> kept = new ArrayList<>();
+    for (CaptureSequence s : sequences) {
+      if (board.at(s.from()).map(Piece::isKing).orElse(false)) {
+        kept.add(s);
+      }
+    }
+    return kept;
+  }
+
+  /**
+   * Law 4 — among the surviving sequences (all from a king, same total / king count), if at least
+   * one captures an enemy king at the first jump, drop those that don't.
+   */
+  private static List<CaptureSequence> applyFirstKingLaw(
+      Board board, List<CaptureSequence> sequences) {
+    boolean anyKingFirst = false;
+    for (CaptureSequence s : sequences) {
+      if (firstCapturedIsKing(board, s)) {
+        anyKingFirst = true;
+        break;
+      }
+    }
+    if (!anyKingFirst) {
+      return sequences;
+    }
+    List<CaptureSequence> kept = new ArrayList<>();
+    for (CaptureSequence s : sequences) {
+      if (firstCapturedIsKing(board, s)) {
+        kept.add(s);
+      }
+    }
+    return kept;
+  }
+
+  private static int countKingsCaptured(Board board, CaptureSequence seq) {
+    int n = 0;
+    for (Square sq : seq.captured()) {
+      Optional<Piece> p = board.at(sq);
+      if (p.isPresent() && p.get().isKing()) {
+        n++;
+      }
+    }
+    return n;
+  }
+
+  private static boolean firstCapturedIsKing(Board board, CaptureSequence seq) {
+    return board.at(seq.captured().get(0)).map(Piece::isKing).orElse(false);
   }
 
   private static int[][] manDirs(Color color) {
