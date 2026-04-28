@@ -10,8 +10,10 @@ import com.damaitaliana.shared.domain.Piece;
 import com.damaitaliana.shared.domain.SimpleMove;
 import com.damaitaliana.shared.domain.Square;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -78,6 +80,22 @@ public final class ItalianRuleEngine implements RuleEngine {
     if (!legal.contains(move)) {
       throw new IllegalMoveException("move not legal in current position: " + move);
     }
+    GameState transitional = applyCore(state, move);
+    GameStatus status = computeStatus(transitional);
+    return new GameState(
+        transitional.board(),
+        transitional.sideToMove(),
+        transitional.halfmoveClock(),
+        transitional.history(),
+        status);
+  }
+
+  /**
+   * Pure board-state transition for {@code move}, without recomputing the game status. Reused by
+   * {@link #applyMove} (via the public path that adds the status) and by {@link
+   * #isThreefoldRepetition} when replaying history. The move is assumed to be legal.
+   */
+  private GameState applyCore(GameState state, Move move) {
     Piece piece =
         state
             .board()
@@ -100,17 +118,74 @@ public final class ItalianRuleEngine implements RuleEngine {
     List<Move> history = new ArrayList<>(state.history());
     history.add(move);
     Color nextSide = state.sideToMove().opposite();
-    GameState transitional =
-        new GameState(newBoard, nextSide, newClock, history, GameStatus.ONGOING);
-    GameStatus status = computeStatus(transitional);
-    return new GameState(newBoard, nextSide, newClock, history, status);
+    return new GameState(newBoard, nextSide, newClock, history, GameStatus.ONGOING);
   }
 
   @Override
   public GameStatus computeStatus(GameState state) {
     Objects.requireNonNull(state, "state");
+    Color side = state.sideToMove();
+
+    // SPEC §3.6 — opponent without pieces is a loss (no pieces left to move).
+    if (state.board().countPieces(side) == 0) {
+      return side == Color.WHITE ? GameStatus.BLACK_WINS : GameStatus.WHITE_WINS;
+    }
+
+    // SPEC §3.6 — stalemate (side to move has no legal moves) is a LOSS in the Italian variant.
+    GameState ongoingView =
+        state.status().isOngoing()
+            ? state
+            : new GameState(
+                state.board(),
+                state.sideToMove(),
+                state.halfmoveClock(),
+                state.history(),
+                GameStatus.ONGOING);
+    if (legalMoves(ongoingView).isEmpty()) {
+      return side == Color.WHITE ? GameStatus.BLACK_WINS : GameStatus.WHITE_WINS;
+    }
+
+    // SPEC §3.6 — 40 moves (= 80 half-moves) without captures or man moves is a draw.
+    if (state.halfmoveClock() >= 80) {
+      return GameStatus.DRAW_FORTY_MOVES;
+    }
+
+    // SPEC §3.6 — threefold repetition is a draw.
+    if (isThreefoldRepetition(state)) {
+      return GameStatus.DRAW_REPETITION;
+    }
+
     return GameStatus.ONGOING;
   }
+
+  /**
+   * Returns {@code true} iff the (board, side-to-move) of {@code current} has appeared at least
+   * three times across the trajectory from the initial position to {@code current}.
+   *
+   * <p>Replays the move history from {@link GameState#initial()} via {@link #applyCore} (no status
+   * recomputation, no recursion) and counts occurrences of each {@link PositionKey}. The caller is
+   * responsible for guaranteeing that {@code current.history()} is consistent with the standard
+   * initial position.
+   */
+  private boolean isThreefoldRepetition(GameState current) {
+    List<Move> history = current.history();
+    if (history.size() < 4) {
+      // Need at least 4 plies for any single position to recur three times.
+      return false;
+    }
+    Map<PositionKey, Integer> counts = new HashMap<>();
+    GameState st = GameState.initial();
+    counts.merge(new PositionKey(st.board(), st.sideToMove()), 1, Integer::sum);
+    for (Move m : history) {
+      st = applyCore(st, m);
+      counts.merge(new PositionKey(st.board(), st.sideToMove()), 1, Integer::sum);
+    }
+    Integer occurrences = counts.get(new PositionKey(current.board(), current.sideToMove()));
+    return occurrences != null && occurrences >= 3;
+  }
+
+  /** Identity of a position for repetition purposes (ADR-021). */
+  private record PositionKey(Board board, Color sideToMove) {}
 
   // --- private helpers ---
 
