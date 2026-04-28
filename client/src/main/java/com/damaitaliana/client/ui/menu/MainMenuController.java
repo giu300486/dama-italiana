@@ -1,0 +1,145 @@
+package com.damaitaliana.client.ui.menu;
+
+import com.damaitaliana.client.app.ClientProperties;
+import com.damaitaliana.client.app.SceneId;
+import com.damaitaliana.client.app.SceneRouter;
+import com.damaitaliana.client.app.UserPromptService;
+import com.damaitaliana.client.i18n.I18n;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Objects;
+import javafx.fxml.FXML;
+import javafx.scene.control.Button;
+import javafx.scene.control.Label;
+import javafx.scene.control.Tooltip;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.context.annotation.Scope;
+import org.springframework.stereotype.Component;
+
+/**
+ * Controller backing {@code main-menu.fxml}. Binds card labels to the active locale, leaves the LAN
+ * and Online cards disabled with a tooltip that announces the phase in which they will go live, and
+ * — when the splash bootstrap detected an autosave on disk — asks the user whether to resume or
+ * discard it.
+ *
+ * <p>Resume (the affirmative branch) is only stubbed in Fase 3 Task 3.6: the autosave file is
+ * intentionally left intact so Task 3.16 can wire the actual load + navigation. Discard always
+ * deletes the file.
+ */
+@Component
+@Scope("prototype")
+public class MainMenuController {
+
+  private static final Logger log = LoggerFactory.getLogger(MainMenuController.class);
+  static final String AUTOSAVE_FILENAME = "_autosave.json";
+
+  private final SceneRouter sceneRouter;
+  private final I18n i18n;
+  private final ClientProperties clientProperties;
+  private final UserPromptService prompt;
+
+  @FXML private Label singlePlayerTitle;
+  @FXML private Label singlePlayerSubtitle;
+  @FXML private Button singlePlayerButton;
+
+  @FXML private Label lanTitle;
+  @FXML private Label lanSubtitle;
+  @FXML private Button lanButton;
+  @FXML private Tooltip lanTooltip;
+
+  @FXML private Label onlineTitle;
+  @FXML private Label onlineSubtitle;
+  @FXML private Button onlineButton;
+  @FXML private Tooltip onlineTooltip;
+
+  @FXML private Label rulesTitle;
+  @FXML private Label rulesSubtitle;
+  @FXML private Button rulesButton;
+
+  @FXML private Label settingsTitle;
+  @FXML private Label settingsSubtitle;
+  @FXML private Button settingsButton;
+
+  public MainMenuController(
+      SceneRouter sceneRouter,
+      I18n i18n,
+      ClientProperties clientProperties,
+      UserPromptService prompt) {
+    this.sceneRouter = Objects.requireNonNull(sceneRouter, "sceneRouter");
+    this.i18n = Objects.requireNonNull(i18n, "i18n");
+    this.clientProperties = Objects.requireNonNull(clientProperties, "clientProperties");
+    this.prompt = Objects.requireNonNull(prompt, "prompt");
+  }
+
+  @FXML
+  void initialize() {
+    bindLabels();
+    if (sceneRouter.consumeAutosavePromptOnNext()) {
+      handleAutosavePrompt();
+    }
+  }
+
+  private void bindLabels() {
+    singlePlayerTitle.setText(i18n.t("menu.singleplayer.title"));
+    singlePlayerSubtitle.setText(i18n.t("menu.singleplayer.subtitle"));
+    singlePlayerButton.setText(i18n.t("menu.open"));
+
+    lanTitle.setText(i18n.t("menu.lan.title"));
+    lanSubtitle.setText(i18n.t("menu.lan.subtitle"));
+    lanButton.setText(i18n.t("menu.open"));
+    lanTooltip.setText(i18n.t("menu.lan.disabled"));
+
+    onlineTitle.setText(i18n.t("menu.online.title"));
+    onlineSubtitle.setText(i18n.t("menu.online.subtitle"));
+    onlineButton.setText(i18n.t("menu.open"));
+    onlineTooltip.setText(i18n.t("menu.online.disabled"));
+
+    rulesTitle.setText(i18n.t("menu.rules.title"));
+    rulesSubtitle.setText(i18n.t("menu.rules.subtitle"));
+    rulesButton.setText(i18n.t("menu.open"));
+
+    settingsTitle.setText(i18n.t("menu.settings.title"));
+    settingsSubtitle.setText(i18n.t("menu.settings.subtitle"));
+    settingsButton.setText(i18n.t("menu.open"));
+  }
+
+  /** Visible for testing. */
+  void handleAutosavePrompt() {
+    boolean resume =
+        prompt.confirm(
+            "autosave.prompt.title", "autosave.prompt.header", "autosave.prompt.content");
+    if (!resume) {
+      deleteAutosave();
+    }
+  }
+
+  private void deleteAutosave() {
+    String savesDir = clientProperties.savesDir();
+    if (savesDir == null || savesDir.isBlank()) {
+      return;
+    }
+    Path autosave = Path.of(savesDir, AUTOSAVE_FILENAME);
+    try {
+      Files.deleteIfExists(autosave);
+    } catch (IOException ex) {
+      log.warn("Failed to delete autosave file {}", autosave, ex);
+    }
+  }
+
+  @FXML
+  void openSinglePlayer() {
+    sceneRouter.show(SceneId.SP_SETUP);
+  }
+
+  @FXML
+  void openRules() {
+    sceneRouter.show(SceneId.RULES);
+  }
+
+  @FXML
+  void openSettings() {
+    sceneRouter.show(SceneId.SETTINGS);
+  }
+}

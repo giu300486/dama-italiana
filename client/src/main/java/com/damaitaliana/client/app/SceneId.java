@@ -9,5 +9,8 @@ package com.damaitaliana.client.app;
  */
 public enum SceneId {
   SPLASH,
-  MAIN_MENU
+  MAIN_MENU,
+  SP_SETUP,
+  RULES,
+  SETTINGS
 }

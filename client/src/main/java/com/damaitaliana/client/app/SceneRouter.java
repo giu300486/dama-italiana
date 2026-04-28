@@ -106,7 +106,8 @@ public class SceneRouter {
   private static String fxmlPathFor(SceneId id) {
     return switch (id) {
       case SPLASH -> "/fxml/splash.fxml";
-      case MAIN_MENU -> null;
+      case MAIN_MENU -> "/fxml/main-menu.fxml";
+      case SP_SETUP, RULES, SETTINGS -> null;
     };
   }
 
