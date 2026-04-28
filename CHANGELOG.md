@@ -29,6 +29,7 @@ Il formato è basato su [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1
 - README sezione "Convenzioni": riflette il nuovo modello branch.
 - **SPEC §8.1 — `GameStatus` esteso a 6 voci** (CR-001 della REVIEW-fase-1, opzione A). L'enum diventa `{ ONGOING, WHITE_WINS, BLACK_WINS, DRAW_REPETITION, DRAW_FORTY_MOVES, DRAW_AGREEMENT }` con helper `isOngoing/isWin/isDraw`. Motivazione: la UI e il replay viewer (FR-RUL, FR-NET-09) devono distinguere il motivo della patta. ADR-023 documenta il rationale. Il codice `shared` era già allineato (Task 1.2).
 - **REVIEW-fase-1 closure**: 7 finding chiusi — 4 RESOLVED (F-002 IllegalMoveException Javadoc, F-003 ItalianRuleEngine class Javadoc, F-004 legalMoves duplicate iteration, F-006 GameStatus extension ADR), 3 ACKNOWLEDGED (F-001 thin coverage del repetition test → F2, F-005 isThreefoldRepetition O(n²) → F2 con Zobrist, F-007 `// TODO Fase 3` in `client/pom.xml` fuori scope F1).
+- **TEST-PLAN-fase-1 closure**: 245 test verdi, coverage modulo 96.7% line / 94.7% branch e package `rules` 95.7% line / 94.9% branch (entrambi sopra il gate 90%). 48 posizioni del corpus distribuite per le 14 categorie minime (CLAUDE.md §2.4.4). Limiti noti tracciati (REVIEW F-001 e F-005 deferred-F2).
 
 ### Removed
 

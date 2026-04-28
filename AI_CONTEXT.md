@@ -6,11 +6,11 @@
 ## Stato corrente
 
 - **Branch corrente**: `feature/1-domain-and-rules` (staccato da `develop`, GitFlow leggero).
-- **Fase roadmap**: Fase 1 — Dominio e regole (`shared`).
-- **Sotto-fase**: REVIEW chiusa il 2026-04-28. Prossima sotto-fase: **TEST**.
-- **Ultimo task completato**: closure REVIEW Fase 1. 7 finding (tutti Low): 4 RESOLVED (F-002, F-003, F-004, F-006), 3 ACKNOWLEDGED (F-001 deferred-F2, F-005 deferred-F2, F-007 fuori scope). CR-001 APPROVED opzione A → SPEC §8.1 allineato all'enum a 6 voci + ADR-023.
-- **Prossimo passo**: TEST Fase 1 → `tests/TEST-PLAN-fase-1.md` (CLAUDE.md §2.4). Documenta strategia di test, copertura raggiunta, traceability finalizzata.
-- **Stato test (`mvn -pl shared verify`)**: BUILD SUCCESS, **245 test verdi**, JaCoCo 90% modulo + 90% package `rules` (`haltOnFailure=true`), SpotBugs 0 High, Spotless OK.
+- **Fase roadmap**: Fase 1 — Dominio e regole (`shared`), **tutte le 4 sotto-fasi completate**.
+- **Sotto-fase**: TEST chiusa il 2026-04-28 con `tests/TEST-PLAN-fase-1.md`.
+- **Ultimo task completato**: redazione e chiusura TEST PLAN. Coverage `shared`: 96.7% line modulo, 95.7% line `rules` (entrambi sopra il gate 90%).
+- **Prossimo passo**: chiusura Fase 1 → merge `feature/1-domain-and-rules` → `develop` (--no-ff) → merge `develop` → `main` → tag `v0.1.0`. **Stop point** (richiede conferma utente prima di taggare).
+- **Stato test (`mvn -pl shared verify`)**: BUILD SUCCESS, **245 test verdi**, JaCoCo 96.7% modulo + 95.7% package `rules` (`haltOnFailure=true` con minimo 90%), SpotBugs 0 High, Spotless OK.
 - **mvn clean verify**: BUILD SUCCESS in ~50s (parent + 4 moduli).
 - **Smoke test eseguiti**: 1 per modulo, tutti verdi.
 - **JaCoCo report**: presenti in `target/site/jacoco/` per tutti i moduli.
