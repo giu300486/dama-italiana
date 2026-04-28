@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import com.damaitaliana.client.ui.board.BoardRenderer?>
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+
+<BorderPane xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="com.damaitaliana.client.ui.board.BoardViewController">
+    <padding>
+        <Insets top="16" right="16" bottom="16" left="16"/>
+    </padding>
+
+    <top>
+        <HBox spacing="16" alignment="CENTER_LEFT" BorderPane.alignment="CENTER">
+            <Label fx:id="gameTitleLabel" styleClass="label-title"/>
+        </HBox>
+    </top>
+
+    <center>
+        <BoardRenderer fx:id="boardRenderer" minWidth="640" minHeight="640"/>
+    </center>
+
+    <right>
+        <VBox spacing="12" prefWidth="280" styleClass="card-elevated">
+            <padding>
+                <Insets top="16" right="16" bottom="16" left="16"/>
+            </padding>
+            <Label fx:id="sidePanelPlaceholderLabel" styleClass="label-secondary" wrapText="true"/>
+            <Button fx:id="backButton" onAction="#onBack" styleClass="button-secondary"/>
+        </VBox>
+    </right>
+</BorderPane>
