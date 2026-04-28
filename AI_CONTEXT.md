@@ -7,11 +7,11 @@
 
 - **Branch corrente**: `feature/2-ai` (staccato da `develop` il 2026-04-28).
 - **Fase roadmap**: Fase 2 — IA (`shared.ai`).
-- **Sotto-fase**: **IMPLEMENTA conclusa, REVIEW pending**. Tasks 2.1 ÷ 2.13 + 2.15 completati.
-- **Ultimo task completato**: 2.15 (docs/ADR-024..028, TRACEABILITY popolata con FR-SP-02 + NFR-P-02 + AC §17.1.1 parziale + AC F2). 
-- **Prossimo passo**: sotto-fase REVIEW (CLAUDE.md §2.3) → produrre `reviews/REVIEW-fase-2.md` mappando AC e FR/NFR al codice, identificando finding e proponendo fix concordati con l'utente.
+- **Sotto-fase**: **REVIEW in corso** — `reviews/REVIEW-fase-2.md` redatto. **Stop point CLAUDE.md §2.3 step 6**: in attesa di disposizione utente sui finding (1 PERFORMANCE Medium deferred-F4, 1 REQUIREMENT_GAP Low deferred-F3, 4 CODE_QUALITY Low + 1 DOC_GAP Low).
+- **Ultimo task completato**: redazione `reviews/REVIEW-fase-2.md`. 7 finding totali, nessuno bloccante. Tutti gli AC operativi A2.1 ÷ A2.13 COVERED; gating A2.2 ✅ PASSED.
+- **Prossimo passo**: dopo decisione utente sui finding → applicare eventuali fix → marcare RESOLVED → chiudere review → procedere a sotto-fase TEST (CLAUDE.md §2.4).
 - **Stato test**: 387/387 verdi con `-DexcludedGroups=slow,performance` sul modulo `shared` in `mvn -pl shared verify`. JaCoCo gate raggiunto (modulo ≥ 90%, `rules` ≥ 90%, `ai` ≥ 85%). SpotBugs 0 High. Spotless clean.
-- **Test gating A2.2 (slow)**: in esecuzione in background al momento dell'aggiornamento di questo file (100 partite Campione vs Principiante). Da verificare ≥ 95 vittorie prima della closure di REVIEW.
+- **Test gating A2.2 (slow)**: ✅ PASSED il 2026-04-28 in 16:02 min (`mvn -pl shared test -Dtest=AiTournamentSimulationTest#campionWinsAtLeast95OutOf100AgainstPrincipiante -Dgroups=slow` → BUILD SUCCESS, 1 test green). Campione ≥ 95/100 vs Principiante confermato.
 - **Task 2.14 (deferred)**: ottimizzazione `isThreefoldRepetition` con Zobrist — rinviata a F4 come da §7.9 del piano. È stata applicata in F2 una hardening fix non-Zobrist (catch `IllegalMoveException` → `false`) per supportare il search su stati hand-built.
 - **Stato test**: `mvn clean verify` (root) BUILD SUCCESS — `shared` 245 test, JaCoCo 96.7% modulo + 95.7% package `rules`, SpotBugs 0 High, Spotless OK; `core-server`/`client`/`server` ancora con il singolo smoke test ciascuno.
 - **mvn clean verify**: BUILD SUCCESS in ~50s (parent + 4 moduli).
