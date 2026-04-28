@@ -156,4 +156,4 @@
 - CR-001 APPROVED opzione A: SPEC §8.1 allineato all'enum a 6 voci.
 
 **Review chiusa il**: 2026-04-28
-**Commit di chiusura**: TBD (questo commit)
+**Commit di chiusura**: `d73e149` (`docs(arch): close REVIEW-fase-1 with ADR-023 and findings resolution`)
