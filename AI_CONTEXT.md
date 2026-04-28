@@ -5,23 +5,14 @@
 
 ## Stato corrente
 
-- **Branch corrente**: `feature/2-ai` (staccato da `develop` il 2026-04-28).
-- **Fase roadmap**: Fase 2 — IA (`shared.ai`).
-- **Sotto-fase**: **TEST chiusa** il 2026-04-28. `tests/TEST-PLAN-fase-2.md` redatto. Coverage finale: modulo 97.3%, `rules` 96.2%, `ai` 97.7%. `mvn clean verify` root BUILD SUCCESS (default exclude `slow,performance`). Gating A2.2 ✅ PASSED. Tutti i Definition of Done della sotto-fase TEST checkati.
-- **Ultimo task completato**: TEST-PLAN-fase-2 + closure checklist verde.
-- **Prossimo passo**: ⏸️ **stop point** — chiusura formale della Fase 2 (CLAUDE.md §11 step 10): merge `feature/2-ai` → `develop`, merge `develop` → `main`, tag `v0.2.0`. In attesa di conferma utente.
-- **Stato test**: 387/387 verdi con `-DexcludedGroups=slow,performance` sul modulo `shared` in `mvn -pl shared verify`. JaCoCo gate raggiunto (modulo ≥ 90%, `rules` ≥ 90%, `ai` ≥ 85%). SpotBugs 0 High. Spotless clean.
-- **Test gating A2.2 (slow)**: ✅ PASSED il 2026-04-28 in 16:02 min (`mvn -pl shared test -Dtest=AiTournamentSimulationTest#campionWinsAtLeast95OutOf100AgainstPrincipiante -Dgroups=slow` → BUILD SUCCESS, 1 test green). Campione ≥ 95/100 vs Principiante confermato.
-- **Task 2.14 (deferred)**: ottimizzazione `isThreefoldRepetition` con Zobrist — rinviata a F4 come da §7.9 del piano. È stata applicata in F2 una hardening fix non-Zobrist (catch `IllegalMoveException` → `false`) per supportare il search su stati hand-built.
-- **Stato test**: `mvn clean verify` (root) BUILD SUCCESS — `shared` 245 test, JaCoCo 96.7% modulo + 95.7% package `rules`, SpotBugs 0 High, Spotless OK; `core-server`/`client`/`server` ancora con il singolo smoke test ciascuno.
-- **mvn clean verify**: BUILD SUCCESS in ~50s (parent + 4 moduli).
-- **Smoke test eseguiti**: 1 per modulo, tutti verdi.
-- **JaCoCo report**: presenti in `target/site/jacoco/` per tutti i moduli.
-- **SpotBugs**: 0 warning High.
-- **Acceptance A0.1 ÷ A0.5, A0.8 ÷ A0.11**: verificati ✓.
-- **Acceptance A0.6 (CI verde)**: marcata **deferred** in ADR-019 (no repository remoto disponibile; workflow disattivato).
-- **Acceptance A0.7 (docker compose up)**: marcata **superata** in ADR-018 (Docker rimosso; il developer usa MySQL locale).
-- **Piano di riferimento**: [`plans/PLAN-fase-0.md`](plans/PLAN-fase-0.md).
+- **Branch corrente**: `develop` (default branch). Fase 2 chiusa, branch `feature/2-ai` eliminato.
+- **Fase roadmap**: Fase 2 — IA (`shared.ai`), **chiusa**.
+- **Sotto-fase**: nessuna in corso. Le 4 sotto-fasi della Fase 2 (PIANIFICA / IMPLEMENTA / REVIEW / TEST) sono tutte chiuse; chiusura formalizzata col tag `v0.2.0` (commit `4839149` su `main`, merge `91fa9d3` su `develop`).
+- **Ultimo task completato**: chiusura Fase 2 con merge `feature/2-ai` → `develop` (`91fa9d3`) → `main` (`4839149`), tag `v0.2.0` applicato, branch feature eliminato (locale; remoto non disponibile per ADR-019).
+- **Prossimo passo**: PIANIFICA Fase 3 — Client UI single-player (JavaFX + design system CSS, schermate splash/menu/board/settings, rendering damiera + animazioni, salvataggio multi-slot, autosave, localizzazione IT/EN, schermata regole). Output atteso: `plans/PLAN-fase-3.md`.
+- **Stato test**: `mvn clean verify` (root) BUILD SUCCESS in ~2 min — `shared` 391 test (387 default + 1 slow + 3 performance), JaCoCo 97.3% modulo + 96.2% package `rules` + 97.7% package `ai`, SpotBugs 0 High, Spotless OK. `core-server`/`client`/`server` ancora con il singolo smoke test ciascuno.
+- **Test gating A2.2 (slow)**: ✅ PASSED il 2026-04-28 in 16:02 min (Campione ≥ 95/100 vs Principiante).
+- **Piano di riferimento Fase 2**: [`plans/PLAN-fase-2.md`](plans/PLAN-fase-2.md). Closure REVIEW: [`reviews/REVIEW-fase-2.md`](reviews/REVIEW-fase-2.md). Closure TEST: [`tests/TEST-PLAN-fase-2.md`](tests/TEST-PLAN-fase-2.md).
 
 ## Decisioni recenti
 
@@ -32,20 +23,20 @@
 - Revisione post-implementazione (2026-04-27, dopo feedback utente):
   - **ADR-018**: Docker Compose rimosso. L'ambiente di sviluppo usa il MySQL locale dell'utente (porta 3306, gestito via Workbench/DBeaver).
   - **ADR-019**: workflow GitHub Actions rinominato in `ci.yml.disabled` (non eseguibile). Verrà riattivato quando un repository remoto sarà disponibile.
-  - `application.yml` server: default `jdbc:mysql://localhost:3306/dama_italiana`.
-- Adozione **GitFlow leggero** (2026-04-28): `main` = production / tag, `develop` = integrazione e default branch GitHub, branch effimeri `feature/<fase>-<topic>` e `fix/review-N-F-<id>` staccati da `develop`, mergiati `--no-ff`. Tag delle fasi (`v0.<fase>.0`) sul commit di merge in `main`. Aggiornato `CLAUDE.md` §4.3-§4.4.
+- Adozione **GitFlow leggero** (2026-04-28): `main` = production / tag, `develop` = integrazione e default branch GitHub, branch effimeri `feature/<fase>-<topic>` e `fix/review-N-F-<id>` staccati da `develop`, mergiati `--no-ff`. Tag delle fasi (`v0.<fase>.0`) sul commit di merge in `main`.
+- Approvati dall'utente in data 2026-04-28 (Task PIANIFICA Fase 2): tutti gli stop point §7.1-§7.10 in opzione A in blocco. Task 2.14 (Zobrist-based threefold repetition) deferred-F4. Si è applicata in F2 una hardening fix non-Zobrist (catch `IllegalMoveException` → `false`) per supportare il search su stati hand-built (REVIEW finding F-001/F-002, ACKNOWLEDGED).
+- ADR-024 ÷ ADR-028 registrati durante Fase 2 (architettura `AiEngine` sealed + 3 livelli, Evaluator modulare, Zobrist + TT, cancellation cooperativa, rumore Principiante deterministico).
 
 ## SPEC clarifications needed
 
-Nessuna ambiguità SPEC bloccante. Il piano F2 contiene 10 stop point su scelte di design interne (architettura `AiEngine`, schema di valutazione, Zobrist/TT, modello cancellazione, rumore Principiante, esecuzione test simulazione, tolleranza performance, soglia coverage, inclusione Task 2.14, naming branch). Tutti hanno una proposta motivata (opzione A) — l'utente può confermare in blocco oppure indicare i punti su cui preferisce un'opzione diversa.
-
-## Note operative — deviazioni dal piano
-
-- **Task 2.4 vs 2.5**: la primitive minimale di `CancellationToken` (interface + `never()` + `MutableCancellationToken`) e `SearchCancelledException` sono state introdotte in Task 2.4 anziché in Task 2.5 perché necessarie per testare la cancellazione di `MinimaxSearch`. Task 2.5 aggiungerà `CancellationToken.deadline(Instant)` + `composite(...)` come previsto, oltre a `IterativeDeepeningSearch`. Deviazione minore, motivata dalla coesione test-codice (CLAUDE.md §2.2).
+Nessuna al momento.
 
 ## Note operative
 
 - Rappresentazione del board per il corpus regole **decisa in Fase 1** (ADR-022): JSON con quattro liste disgiunte `whiteMen`/`whiteKings`/`blackMen`/`blackKings` indicizzate in FID 1-32 (ADR-020).
 - Smoke test `SharedSmokeTest` **rimosso** in Task 1.11. Restano `CoreServerSmokeTest`, `ClientSmokeTest`, `ServerSmokeTest`: da rimuovere quando i rispettivi moduli ricevono test reali (Fase 4 / 3 / 5 rispettivamente).
-- JaCoCo `haltOnFailure=true` da Fase 1 sul modulo `shared` con soglie 90% bundle + 90% package `rules`. Per `client`/`core-server`/`server` il gate resta lasco fino alle rispettive fasi.
-- `isThreefoldRepetition` (ADR-021) replay-based: assume `history` consistente con `GameState.initial()`. Stati costruiti a mano con history arbitrarie possono dare falsi negativi (documentato nel Javadoc). Possibile ottimizzazione futura: hash Zobrist (Fase 2 con transposition table).
+- JaCoCo `haltOnFailure=true` su `shared` con soglie 90% bundle + 90% package `rules` (Fase 1) + 85% package `ai` (Fase 2). Per `client`/`core-server`/`server` il gate resta lasco fino alle rispettive fasi.
+- `isThreefoldRepetition` (ADR-021) replay-based con hardening fix Fase 2 (catch `IllegalMoveException` → `false`). Limite documentato per stati hand-built. Ottimizzazione Zobrist-incremental deferred a Fase 4 (REVIEW-fase-2 finding F-001/F-002).
+- Tag JUnit attivi nel modulo `shared`: `slow` (1 test, gating A2.2 ~16 min) + `performance` (3 test, NFR-P-02). Default `mvn verify` include tutto; loop di sviluppo veloce: `-DexcludedGroups=slow,performance`.
+- Determinismo Principiante (ADR-028): `RandomGenerator` iniettato; in test `SplittableRandom(42L + gameIndex)` per simulazioni riproducibili. Default produzione: `SplittableRandom(System.nanoTime())`.
+- Determinismo Zobrist (ADR-026): seed costante `0xDA4A172L`. Stesso jar = stessi hash = stesso comportamento TT.
