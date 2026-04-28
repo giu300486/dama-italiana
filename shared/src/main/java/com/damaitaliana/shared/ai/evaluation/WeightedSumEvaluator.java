@@ -40,11 +40,17 @@ public final class WeightedSumEvaluator implements Evaluator {
   }
 
   /**
-   * SPEC §12.1 default composition. In Task 2.1 only the material term is wired; mobility,
-   * advancement, edge safety and center control are added in Task 2.2.
+   * SPEC §12.1 default composition: material (×1), mobility (×5), advancement (×2), edge safety
+   * (×8), center control (×10).
    */
   public static WeightedSumEvaluator defaultEvaluator() {
-    return new WeightedSumEvaluator(List.of(new WeightedTerm(new MaterialTerm(), 1)));
+    return new WeightedSumEvaluator(
+        List.of(
+            new WeightedTerm(new MaterialTerm(), 1),
+            new WeightedTerm(new MobilityTerm(), 5),
+            new WeightedTerm(new AdvancementTerm(), 2),
+            new WeightedTerm(new EdgeSafetyTerm(), 8),
+            new WeightedTerm(new CenterControlTerm(), 10)));
   }
 
   @Override
