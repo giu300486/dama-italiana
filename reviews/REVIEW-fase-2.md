@@ -93,7 +93,7 @@ I 7 finding sono tutti `Low` (eccetto F-002 PERFORMANCE Medium) e sono prevalent
 - **Descrizione**: il piano §4 task 2.6 menziona un metodo `hashAfterMove(long oldHash, Move m, GameState before, GameState after)` per update incrementale del hash. L'implementazione attuale ricalcola il hash da zero a ogni nodo (`hash(GameState)`). Per Campione a depth 8 con TT, ogni nodo costa ~16 XOR (uno per pezzo). Non un collo di bottiglia su ~20 pezzi. La documentazione (Javadoc + ADR-026) non menziona la mancata implementazione del metodo incrementale.
 - **SPEC reference**: §12.1 (transposition table).
 - **Proposta di fix**: aggiornare il Javadoc di `ZobristHasher` con una nota: "{@code hashAfterMove} (incremental update) is not implemented — the search recomputes from scratch at every node, which is fast enough for the current depth budget". Se il profiling di F2/F3 dovesse mostrare il hash come bottleneck, l'API può crescere senza breaking changes.
-- **Status**: OPEN (proposta di mini-fix Javadoc — vedi sezione "Closure")
+- **Status**: RESOLVED — Javadoc note added on `ZobristHasher` class explaining why `hashAfterMove` was deliberately not shipped and how it could be added later without breaking the existing contract.
 
 ---
 
@@ -102,7 +102,7 @@ I 7 finding sono tutti `Low` (eccetto F-002 PERFORMANCE Medium) e sono prevalent
 - **Posizione**: `shared/src/main/java/com/damaitaliana/shared/ai/search/MoveOrderer.java` + `StandardMoveOrderer.java`
 - **Descrizione**: l'interfaccia `MoveOrderer.order(List<Move>, GameState)` espone il `GameState` come parametro per future implementazioni context-aware (es. "preferisci catture verso pezzi avanzati", "considera la posizione del re avversario"). `StandardMoveOrderer` non lo usa: il suo comparator si basa solo su `Move.isCapture()`, `Move.capturedSquares().size()`, `Move.to()`, e `Move.from()`. Il parametro è quindi unused ma documenta intent futuro.
 - **Proposta di fix**: nessuna — l'API è correttamente future-proof. Aggiungere una nota esplicita nel Javadoc di `MoveOrderer.order` che il parametro `state` può essere ignorato dalle implementazioni che non lo necessitano.
-- **Status**: OPEN (proposta di mini-fix Javadoc)
+- **Status**: RESOLVED — Javadoc note added on `MoveOrderer.order` explaining the contextual purpose of the `state` parameter and its optional use.
 
 ---
 
@@ -132,23 +132,25 @@ I 7 finding sono tutti `Low` (eccetto F-002 PERFORMANCE Medium) e sono prevalent
 
 ## Closure
 
-- [ ] Tutti i `BLOCKER` risolti — 0 finding
-- [ ] Tutti i `REQUIREMENT_GAP` risolti — F-003 ACKNOWLEDGED (deferred-F3 by design)
-- [ ] Tutti i `Critical/High` `BUG` risolti — 0 finding
-- [ ] Tutti i `Critical/High` `SECURITY` risolti — 0 finding
-- [ ] `PERFORMANCE` che violano NFR risolti — F-002 Medium ma NFR-P-02 (5s) confermato dal gating; deferred-F4
-- [ ] SPEC change requests con stato non-PENDING — 0 SCR
-- [ ] Mini-fix DOC_GAP F-004 e CODE_QUALITY F-005 (Javadoc): da decidere con utente
+- [x] Tutti i `BLOCKER` risolti — 0 finding
+- [x] Tutti i `REQUIREMENT_GAP` risolti — F-003 ACKNOWLEDGED (deferred-F3 by design)
+- [x] Tutti i `Critical/High` `BUG` risolti — 0 finding
+- [x] Tutti i `Critical/High` `SECURITY` risolti — 0 finding
+- [x] `PERFORMANCE` che violano NFR risolti — F-002 Medium ACKNOWLEDGED; NFR-P-02 (5s) confermato dal gating A2.2 PASSED; deferred-F4
+- [x] SPEC change requests con stato non-PENDING — 0 SCR
+- [x] Mini-fix Javadoc F-004 + F-005 applicati (Opzione 2 scelta dall'utente — "scelta a tua scelta")
 
-**Review chiusa il**: _pending user disposition of findings_
-**Commit di chiusura**: _pending_
+**Review chiusa il**: 2026-04-28
+**Commit di chiusura**: _pending closure commit_ (questo file + ZobristHasher + MoveOrderer Javadoc updates)
 
----
+### Disposizione finale dei finding
 
-## Sintesi proposta per l'utente
-
-Nessun finding è bloccante. Le opzioni:
-
-1. **Chiudere review così com'è**, con F-001/F-002/F-003/F-006/F-007 ACKNOWLEDGED e F-004/F-005 OPEN come "noti, fix non urgente". Andare direttamente alla sotto-fase TEST per la closure formale di Fase 2.
-2. **Applicare i 2 mini-fix Javadoc** (F-004 nota su `hashAfterMove` non implementato, F-005 nota su `state` parameter intenzionalmente unused). Costo: 5 minuti, ~20 righe di doc. Poi closure.
-3. **Tirare in F2 anche Task 2.14** (Zobrist-based `isThreefoldRepetition`) chiudendo F-001 + F-002 con un fix vero invece di rinviarli a F4. Costo: ~1 ora, refactor di `RuleEngine.computeStatus` + nuovi test. Lo SPEC §3.6 e ADR-021 non cambiano (semantica equivalente).
+| ID    | Categoria       | Severity | Status finale                        |
+|-------|-----------------|----------|---------------------------------------|
+| F-001 | CODE_QUALITY    | Low      | ACKNOWLEDGED (deferred-F4)            |
+| F-002 | PERFORMANCE     | Medium   | ACKNOWLEDGED (deferred-F4, fix con F-001) |
+| F-003 | REQUIREMENT_GAP | Low      | ACKNOWLEDGED (deferred-F3 by design)  |
+| F-004 | DOC_GAP         | Low      | RESOLVED                              |
+| F-005 | CODE_QUALITY    | Low      | RESOLVED                              |
+| F-006 | CODE_QUALITY    | Low      | ACKNOWLEDGED (design intentional)     |
+| F-007 | CODE_QUALITY    | Low      | ACKNOWLEDGED (design intentional)     |

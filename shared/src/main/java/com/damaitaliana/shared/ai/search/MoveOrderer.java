@@ -16,6 +16,12 @@ public interface MoveOrderer {
   /**
    * Returns a new list with the moves of {@code moves} sorted by descending priority. The input
    * list is not modified.
+   *
+   * <p>The {@code state} parameter is supplied so context-aware orderers (e.g. ones that prefer
+   * captures of advanced enemy pieces, or that consult a positional opening book) can use it. The
+   * shipped {@link StandardMoveOrderer} ignores it: its priorities derive entirely from {@link
+   * Move} properties. Implementations that don't need the state are free to discard it
+   * (REVIEW-fase-2 finding F-005).
    */
   List<Move> order(List<Move> moves, GameState state);
 }

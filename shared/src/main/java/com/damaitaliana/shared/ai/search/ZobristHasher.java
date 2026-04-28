@@ -19,6 +19,14 @@ import java.util.SplittableRandom;
  * <p>The internal random table is initialised <em>deterministically</em> from a fixed seed: same
  * jar version ⇒ same Zobrist values, same hashes. This makes the transposition table and any tests
  * that exercise it bit-for-bit reproducible.
+ *
+ * <p><b>No incremental update API in F2.</b> The plan task 2.6 mentioned a {@code
+ * hashAfterMove(oldHash, move, before, after)} variant that updates the hash by XOR-ing out the
+ * from-piece and XOR-ing in the to-piece (and capture/promotion deltas). That API is <em>not</em>
+ * shipped: at the depth budget of Campione (≤ 8 ply) the from-scratch {@link #hash(GameState)}
+ * costs ~16 XORs per node and is not the bottleneck. If profiling in a later phase shows otherwise,
+ * an incremental method can be added without breaking the existing contract (REVIEW-fase-2 finding
+ * F-004).
  */
 public final class ZobristHasher {
 
