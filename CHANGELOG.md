@@ -8,10 +8,28 @@ Il formato è basato su [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1
 
 ### Added
 
+- `plans/PLAN-fase-1.md` (sotto-fase PIANIFICA Fase 1, approvata 2026-04-28).
+- **Fase 1 — Dominio e regole nel modulo `shared`** (sotto-fase IMPLEMENTA conclusa). 245 test su 4 sotto-package, JaCoCo ≥ 90% modulo + ≥ 90% package `rules`, SpotBugs 0 High.
+  - **Task 1.1** — `com.damaitaliana.shared.notation.FidNotation`: bijezione `Square ↔ 1..32` in orientamento standard FID (ADR-020), parsing/format mosse, record `ParsedMove` (59 test).
+  - **Task 1.2** — `com.damaitaliana.shared.domain`: `Square`, `Color`, `PieceKind`, `Piece`, `Board` (immutabile, `initial()` con 24 pezzi sulle case scure rank 0-2/5-7), `Move` sealed + `SimpleMove` + `CaptureSequence`, `GameStatus` esteso (6 voci con `isOngoing`/`isWin`/`isDraw`), `GameState` (58 test).
+  - **Task 1.3** — `com.damaitaliana.shared.rules.RuleEngine` interface + `IllegalMoveException` + `ItalianRuleEngine` movimenti semplici (22 test).
+  - **Task 1.4** — Catture singole con la regola "pedina non cattura dama" (SPEC §3.3) e regola della cattura obbligatoria (14 test).
+  - **Task 1.5** — Sequenze multi-jump via DFS con anti-loop (set di pezzi catturati) e stop alla promozione mid-sequenza per le pedine (SPEC §3.5) (10 test).
+  - **Task 1.6** — Le 4 leggi italiane di precedenza (SPEC §3.4): quantità → qualità → precedenza dama → prima dama, ognuna come filtro privato isolato (7 test).
+  - **Task 1.7** — Promozione su `applyMove`: una pedina che termina su rank 7 (bianco) o rank 0 (nero) viene promossa a dama prima di essere posizionata (7 test).
+  - **Task 1.8** — `computeStatus` completo (SPEC §3.6): vittoria per assenza pezzi, vittoria per stallo (sconfitta del bloccato in variante italiana), patta per regola 40 mosse (≥80 ply), patta per triplice ripetizione via replay della history da `GameState.initial()` con record privato `PositionKey` (ADR-021), tramite metodo `applyCore` non ricorsivo (11 test).
+  - **Task 1.9** — Test corpus parametrizzato `test-positions.json` con **48 posizioni** distribuite per categoria (CLAUDE.md §2.4.4); schema disgiunto `whiteMen`/`whiteKings`/`blackMen`/`blackKings` (ADR-022); loader Jackson con validazione + `RuleEngineCorpusTest` parametrizzato + `RuleEngineCorpusSchemaTest` + `RuleEngineCorpusCoverageTest` (4 + 3 + 48 = 55 test totali).
+  - **Task 1.10** — `EndToEndGameApiTest` con 3 partite scriptate via API pura (white-wins, black-wins per stallo, draw per regola 40 mosse) (3 test).
+  - **Task 1.11** — `shared/pom.xml`: JaCoCo `haltOnFailure=true`, regole `BUNDLE` ≥ 90% line+branch e `PACKAGE com.damaitaliana.shared.rules` ≥ 90% line+branch. `SharedSmokeTest` rimosso.
+  - **Task 1.12** — `package-info.java` per `shared`, `shared.domain`, `shared.notation`, `shared.rules`. ADR-020/021/022 in `ARCHITECTURE.md`. Matrice tracciabilità `tests/TRACEABILITY.md` popolata con FR-SP-04, FR-SP-05, FR-SP-09, FR-COM-01, FR-RUL-01, NFR-M-01, NFR-M-04, AC §17.1.6/7/8/§17.2.4/5 e gli 11 acceptance criteria operativi della Fase 1.
+
 ### Changed
 
 - **Modello branch git**: adozione di **GitFlow leggero** (`CLAUDE.md` §4.3-§4.4). `main` = production / tag, `develop` = integrazione e default branch su GitHub, branch effimeri `feature/<fase>-<topic>` e `fix/review-N-F-<id>` staccati da `develop` e mergiati `--no-ff`. Tag delle fasi (`v0.<fase>.0`) sul commit di merge in `main` (eccezione: `v0.0.0` taggato direttamente su `main` prima dell'introduzione del modello GitFlow).
 - README sezione "Convenzioni": riflette il nuovo modello branch.
+- **SPEC §8.1 — `GameStatus` esteso a 6 voci** (CR-001 della REVIEW-fase-1, opzione A). L'enum diventa `{ ONGOING, WHITE_WINS, BLACK_WINS, DRAW_REPETITION, DRAW_FORTY_MOVES, DRAW_AGREEMENT }` con helper `isOngoing/isWin/isDraw`. Motivazione: la UI e il replay viewer (FR-RUL, FR-NET-09) devono distinguere il motivo della patta. ADR-023 documenta il rationale. Il codice `shared` era già allineato (Task 1.2).
+- **REVIEW-fase-1 closure**: 7 finding chiusi — 4 RESOLVED (F-002 IllegalMoveException Javadoc, F-003 ItalianRuleEngine class Javadoc, F-004 legalMoves duplicate iteration, F-006 GameStatus extension ADR), 3 ACKNOWLEDGED (F-001 thin coverage del repetition test → F2, F-005 isThreefoldRepetition O(n²) → F2 con Zobrist, F-007 `// TODO Fase 3` in `client/pom.xml` fuori scope F1).
+- **TEST-PLAN-fase-1 closure**: 245 test verdi, coverage modulo 96.7% line / 94.7% branch e package `rules` 95.7% line / 94.9% branch (entrambi sopra il gate 90%). 48 posizioni del corpus distribuite per le 14 categorie minime (CLAUDE.md §2.4.4). Limiti noti tracciati (REVIEW F-001 e F-005 deferred-F2).
 
 ### Removed
 

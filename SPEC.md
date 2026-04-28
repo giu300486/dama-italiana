@@ -533,9 +533,28 @@ public record GameState(
     Color sideToMove,
     int halfmoveClock,           // per regola 40 mosse
     List<Move> history,
-    GameStatus status            // ONGOING, WHITE_WINS, BLACK_WINS, DRAW
+    GameStatus status
 ) { }
+
+// Status della partita: il ramo DRAW è materializzato in tre voci distinte
+// così che UI, log e replay possano mostrare il motivo della patta.
+public enum GameStatus {
+    ONGOING,
+    WHITE_WINS,
+    BLACK_WINS,
+    DRAW_REPETITION,        // triplice ripetizione
+    DRAW_FORTY_MOVES,       // 40 mosse senza catture e senza spostamenti di pedina
+    DRAW_AGREEMENT;         // accordo fra giocatori (online)
+
+    public boolean isOngoing() { return this == ONGOING; }
+    public boolean isWin()     { return this == WHITE_WINS || this == BLACK_WINS; }
+    public boolean isDraw()    { return this == DRAW_REPETITION || this == DRAW_FORTY_MOVES || this == DRAW_AGREEMENT; }
+}
 ```
+
+> Nota: in Dama Italiana lo stallo (assenza di mosse legali per chi è al tratto)
+> è una **sconfitta** del bloccato, NON una patta come negli scacchi (§3.6). Per
+> questo non esiste una voce di stallo-patta in `GameStatus`.
 
 ### 8.2 Servizi di dominio
 
