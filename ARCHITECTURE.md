@@ -136,6 +136,87 @@ Riferimento autoritativo: `SPEC.md` Appendice B.
   - **Strict-SPEC originale (4 voci) + `Optional<DrawReason>` su `GameState`**: doppia rappresentazione, validazione manuale che il reason sia non-null sse status==DRAW.
   - **Strict-SPEC senza reason esposto**: motivo della patta perso → degrada UX e replay.
 
+### ADR-024 — Architettura motore IA: sealed `AiEngine` + 3 livelli concreti
+
+- **Data**: 2026-04-28
+- **Stato**: Accepted (Fase 2)
+- **Contesto**: SPEC §12.2 e ADR-015 fissano tre livelli di difficoltà fissi (Principiante, Esperto, Campione) con depth/timeout/caratteristiche distinti. Il motore deve essere tipato in modo esaustivo (la UI di Fase 3 fa `switch` sull'enum) e niente livello "in mezzo" deve essere creabile per errore.
+- **Decisione**: `sealed interface AiEngine permits PrincipianteAi, EspertoAi, CampioneAi`. Tre classi `final` con costanti `DEPTH`/`MAX_DEPTH`, `DEFAULT_TIMEOUT` e `NOISE_PROBABILITY` (Principiante) `public static final` per consultazione esterna. Factory `AiEngine.forLevel(AiLevel, RandomGenerator)`. Tutti e tre delegano a `IterativeDeepeningSearch`: deviazione minore vs piano (Esperto userebbe `MinimaxSearch` puro), motivata dalla cooperative cancellation (deadline → IDS ritorna best-so-far invece di crashare).
+- **Conseguenze**:
+  - Pattern matching esaustivo nei consumer (UI, executor) senza branch default sospetti.
+  - Aggiungere un livello richiede esplicitamente `permits` + classe — passaggio rituale che invita a documentare la scelta.
+  - Configurazione (depth, timeout, noise) è auto-descrittiva sui tipi — niente magic numbers nel codice client.
+- **Alternative considerate**:
+  - Singolo `MinimaxAiEngine` + `record AiConfig`: più flessibile ma mappa male sul "3 livelli fissi" di SPEC; tooling/debug peggiore.
+  - Strategy con `interface SearchPolicy`: livelli come tre policies preconfezionate. Aggiunge un livello d'indirezione rispetto al "tre classi finali" del SPEC senza beneficio nel breve.
+
+### ADR-025 — Funzione di valutazione modulare a somma pesata
+
+- **Data**: 2026-04-28
+- **Stato**: Accepted (Fase 2)
+- **Contesto**: SPEC §12.1 elenca cinque componenti euristici (materiale, mobilità, posizione/avanzamento, sicurezza-bordi, controllo-centro) con pesi indicativi. Vogliamo poter testare ogni termine in isolamento, sostituirne uno per esperimenti, e mantenere chiari i pesi.
+- **Decisione**: `interface Evaluator { int evaluate(state, perspective); }` come API consumata dalla search. Un `interface EvaluationTerm` per ogni componente puro (un metodo `score`). `WeightedSumEvaluator(List<WeightedTerm>)` somma `weight·score` per ogni termine. `WeightedSumEvaluator.defaultEvaluator()` istanzia la composizione SPEC §12.1: materiale ×1, mobilità ×5, avanzamento ×2, sicurezza-bordi ×8, centro ×10.
+- **Conseguenze**:
+  - Ogni termine è testabile da solo (`MaterialTermTest`, `MobilityTermTest`, ecc.).
+  - Tuning futuro = nuova istanza di `WeightedSumEvaluator` con pesi diversi; nessun cambio di codice nei termini.
+  - Pesi documentati in un solo punto (`defaultEvaluator()`).
+- **Alternative considerate**:
+  - Pesi configurabili via `record EvaluationWeights` esposto: più flessibile ma sposta la mappa SPEC §12.1 dal codice ai chiamanti.
+  - Solo materiale + mobilità in F2: troppo "cieco" per battere Principiante in modo solido.
+
+### ADR-026 — Hashing Zobrist deterministico + Transposition Table always-replace
+
+- **Data**: 2026-04-28
+- **Stato**: Accepted (Fase 2)
+- **Contesto**: La specifica del livello Campione richiede transposition table (SPEC §12.2). Tre sotto-decisioni: come generare i numeri Zobrist, dimensione e politica di sostituzione della TT, integrazione con la search.
+- **Decisione**:
+  - **Tabelle Zobrist generate da `SplittableRandom(0xDA4A172L)` — seed costante**. Stesso jar = stessi hash; tutti i test sulla TT sono bit-deterministici.
+  - **`TranspositionTable` ad array circolare di `2^20 = 1 048 576` slot** (~32 MB a 32 byte/slot). Slot index = `hash & (size-1)`. Probe rifiuta entry con hash diverso (slot collision). Replacement: **always-replace** (la più semplice corretta — possibile evoluzione "prefer deeper/newer" se il profiling lo giustifica).
+  - **Integrazione in `MinimaxSearch`**: probe all'ingresso del nodo; entry con `depth >= depthRemaining` produce ritorno anticipato con semantica `EXACT`/`LOWER_BOUND`/`UPPER_BOUND`. **Mai ritorno anticipato al root** (`plyFromRoot == 0`) — il chiamante richiede `bestMove` settato dal loop, non recuperato dalla TT. Al ritorno, store con bound type derivato da `(alphaOrig, beta, score)`.
+  - La TT bestMove viene promossa al primo posto del move ordering (PV-from-TT) per innescare cutoff alpha-beta più presto.
+- **Conseguenze**:
+  - Determinismo end-to-end nei test (`AiTournamentSimulationTest` può asserire risultati esatti su seed dato).
+  - 32 MB di RAM per Campione attivo — accettabile su hardware moderno.
+  - Iterazioni successive di IDS riusano TT cross-iteration: depth k+1 raccoglie valori di depth k senza ricalcolarli.
+- **Alternative considerate**:
+  - Tabelle randomizzate ad ogni avvio (seed `nanoTime()`): rompe i test deterministici, niente vantaggio.
+  - TT 2^18 = 8 MB: meno collisioni risparmiate, perdita perf 5-10% stimata.
+  - Politica "prefer deeper": più complessa, beneficio marginale nei depth budget di Campione.
+  - TT ricreata ad ogni `chooseMove`: niente memory leak ma perde benefici cross-call dell'IDS.
+
+### ADR-027 — Modello di cancellazione cooperativa
+
+- **Data**: 2026-04-28
+- **Stato**: Accepted (Fase 2)
+- **Contesto**: SPEC §12.2 vuole l'IA "cancellabile, con timeout, non blocca la UI". `Future#cancel(true)` interrompe il thread JDK ma se la search non controlla il flag interrupt esplicitamente, può proseguire fino al termine naturale; e l'API standard del `Future` perde il valore intermedio una volta cancellato.
+- **Decisione**: Cooperative cancellation tramite `interface CancellationToken`. La search controlla `cancel.throwIfCancelled()` all'ingresso di ogni nodo (overhead trascurabile su `boolean volatile`). Tre factory standard:
+  - `never()` — singleton mai cancellato.
+  - `deadline(Instant)` / `deadline(Instant, Clock)` — cancellato a/oltre l'istante; il `Clock` iniettabile rende i test deterministici.
+  - `composite(token1, token2, …)` — OR logico.
+  - `MutableCancellationToken` — implementazione con `cancel()` esplicito, usata da `VirtualThreadAiExecutor`.
+- L'`IterativeDeepeningSearch` cattura `SearchCancelledException` al boundary di ogni iterazione e ritorna il `bestMove` dell'iterazione completata più profonda (graceful). Se nemmeno la prima itera completa, fallback alla prima mossa legale (`chooseMove` non ritorna mai null su stati ongoing).
+- **Conseguenze**:
+  - Risposta a cancellazione entro ~200 ms (overhead di check di `volatile boolean` per nodo).
+  - Soft-cancel via `Submission.cancelGracefully()` ritorna best-so-far; hard-cancel via `Future.cancel(true)` dà semantica JDK standard (`CancellationException`).
+  - Test deterministici di cancellazione tramite `deadline(past)` e `MutableCancellationToken.cancel()`.
+- **Alternative considerate**:
+  - Solo `Thread.interrupted()`: API meno ricca (niente deadline, niente composite); dipendenza dall'interrupt flag del thread che alcune call JDK resettano.
+  - `CompletableFuture.cancel`: overkill; SPEC esplicita "su virtual thread" → API sincrona del search basta.
+
+### ADR-028 — Determinismo del rumore "Principiante"
+
+- **Data**: 2026-04-28
+- **Stato**: Accepted (Fase 2)
+- **Contesto**: SPEC §12.2 dice "Probabilità 25% di scegliere mossa subottima (rumore)". Definizione di "subottima" lasciata aperta. Per testabilità il rumore deve essere riproducibile.
+- **Decisione**: Con probabilità 25% (controllata da `RandomGenerator.nextDouble() < NOISE_PROBABILITY`), `PrincipianteAi` scarta la `bestMove` calcolata e sceglie **uniformemente a caso** fra le altre legali. Se `legalMoves.size() == 1` (cattura forzata, mossa unica), il rumore è bypassato. Il `RandomGenerator` è iniettato (`PrincipianteAi(RandomGenerator)` + `AiEngine.forLevel(level, rng)` factory). Default in produzione: `SplittableRandom(System.nanoTime())`. Nei test: seed fisso (`SplittableRandom(42L)` o derivato).
+- **Conseguenze**:
+  - Test gating `AiTournamentSimulationTest` deterministico — stesso seed produce stesso risultato bit-per-bit.
+  - "Subottima" significa "una qualunque non-best", coerente con un giocatore principiante che gioca senza piano.
+  - Aggiungere un livello "noisy" diverso significa una nuova classe — non si tunina il livello esistente runtime.
+- **Alternative considerate**:
+  - "Seconda migliore per score": più sottile ma non è ciò che dice SPEC; richiede ricerca duplicata o dell'intero `List<MoveScore>` invece del solo `bestMove`.
+  - Epsilon-greedy sul punteggio: più "smooth" ma cambia il senso di "subottima".
+
 ---
 
 ## Vincoli architetturali invariabili

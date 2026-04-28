@@ -7,10 +7,12 @@
 
 - **Branch corrente**: `feature/2-ai` (staccato da `develop` il 2026-04-28).
 - **Fase roadmap**: Fase 2 — IA (`shared.ai`).
-- **Sotto-fase**: **IMPLEMENTA in corso**. Piano (PLAN-fase-2) approvato in blocco dall'utente.
-- **Task completati**: 2.1 (Evaluator + MaterialTerm), 2.2 (4 termini residui SPEC §12.1), 2.3 (StandardMoveOrderer), 2.4 (MinimaxSearch + CancellationToken minimale + SearchCancelledException).
-- **Prossimo task**: 2.5 — IterativeDeepeningSearch + estensione `CancellationToken` (deadline + composite). Le primitive minime di token sono già presenti (in 2.4 per testare la cancellazione di MinimaxSearch).
-- **Stato test**: 304/304 verdi su `shared`. JaCoCo gate raggiunto, SpotBugs 0 High.
+- **Sotto-fase**: **IMPLEMENTA conclusa, REVIEW pending**. Tasks 2.1 ÷ 2.13 + 2.15 completati.
+- **Ultimo task completato**: 2.15 (docs/ADR-024..028, TRACEABILITY popolata con FR-SP-02 + NFR-P-02 + AC §17.1.1 parziale + AC F2). 
+- **Prossimo passo**: sotto-fase REVIEW (CLAUDE.md §2.3) → produrre `reviews/REVIEW-fase-2.md` mappando AC e FR/NFR al codice, identificando finding e proponendo fix concordati con l'utente.
+- **Stato test**: 387/387 verdi con `-DexcludedGroups=slow,performance` sul modulo `shared` in `mvn -pl shared verify`. JaCoCo gate raggiunto (modulo ≥ 90%, `rules` ≥ 90%, `ai` ≥ 85%). SpotBugs 0 High. Spotless clean.
+- **Test gating A2.2 (slow)**: in esecuzione in background al momento dell'aggiornamento di questo file (100 partite Campione vs Principiante). Da verificare ≥ 95 vittorie prima della closure di REVIEW.
+- **Task 2.14 (deferred)**: ottimizzazione `isThreefoldRepetition` con Zobrist — rinviata a F4 come da §7.9 del piano. È stata applicata in F2 una hardening fix non-Zobrist (catch `IllegalMoveException` → `false`) per supportare il search su stati hand-built.
 - **Stato test**: `mvn clean verify` (root) BUILD SUCCESS — `shared` 245 test, JaCoCo 96.7% modulo + 95.7% package `rules`, SpotBugs 0 High, Spotless OK; `core-server`/`client`/`server` ancora con il singolo smoke test ciascuno.
 - **mvn clean verify**: BUILD SUCCESS in ~50s (parent + 4 moduli).
 - **Smoke test eseguiti**: 1 per modulo, tutti verdi.
