@@ -8,6 +8,12 @@ Il formato è basato su [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1
 
 ### Added
 
+---
+
+## [0.1.0] — 2026-04-28
+
+Tag git: `v0.1.0` (commit `2f6a14e`). Chiusura della **Fase 1 — Dominio e regole nel modulo `shared`** della roadmap (`SPEC.md` §16). Tutte e 4 le sotto-fasi (PIANIFICA / IMPLEMENTA / REVIEW / TEST) chiuse. Branch `feature/1-domain-and-rules` mergiato `--no-ff` in `develop` (`9fb533f`) e poi in `main` (`2f6a14e`).
+
 - `plans/PLAN-fase-1.md` (sotto-fase PIANIFICA Fase 1, approvata 2026-04-28).
 - **Fase 1 — Dominio e regole nel modulo `shared`** (sotto-fase IMPLEMENTA conclusa). 245 test su 4 sotto-package, JaCoCo ≥ 90% modulo + ≥ 90% package `rules`, SpotBugs 0 High.
   - **Task 1.1** — `com.damaitaliana.shared.notation.FidNotation`: bijezione `Square ↔ 1..32` in orientamento standard FID (ADR-020), parsing/format mosse, record `ParsedMove` (59 test).

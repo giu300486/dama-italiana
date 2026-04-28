@@ -5,12 +5,12 @@
 
 ## Stato corrente
 
-- **Branch corrente**: `feature/1-domain-and-rules` (staccato da `develop`, GitFlow leggero).
-- **Fase roadmap**: Fase 1 — Dominio e regole (`shared`), **tutte le 4 sotto-fasi completate**.
-- **Sotto-fase**: TEST chiusa il 2026-04-28 con `tests/TEST-PLAN-fase-1.md`.
-- **Ultimo task completato**: redazione e chiusura TEST PLAN. Coverage `shared`: 96.7% line modulo, 95.7% line `rules` (entrambi sopra il gate 90%).
-- **Prossimo passo**: chiusura Fase 1 → merge `feature/1-domain-and-rules` → `develop` (--no-ff) → merge `develop` → `main` → tag `v0.1.0`. **Stop point** (richiede conferma utente prima di taggare).
-- **Stato test (`mvn -pl shared verify`)**: BUILD SUCCESS, **245 test verdi**, JaCoCo 96.7% modulo + 95.7% package `rules` (`haltOnFailure=true` con minimo 90%), SpotBugs 0 High, Spotless OK.
+- **Branch corrente**: `develop` (default branch).
+- **Fase roadmap**: Fase 1 — Dominio e regole (`shared`), **chiusa**.
+- **Sotto-fase**: nessuna in corso. Le 4 sotto-fasi della Fase 1 (PIANIFICA / IMPLEMENTA / REVIEW / TEST) sono tutte chiuse; chiusura formalizzata col tag `v0.1.0` (commit `2f6a14e` su `main`).
+- **Ultimo task completato**: chiusura Fase 1 con merge `feature/1-domain-and-rules` → `develop` (`9fb533f`) → `main` (`2f6a14e`), tag `v0.1.0` applicato e pushato, branch feature eliminato (locale + remoto).
+- **Prossimo passo**: PIANIFICA Fase 2 — IA (Minimax + alpha-beta nel modulo `shared`, 3 livelli Principiante/Esperto/Campione, cancellabilità + timeout). Output atteso: `plans/PLAN-fase-2.md`.
+- **Stato test**: `mvn clean verify` (root) BUILD SUCCESS — `shared` 245 test, JaCoCo 96.7% modulo + 95.7% package `rules`, SpotBugs 0 High, Spotless OK; `core-server`/`client`/`server` ancora con il singolo smoke test ciascuno.
 - **mvn clean verify**: BUILD SUCCESS in ~50s (parent + 4 moduli).
 - **Smoke test eseguiti**: 1 per modulo, tutti verdi.
 - **JaCoCo report**: presenti in `target/site/jacoco/` per tutti i moduli.
