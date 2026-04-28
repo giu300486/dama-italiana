@@ -27,6 +27,8 @@ Il formato è basato su [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1
 
 - **Modello branch git**: adozione di **GitFlow leggero** (`CLAUDE.md` §4.3-§4.4). `main` = production / tag, `develop` = integrazione e default branch su GitHub, branch effimeri `feature/<fase>-<topic>` e `fix/review-N-F-<id>` staccati da `develop` e mergiati `--no-ff`. Tag delle fasi (`v0.<fase>.0`) sul commit di merge in `main` (eccezione: `v0.0.0` taggato direttamente su `main` prima dell'introduzione del modello GitFlow).
 - README sezione "Convenzioni": riflette il nuovo modello branch.
+- **SPEC §8.1 — `GameStatus` esteso a 6 voci** (CR-001 della REVIEW-fase-1, opzione A). L'enum diventa `{ ONGOING, WHITE_WINS, BLACK_WINS, DRAW_REPETITION, DRAW_FORTY_MOVES, DRAW_AGREEMENT }` con helper `isOngoing/isWin/isDraw`. Motivazione: la UI e il replay viewer (FR-RUL, FR-NET-09) devono distinguere il motivo della patta. ADR-023 documenta il rationale. Il codice `shared` era già allineato (Task 1.2).
+- **REVIEW-fase-1 closure**: 7 finding chiusi — 4 RESOLVED (F-002 IllegalMoveException Javadoc, F-003 ItalianRuleEngine class Javadoc, F-004 legalMoves duplicate iteration, F-006 GameStatus extension ADR), 3 ACKNOWLEDGED (F-001 thin coverage del repetition test → F2, F-005 isThreefoldRepetition O(n²) → F2 con Zobrist, F-007 `// TODO Fase 3` in `client/pom.xml` fuori scope F1).
 
 ### Removed
 

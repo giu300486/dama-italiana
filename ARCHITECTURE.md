@@ -121,6 +121,21 @@ Riferimento autoritativo: `SPEC.md` Appendice B.
   - **Schema dell'esempio SPEC** (`white`/`black` + `kings`): leggermente meno verboso ma richiede validazione a runtime e duplica i numeri delle dame.
   - **Schema FEN-like** (una stringa per riga): più compatto ma meno leggibile per chi scrive le posizioni a mano.
 
+### ADR-023 — `GameStatus` esteso a 6 voci (motivo della patta esplicito)
+
+- **Data**: 2026-04-28
+- **Stato**: Accepted (SPEC §8.1 aggiornato di conseguenza, CR-001 della REVIEW-fase-1)
+- **Contesto**: SPEC §8.1 v2.0 prescriveva originariamente 4 valori per `GameStatus`: `ONGOING`, `WHITE_WINS`, `BLACK_WINS`, `DRAW`. Durante la Fase 1 è emerso che la UI (FR-RUL, FR-NET-09 replay viewer) e i log di partita necessitano di distinguere il *motivo* della patta — triplice ripetizione, regola delle 40 mosse, accordo. Aggiungere un campo separato `Optional<DrawReason>` su `GameState` produrrebbe doppia rappresentazione (status + reason) e logica di consistenza ridondante.
+- **Decisione**: `GameStatus` ha 6 valori — `ONGOING`, `WHITE_WINS`, `BLACK_WINS`, `DRAW_REPETITION`, `DRAW_FORTY_MOVES`, `DRAW_AGREEMENT` — più tre helper boolean: `isOngoing()`, `isWin()`, `isDraw()`. SPEC §8.1 è stato aggiornato con commit `docs(spec): align §8.1 GameStatus to 6-value extension (CR-001)` per riflettere la decisione.
+- **Conseguenze**:
+  - La UI può fare `switch` esaustivo sull'enum per mostrare il motivo della patta senza accedere a un campo accessorio.
+  - I log strutturati (NFR-O-02) hanno un campo `status` univoco e self-describing, niente parallelismo.
+  - L'estensione è retro-compatibile: chi tratta solo "ongoing/win/draw" usa gli helper.
+  - In Dama Italiana lo stallo è sconfitta, NON patta (§3.6): non c'è una voce `DRAW_STALEMATE`. La modellazione della sconfitta-per-stallo passa per `WHITE_WINS`/`BLACK_WINS` calcolati da `computeStatus`.
+- **Alternative considerate**:
+  - **Strict-SPEC originale (4 voci) + `Optional<DrawReason>` su `GameState`**: doppia rappresentazione, validazione manuale che il reason sia non-null sse status==DRAW.
+  - **Strict-SPEC senza reason esposto**: motivo della patta perso → degrada UX e replay.
+
 ---
 
 ## Vincoli architetturali invariabili
