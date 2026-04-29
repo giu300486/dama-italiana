@@ -2,6 +2,7 @@
 
 <?import com.damaitaliana.client.ui.board.BoardRenderer?>
 <?import com.damaitaliana.client.ui.board.MoveHistoryView?>
+<?import com.damaitaliana.client.ui.board.StatusPane?>
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.Label?>
@@ -31,6 +32,7 @@
             <padding>
                 <Insets top="16" right="16" bottom="16" left="16"/>
             </padding>
+            <StatusPane fx:id="statusPane"/>
             <MoveHistoryView fx:id="moveHistoryView" VBox.vgrow="ALWAYS"/>
             <Button fx:id="backButton" onAction="#onBack" styleClass="button-secondary"/>
         </VBox>

@@ -32,6 +32,7 @@ public class BoardViewController {
 
   @FXML private BoardRenderer boardRenderer;
   @FXML private Label gameTitleLabel;
+  @FXML private StatusPane statusPane;
   @FXML private MoveHistoryView moveHistoryView;
   @FXML private Button backButton;
 
@@ -58,7 +59,10 @@ public class BoardViewController {
     gameTitleLabel.setText(game.name());
     backButton.setText(i18n.t("common.button.back"));
 
+    StatusPaneViewModel statusViewModel = new StatusPaneViewModel(i18n);
     SinglePlayerController gameController = singlePlayerControllerProvider.getObject();
+    gameController.setStateChangeListener(
+        state -> statusPane.update(statusViewModel.compute(game, state)));
     gameController.start(game, boardRenderer);
     moveHistoryView.setItems(gameController.history().rows());
   }

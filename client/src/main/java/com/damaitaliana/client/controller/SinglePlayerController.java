@@ -12,6 +12,7 @@ import com.damaitaliana.shared.rules.RuleEngine;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Consumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Scope;
@@ -51,6 +52,7 @@ public class SinglePlayerController {
   private BoardRenderer renderer;
   private GameState state;
   private Square selected;
+  private Consumer<GameState> stateChangeListener = state -> {};
 
   public SinglePlayerController(RuleEngine ruleEngine, Optional<AutosaveTrigger> autosaveTrigger) {
     this.ruleEngine = Objects.requireNonNull(ruleEngine, "ruleEngine");
@@ -59,7 +61,8 @@ public class SinglePlayerController {
 
   /**
    * Attaches the controller to a freshly-created game and renderer. Must be called once before any
-   * user interaction.
+   * user interaction. Fires the state-change listener once with the initial state so views (status
+   * pane, etc.) render their initial frame.
    */
   public void start(SinglePlayerGame game, BoardRenderer renderer) {
     this.game = Objects.requireNonNull(game, "game");
@@ -69,6 +72,15 @@ public class SinglePlayerController {
     renderer.renderState(state.board());
     renderer.setOnCellClicked(this::onCellClicked);
     refreshMandatoryHighlights();
+    fireStateChange();
+  }
+
+  /**
+   * Registers a listener invoked with the current {@link GameState} every time it changes (after
+   * {@link #start} and after each successful {@link #applyMove}).
+   */
+  public void setStateChangeListener(Consumer<GameState> listener) {
+    this.stateChangeListener = listener != null ? listener : state -> {};
   }
 
   /** Visible for testing. */
@@ -147,6 +159,11 @@ public class SinglePlayerController {
     renderer.clearHighlights();
     refreshMandatoryHighlights();
     autosaveTrigger.ifPresent(t -> t.onMoveApplied(snapshot()));
+    fireStateChange();
+  }
+
+  private void fireStateChange() {
+    stateChangeListener.accept(state);
   }
 
   private void refreshMandatoryHighlights() {

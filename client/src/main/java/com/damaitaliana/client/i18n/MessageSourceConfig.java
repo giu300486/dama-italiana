@@ -28,7 +28,7 @@ public class MessageSourceConfig {
     return buildMessageSource();
   }
 
-  static ReloadableResourceBundleMessageSource buildMessageSource() {
+  public static ReloadableResourceBundleMessageSource buildMessageSource() {
     ReloadableResourceBundleMessageSource source = new ReloadableResourceBundleMessageSource();
     source.setBasename("classpath:i18n/messages");
     source.setDefaultEncoding(StandardCharsets.UTF_8.name());
