@@ -5,6 +5,7 @@ import com.damaitaliana.shared.domain.Square;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
+import javafx.scene.Node;
 import javafx.scene.SnapshotParameters;
 import javafx.scene.image.WritableImage;
 import javafx.scene.layout.Region;
@@ -86,6 +87,21 @@ public class BoardRenderer extends Region {
   /** Returns the current highlight bookkeeping. Test hook. */
   public HighlightState highlightState() {
     return highlightState;
+  }
+
+  /**
+   * @return the {@link Node} of the piece currently rendered at {@code square}, or {@code null}
+   *     when the cell is empty. Used by the animation orchestrator to identify the moving and
+   *     captured pieces before {@link #renderState} replaces them.
+   */
+  public Node pieceAt(Square square) {
+    Objects.requireNonNull(square, "square");
+    return cells[square.file()][square.rank()].pieceNode();
+  }
+
+  /** Cell side length in pixels at the current size. */
+  public double currentCellSize() {
+    return BoardLayoutMath.cellSize(getWidth(), getHeight());
   }
 
   /** Snapshot for save miniatures and rules-screen diagrams. */

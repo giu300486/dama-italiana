@@ -2,6 +2,7 @@ package com.damaitaliana.client.controller;
 
 import com.damaitaliana.client.ui.board.BoardRenderer;
 import com.damaitaliana.client.ui.board.MoveHistoryViewModel;
+import com.damaitaliana.client.ui.board.animation.AnimationOrchestrator;
 import com.damaitaliana.shared.domain.Color;
 import com.damaitaliana.shared.domain.GameState;
 import com.damaitaliana.shared.domain.Move;
@@ -15,7 +16,9 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.function.Consumer;
+import javafx.animation.Animation;
 import javafx.application.Platform;
+import javafx.scene.Node;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Scope;
@@ -44,8 +47,10 @@ import org.springframework.stereotype.Component;
  * autosave hook is plumbed via {@link AutosaveTrigger}: empty in production until Task 3.16 wires
  * the disk-backed implementation, mocked in tests.
  *
- * <p>Move animation (Task 3.10) is intentionally still un-wired here; it will be plugged into
- * {@link #applyMove} once the renderer exposes per-square node lookup.
+ * <p>Move animations: when {@link BoardRenderer#pieceAt} returns a real node, the move is
+ * dispatched through {@link AnimationOrchestrator}; the {@code onFinished} callback then runs the
+ * synchronous mutation step. Tests with a mocked renderer get {@code null} from {@code pieceAt} and
+ * fall through to the immediate mutation path so assertions stay synchronous.
  */
 @Component
 @Scope("prototype")
@@ -66,6 +71,7 @@ public class SinglePlayerController {
   private Consumer<GameState> stateChangeListener = state -> {};
   private Executor fxExecutor = Platform::runLater;
   private boolean busy;
+  private boolean stopped;
   private CompletableFuture<Move> pendingAiRequest;
 
   public SinglePlayerController(
@@ -98,6 +104,7 @@ public class SinglePlayerController {
 
   /** Cancels any pending AI request and clears the busy flag. Call when leaving the board view. */
   public void stop() {
+    stopped = true;
     if (pendingAiRequest != null && !pendingAiRequest.isDone()) {
       pendingAiRequest.cancel(true);
     }
@@ -196,11 +203,29 @@ public class SinglePlayerController {
 
   private void applyMove(Move move) {
     Color sideThatMoved = state.sideToMove();
+    Node movingPiece = renderer.pieceAt(move.from());
+    if (movingPiece == null) {
+      // Mocked renderer (tests) or pre-render edge case: skip animation, mutate immediately.
+      finalizeMove(move, sideThatMoved);
+      return;
+    }
+    busy = true;
+    Animation animation =
+        AnimationOrchestrator.animateMove(move, renderer::pieceAt, renderer.currentCellSize());
+    animation.setOnFinished(ev -> finalizeMove(move, sideThatMoved));
+    animation.playFromStart();
+  }
+
+  private void finalizeMove(Move move, Color sideThatMoved) {
+    if (stopped) {
+      return;
+    }
     try {
       state = ruleEngine.applyMove(state, move);
     } catch (IllegalMoveException ex) {
       log.warn("Move {} rejected by rule engine despite legality filter", move, ex);
       deselect();
+      busy = false;
       return;
     }
     history.appendMove(move, sideThatMoved);
@@ -210,6 +235,7 @@ public class SinglePlayerController {
     refreshMandatoryHighlights();
     autosaveTrigger.ifPresent(t -> t.onMoveApplied(snapshot()));
     fireStateChange();
+    busy = false;
     scheduleAiTurnIfAi();
   }
 
@@ -231,6 +257,9 @@ public class SinglePlayerController {
   }
 
   private void onAiCompletion(Move move, Throwable error) {
+    if (stopped) {
+      return;
+    }
     aiThinkingState.set(false);
     busy = false;
     pendingAiRequest = null;
