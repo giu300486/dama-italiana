@@ -24,6 +24,7 @@ class RulesControllerTest {
   private I18n i18n;
   private RuleDiagramLoader diagramLoader;
   private MiniatureRenderer renderer;
+  private RulesAnimations animations;
   private RulesController controller;
 
   @BeforeEach
@@ -32,9 +33,10 @@ class RulesControllerTest {
     i18n = Mockito.mock(I18n.class);
     diagramLoader = new RuleDiagramLoader();
     renderer = Mockito.mock(MiniatureRenderer.class);
+    animations = new RulesAnimations();
     when(i18n.t(anyString())).thenAnswer(inv -> inv.getArgument(0));
     when(i18n.t(anyString(), any(Object[].class))).thenAnswer(inv -> inv.getArgument(0));
-    controller = new RulesController(sceneRouter, i18n, diagramLoader, renderer);
+    controller = new RulesController(sceneRouter, i18n, diagramLoader, renderer, animations);
   }
 
   @Test
@@ -86,6 +88,23 @@ class RulesControllerTest {
   void onBackNavigatesToMainMenu() {
     controller.onBack();
     verify(sceneRouter).show(SceneId.MAIN_MENU);
+  }
+
+  @Test
+  void animationKindsAttachedToCaptureAndPromotionOnly() {
+    assertThat(RulesController.animationKindsFor(RuleSection.CAPTURE))
+        .containsExactly(RulesAnimations.Kind.SIMPLE_CAPTURE, RulesAnimations.Kind.MULTI_CAPTURE);
+    assertThat(RulesController.animationKindsFor(RuleSection.PROMOTION))
+        .containsExactly(RulesAnimations.Kind.PROMOTION);
+
+    for (RuleSection section : RuleSection.ALL) {
+      if (section.equals(RuleSection.CAPTURE) || section.equals(RuleSection.PROMOTION)) {
+        continue;
+      }
+      assertThat(RulesController.animationKindsFor(section))
+          .as("section %s should not have animations", section.id())
+          .isEmpty();
+    }
   }
 
   private Properties readBundle(String classpath) throws IOException {

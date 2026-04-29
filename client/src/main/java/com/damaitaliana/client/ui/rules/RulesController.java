@@ -3,9 +3,11 @@ package com.damaitaliana.client.ui.rules;
 import com.damaitaliana.client.app.SceneId;
 import com.damaitaliana.client.app.SceneRouter;
 import com.damaitaliana.client.i18n.I18n;
+import com.damaitaliana.client.ui.board.BoardRenderer;
 import com.damaitaliana.client.ui.save.MiniatureRenderer;
 import java.util.List;
 import java.util.Objects;
+import javafx.animation.Animation;
 import javafx.fxml.FXML;
 import javafx.geometry.Pos;
 import javafx.scene.control.Button;
@@ -37,10 +39,14 @@ public class RulesController {
   /** Diagram side, in pixels, used by {@link MiniatureRenderer#render}. */
   static final int DIAGRAM_PX = 220;
 
+  /** Side length of the live BoardRenderer used to host each animation widget, in pixels. */
+  static final int ANIMATION_BOARD_PX = 280;
+
   private final SceneRouter sceneRouter;
   private final I18n i18n;
   private final RuleDiagramLoader diagramLoader;
   private final MiniatureRenderer renderer;
+  private final RulesAnimations animations;
 
   @FXML private Label titleLabel;
   @FXML private Button backButton;
@@ -54,11 +60,13 @@ public class RulesController {
       SceneRouter sceneRouter,
       I18n i18n,
       RuleDiagramLoader diagramLoader,
-      MiniatureRenderer renderer) {
+      MiniatureRenderer renderer,
+      RulesAnimations animations) {
     this.sceneRouter = Objects.requireNonNull(sceneRouter, "sceneRouter");
     this.i18n = Objects.requireNonNull(i18n, "i18n");
     this.diagramLoader = Objects.requireNonNull(diagramLoader, "diagramLoader");
     this.renderer = Objects.requireNonNull(renderer, "renderer");
+    this.animations = Objects.requireNonNull(animations, "animations");
   }
 
   @FXML
@@ -142,6 +150,54 @@ public class RulesController {
       figure.getChildren().addAll(view, caption);
       contentBox.getChildren().add(figure);
     }
+
+    for (RulesAnimations.Kind kind : animationKindsFor(section)) {
+      contentBox.getChildren().add(buildAnimationWidget(kind));
+    }
+  }
+
+  /** Returns the demonstrative animations to attach to {@code section}, in display order. */
+  static List<RulesAnimations.Kind> animationKindsFor(RuleSection section) {
+    if (RuleSection.CAPTURE.equals(section)) {
+      return List.of(RulesAnimations.Kind.SIMPLE_CAPTURE, RulesAnimations.Kind.MULTI_CAPTURE);
+    }
+    if (RuleSection.PROMOTION.equals(section)) {
+      return List.of(RulesAnimations.Kind.PROMOTION);
+    }
+    return List.of();
+  }
+
+  private VBox buildAnimationWidget(RulesAnimations.Kind kind) {
+    BoardRenderer board = new BoardRenderer();
+    board.setPrefSize(ANIMATION_BOARD_PX, ANIMATION_BOARD_PX);
+    board.setMinSize(ANIMATION_BOARD_PX, ANIMATION_BOARD_PX);
+    board.setMaxSize(ANIMATION_BOARD_PX, ANIMATION_BOARD_PX);
+    board.getStyleClass().add("rule-animation-board");
+    board.renderState(animations.startingPosition(kind).toState().board());
+
+    Label caption = new Label(i18n.t(animations.captionKey(kind)));
+    caption.setWrapText(true);
+    caption.getStyleClass().add("label-secondary");
+
+    Button play = new Button(i18n.t("rules.animation.play"));
+    play.getStyleClass().add("button-secondary");
+    play.setOnAction(
+        e -> {
+          board.renderState(animations.startingPosition(kind).toState().board());
+          double cellSize = board.currentCellSize();
+          if (cellSize <= 0) {
+            return;
+          }
+          Animation anim = animations.animation(kind, board::pieceAt, cellSize);
+          play.setDisable(true);
+          anim.setOnFinished(ev -> play.setDisable(false));
+          anim.playFromStart();
+        });
+
+    VBox widget = new VBox(8, board, caption, play);
+    widget.setAlignment(Pos.CENTER_LEFT);
+    widget.getStyleClass().add("rule-animation-widget");
+    return widget;
   }
 
   @FXML
