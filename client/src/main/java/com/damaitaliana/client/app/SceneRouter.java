@@ -111,7 +111,7 @@ public class SceneRouter {
       case BOARD -> "/fxml/board-view.fxml";
       case LOAD -> "/fxml/load-screen.fxml";
       case SETTINGS -> "/fxml/settings.fxml";
-      case RULES -> null;
+      case RULES -> "/fxml/rules.fxml";
     };
   }
 

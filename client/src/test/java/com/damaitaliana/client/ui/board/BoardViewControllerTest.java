@@ -91,6 +91,14 @@ class BoardViewControllerTest {
   }
 
   @Test
+  void onShowRulesStopsAiThenNavigatesToRulesScreen() {
+    controller.onShowRules();
+
+    verify(gameController).stop();
+    verify(sceneRouter).show(SceneId.RULES);
+  }
+
+  @Test
   void openSaveDialogReturnsFalseWhenNoActiveGame() {
     controller.setGameControllerForTest(null);
 

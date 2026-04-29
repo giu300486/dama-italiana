@@ -50,6 +50,7 @@ public class BoardViewController {
   @FXML private Menu gameMenu;
   @FXML private MenuItem saveMenuItem;
   @FXML private MenuItem loadMenuItem;
+  @FXML private MenuItem rulesMenuItem;
   @FXML private MenuItem terminateMenuItem;
   @FXML private BoardRenderer boardRenderer;
   @FXML private Label gameTitleLabel;
@@ -108,6 +109,7 @@ public class BoardViewController {
     gameMenu.setText(i18n.t("board.menu.game"));
     saveMenuItem.setText(i18n.t("board.menu.save"));
     loadMenuItem.setText(i18n.t("board.menu.load"));
+    rulesMenuItem.setText(i18n.t("board.menu.rules"));
     terminateMenuItem.setText(i18n.t("board.menu.terminate"));
   }
 
@@ -135,6 +137,14 @@ public class BoardViewController {
   @FXML
   void onTerminate() {
     terminate();
+  }
+
+  @FXML
+  void onShowRules() {
+    if (gameController != null) {
+      gameController.stop();
+    }
+    sceneRouter.show(SceneId.RULES);
   }
 
   /** Visible for tests: business logic for "Salva con nome" without FXML node access. */

@@ -1,0 +1,26 @@
+[
+  {
+    "captionKey": "rules.diagram.capture.simple",
+    "position": {
+      "whiteMen": [22],
+      "whiteKings": [],
+      "blackMen": [18],
+      "blackKings": [],
+      "sideToMove": "WHITE",
+      "halfmoveClock": 0,
+      "history": []
+    }
+  },
+  {
+    "captionKey": "rules.diagram.capture.man_vs_king",
+    "position": {
+      "whiteMen": [22],
+      "whiteKings": [],
+      "blackMen": [],
+      "blackKings": [18],
+      "sideToMove": "WHITE",
+      "halfmoveClock": 0,
+      "history": []
+    }
+  }
+]

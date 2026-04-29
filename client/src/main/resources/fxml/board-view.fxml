@@ -23,6 +23,7 @@
                     <items>
                         <MenuItem fx:id="saveMenuItem" onAction="#onSaveAs"/>
                         <MenuItem fx:id="loadMenuItem" onAction="#onLoad"/>
+                        <MenuItem fx:id="rulesMenuItem" onAction="#onShowRules"/>
                         <MenuItem fx:id="terminateMenuItem" onAction="#onTerminate"/>
                     </items>
                 </Menu>

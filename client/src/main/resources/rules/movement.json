@@ -1,0 +1,14 @@
+[
+  {
+    "captionKey": "rules.diagram.movement.man",
+    "position": {
+      "whiteMen": [22],
+      "whiteKings": [],
+      "blackMen": [6],
+      "blackKings": [],
+      "sideToMove": "WHITE",
+      "halfmoveClock": 0,
+      "history": []
+    }
+  }
+]
