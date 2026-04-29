@@ -1,14 +1,16 @@
 package com.damaitaliana.client.ui.menu;
 
-import com.damaitaliana.client.app.ClientProperties;
 import com.damaitaliana.client.app.SceneId;
 import com.damaitaliana.client.app.SceneRouter;
 import com.damaitaliana.client.app.UserPromptService;
+import com.damaitaliana.client.controller.GameSession;
+import com.damaitaliana.client.controller.SinglePlayerGame;
 import com.damaitaliana.client.i18n.I18n;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
+import com.damaitaliana.client.persistence.AutosaveService;
+import com.damaitaliana.client.persistence.SaveService;
+import java.io.UncheckedIOException;
 import java.util.Objects;
+import java.util.Optional;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
@@ -24,20 +26,30 @@ import org.springframework.stereotype.Component;
  * — when the splash bootstrap detected an autosave on disk — asks the user whether to resume or
  * discard it.
  *
- * <p>Resume (the affirmative branch) is only stubbed in Fase 3 Task 3.6: the autosave file is
- * intentionally left intact so Task 3.16 can wire the actual load + navigation. Discard always
- * deletes the file.
+ * <p>Resume flow (Task 3.16): on accept, the {@link AutosaveService} re-materialises the {@link
+ * SinglePlayerGame}, publishes it on {@link GameSession}, and routes to the board view. Read
+ * failures (unknown {@code schemaVersion} per ADR-031, IO errors) surface as a localized toast and
+ * the autosave is cleared so the user sees a clean main menu on the next start.
  */
 @Component
 @Scope("prototype")
 public class MainMenuController {
 
   private static final Logger log = LoggerFactory.getLogger(MainMenuController.class);
-  static final String AUTOSAVE_FILENAME = "_autosave.json";
+
+  /** Outcome of the autosave prompt; surfaced for unit tests. */
+  enum PromptResult {
+    NO_AUTOSAVE,
+    RESUMED,
+    DISCARDED,
+    SCHEMA_MISMATCH,
+    IO_ERROR
+  }
 
   private final SceneRouter sceneRouter;
   private final I18n i18n;
-  private final ClientProperties clientProperties;
+  private final AutosaveService autosaveService;
+  private final GameSession gameSession;
   private final UserPromptService prompt;
 
   @FXML private Label singlePlayerTitle;
@@ -65,11 +77,13 @@ public class MainMenuController {
   public MainMenuController(
       SceneRouter sceneRouter,
       I18n i18n,
-      ClientProperties clientProperties,
+      AutosaveService autosaveService,
+      GameSession gameSession,
       UserPromptService prompt) {
     this.sceneRouter = Objects.requireNonNull(sceneRouter, "sceneRouter");
     this.i18n = Objects.requireNonNull(i18n, "i18n");
-    this.clientProperties = Objects.requireNonNull(clientProperties, "clientProperties");
+    this.autosaveService = Objects.requireNonNull(autosaveService, "autosaveService");
+    this.gameSession = Objects.requireNonNull(gameSession, "gameSession");
     this.prompt = Objects.requireNonNull(prompt, "prompt");
   }
 
@@ -106,26 +120,35 @@ public class MainMenuController {
   }
 
   /** Visible for testing. */
-  void handleAutosavePrompt() {
+  PromptResult handleAutosavePrompt() {
     boolean resume =
         prompt.confirm(
             "autosave.prompt.title", "autosave.prompt.header", "autosave.prompt.content");
     if (!resume) {
-      deleteAutosave();
+      autosaveService.clearAutosave();
+      return PromptResult.DISCARDED;
     }
-  }
-
-  private void deleteAutosave() {
-    String savesDir = clientProperties.savesDir();
-    if (savesDir == null || savesDir.isBlank()) {
-      return;
-    }
-    Path autosave = Path.of(savesDir, AUTOSAVE_FILENAME);
+    Optional<SinglePlayerGame> loaded;
     try {
-      Files.deleteIfExists(autosave);
-    } catch (IOException ex) {
-      log.warn("Failed to delete autosave file {}", autosave, ex);
+      loaded = autosaveService.readAutosave();
+    } catch (SaveService.UnknownSchemaVersionException ex) {
+      log.warn("Autosave has unknown schema {}, discarding", ex.actualVersion());
+      prompt.info("autosave.toast.error.schema.title", "autosave.toast.error.schema.content");
+      autosaveService.clearAutosave();
+      return PromptResult.SCHEMA_MISMATCH;
+    } catch (UncheckedIOException ex) {
+      log.warn("Autosave could not be read, discarding", ex);
+      prompt.info("autosave.toast.error.io.title", "autosave.toast.error.io.content");
+      autosaveService.clearAutosave();
+      return PromptResult.IO_ERROR;
     }
+    if (loaded.isEmpty()) {
+      // The file vanished between splash detection and now; nothing to resume.
+      return PromptResult.NO_AUTOSAVE;
+    }
+    gameSession.setCurrentGame(loaded.get());
+    sceneRouter.show(SceneId.BOARD);
+    return PromptResult.RESUMED;
   }
 
   @FXML

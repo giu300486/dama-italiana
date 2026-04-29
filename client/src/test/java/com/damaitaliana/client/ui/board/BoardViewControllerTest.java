@@ -14,7 +14,7 @@ import com.damaitaliana.client.app.UserPromptService;
 import com.damaitaliana.client.controller.GameSession;
 import com.damaitaliana.client.controller.SinglePlayerController;
 import com.damaitaliana.client.i18n.I18n;
-import com.damaitaliana.client.persistence.SaveService;
+import com.damaitaliana.client.persistence.AutosaveService;
 import com.damaitaliana.client.ui.save.SaveDialogController;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -26,7 +26,7 @@ class BoardViewControllerTest {
   private SceneRouter sceneRouter;
   private GameSession gameSession;
   private I18n i18n;
-  private SaveService saveService;
+  private AutosaveService autosaveService;
   private UserPromptService prompt;
   private ObjectProvider<SinglePlayerController> spProvider;
   private ObjectProvider<SaveDialogController> dialogProvider;
@@ -40,7 +40,7 @@ class BoardViewControllerTest {
     gameSession = Mockito.mock(GameSession.class);
     i18n = Mockito.mock(I18n.class);
     when(i18n.t(anyString())).thenAnswer(inv -> inv.getArgument(0));
-    saveService = Mockito.mock(SaveService.class);
+    autosaveService = Mockito.mock(AutosaveService.class);
     prompt = Mockito.mock(UserPromptService.class);
     spProvider = Mockito.mock(ObjectProvider.class);
     dialogProvider = Mockito.mock(ObjectProvider.class);
@@ -48,7 +48,7 @@ class BoardViewControllerTest {
 
     controller =
         new BoardViewController(
-            sceneRouter, gameSession, i18n, saveService, prompt, spProvider, dialogProvider);
+            sceneRouter, gameSession, i18n, autosaveService, prompt, spProvider, dialogProvider);
     controller.setGameControllerForTest(gameController);
   }
 
@@ -64,7 +64,7 @@ class BoardViewControllerTest {
 
     assertThat(terminated).isTrue();
     verify(gameController).stop();
-    verify(saveService).delete(SaveService.AUTOSAVE_SLOT);
+    verify(autosaveService).clearAutosave();
     verify(gameSession).clear();
     verify(sceneRouter).show(SceneId.MAIN_MENU);
   }
@@ -77,7 +77,7 @@ class BoardViewControllerTest {
 
     assertThat(terminated).isFalse();
     verify(gameController, never()).stop();
-    verify(saveService, never()).delete(anyString());
+    verify(autosaveService, never()).clearAutosave();
     verify(gameSession, never()).clear();
     verify(sceneRouter, never()).show(any());
   }

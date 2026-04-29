@@ -8,6 +8,16 @@ Il formato è basato su [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1
 
 ### Added
 
+- **Task 3.16** — Autosave + recovery prompt (Fase 3, sotto-fase IMPLEMENTA, branch `feature/3-ui-singleplayer`):
+  - `client/persistence/AutosaveService.java` (`@Component`): wrap di `SaveService` vincolato a `AUTOSAVE_SLOT`, espone `writeAutosave/readAutosave/clearAutosave/autosaveExists`. `Clock` e `Supplier<RandomGenerator>` injectable per test (timestamp deterministici e RNG riproducibile).
+  - `client/controller/SinglePlayerAutosaveTrigger.java` (`@Component`): impl di `AutosaveTrigger` che inoltra `onMoveApplied(SinglePlayerGame)` a `AutosaveService.writeAutosave`, swallows `UncheckedIOException` con log WARN per non bloccare il game loop. Spring popola automaticamente `Optional<AutosaveTrigger>` di `SinglePlayerController`: ogni mossa applicata produce ora un autosave atomico.
+  - `MainMenuController` ridisegnato: nuova firma ctor `(SceneRouter, I18n, AutosaveService, GameSession, UserPromptService)`. `handleAutosavePrompt()` ritorna typed enum `PromptResult` (RESUMED/DISCARDED/SCHEMA_MISMATCH/IO_ERROR/NO_AUTOSAVE); ramo "yes" carica via `AutosaveService.readAutosave`, popola `GameSession`, naviga a `SceneId.BOARD`; ramo "no" cancella via `AutosaveService.clearAutosave`. `UnknownSchemaVersionException` (ADR-031) e `UncheckedIOException` mostrano toast localizzato e cancellano il file.
+  - `SplashController` migrato a `AutosaveService.autosaveExists()` (rimosse `Path`/`Files`/`AUTOSAVE_FILENAME` hardcoded).
+  - `BoardViewController.terminate()` migrato a `AutosaveService.clearAutosave()` (sostituisce `saveService.delete(AUTOSAVE_SLOT)` diretto).
+  - **i18n** IT/EN: `autosave.toast.error.schema.title/content`, `autosave.toast.error.io.title/content`.
+  - **22 test nuovi/modificati**: `AutosaveServiceTest` 8, `SinglePlayerAutosaveTriggerTest` 2, `AutosaveE2ETest` 3 (prompt on restart A3.5, clear on terminate, write failure tolerated), `SaveDialogSpringContextTest` +2 context-resolution per `AutosaveService` e `AutosaveTrigger` (lezione `feedback_spring_ui_tests`), `MainMenuControllerTest` riscritto su 8 metodi (3 click + 5 prompt branch), `SplashControllerTest` aggiornato, `BoardViewControllerTest` aggiornato.
+  - `mvn -pl client verify -DexcludedGroups=slow,performance` BUILD SUCCESS, 205 test totali (+22 vs Task 3.15), JaCoCo client gate ✅, SpotBugs 0 High, Spotless OK.
+
 ---
 
 ## [0.2.0] — 2026-04-28

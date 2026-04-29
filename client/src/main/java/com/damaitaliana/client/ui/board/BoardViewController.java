@@ -7,7 +7,7 @@ import com.damaitaliana.client.controller.GameSession;
 import com.damaitaliana.client.controller.SinglePlayerController;
 import com.damaitaliana.client.controller.SinglePlayerGame;
 import com.damaitaliana.client.i18n.I18n;
-import com.damaitaliana.client.persistence.SaveService;
+import com.damaitaliana.client.persistence.AutosaveService;
 import com.damaitaliana.client.ui.save.SaveDialogController;
 import java.util.Objects;
 import java.util.Optional;
@@ -31,7 +31,7 @@ import org.springframework.stereotype.Component;
  * <p>Top-bar menu (Task 3.15): the {@code Partita} menu exposes <em>Salva con nome…</em> (opens the
  * {@link SaveDialogController save dialog} pre-filled with the current snapshot), <em>Carica</em>
  * (navigates to the load screen, stopping the live AI), and <em>Termina partita</em> (confirms,
- * deletes the autosave file, clears the session and returns to the main menu).
+ * clears the autosave via {@link AutosaveService}, drops the session and returns to the main menu).
  */
 @Component
 @Scope("prototype")
@@ -40,7 +40,7 @@ public class BoardViewController {
   private final SceneRouter sceneRouter;
   private final GameSession gameSession;
   private final I18n i18n;
-  private final SaveService saveService;
+  private final AutosaveService autosaveService;
   private final UserPromptService prompt;
   private final ObjectProvider<SinglePlayerController> singlePlayerControllerProvider;
   private final ObjectProvider<SaveDialogController> saveDialogControllerProvider;
@@ -62,14 +62,14 @@ public class BoardViewController {
       SceneRouter sceneRouter,
       GameSession gameSession,
       I18n i18n,
-      SaveService saveService,
+      AutosaveService autosaveService,
       UserPromptService prompt,
       ObjectProvider<SinglePlayerController> singlePlayerControllerProvider,
       ObjectProvider<SaveDialogController> saveDialogControllerProvider) {
     this.sceneRouter = Objects.requireNonNull(sceneRouter, "sceneRouter");
     this.gameSession = Objects.requireNonNull(gameSession, "gameSession");
     this.i18n = Objects.requireNonNull(i18n, "i18n");
-    this.saveService = Objects.requireNonNull(saveService, "saveService");
+    this.autosaveService = Objects.requireNonNull(autosaveService, "autosaveService");
     this.prompt = Objects.requireNonNull(prompt, "prompt");
     this.singlePlayerControllerProvider =
         Objects.requireNonNull(singlePlayerControllerProvider, "singlePlayerControllerProvider");
@@ -154,7 +154,7 @@ public class BoardViewController {
     if (gameController != null) {
       gameController.stop();
     }
-    saveService.delete(SaveService.AUTOSAVE_SLOT);
+    autosaveService.clearAutosave();
     gameSession.clear();
     sceneRouter.show(SceneId.MAIN_MENU);
     return true;

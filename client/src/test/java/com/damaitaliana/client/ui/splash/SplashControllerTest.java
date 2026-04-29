@@ -3,66 +3,51 @@ package com.damaitaliana.client.ui.splash;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
-import com.damaitaliana.client.app.ClientProperties;
 import com.damaitaliana.client.app.SceneId;
 import com.damaitaliana.client.app.SceneRouter;
 import com.damaitaliana.client.i18n.I18n;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
+import com.damaitaliana.client.persistence.AutosaveService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
 import org.mockito.Mockito;
 
 class SplashControllerTest {
 
-  @TempDir Path tempDir;
-
-  private Path savesDir;
   private SceneRouter sceneRouter;
+  private AutosaveService autosaveService;
   private SplashController controller;
 
   @BeforeEach
-  void setUp() throws IOException {
-    savesDir = tempDir.resolve("saves");
-    Files.createDirectories(savesDir);
+  void setUp() {
     sceneRouter = Mockito.mock(SceneRouter.class);
-    var props =
-        new ClientProperties(savesDir.toString(), tempDir.resolve("config.json").toString());
+    autosaveService = Mockito.mock(AutosaveService.class);
     var i18n = Mockito.mock(I18n.class);
-    controller = new SplashController(sceneRouter, props, i18n);
+    controller = new SplashController(sceneRouter, autosaveService, i18n);
   }
 
   @Test
   void bootstrapDetectsAutosaveWhenPresent() throws Exception {
-    Files.writeString(savesDir.resolve(SplashController.AUTOSAVE_FILENAME), "{}");
+    when(autosaveService.autosaveExists()).thenReturn(true);
     SplashController.BootstrapResult result = controller.bootstrap();
     assertThat(result.hasAutosave()).isTrue();
   }
 
   @Test
   void bootstrapDetectsNoAutosaveWhenAbsent() throws Exception {
+    when(autosaveService.autosaveExists()).thenReturn(false);
     SplashController.BootstrapResult result = controller.bootstrap();
     assertThat(result.hasAutosave()).isFalse();
   }
 
   @Test
   void bootstrapWaitsAtLeastMinSplashMillis() throws Exception {
+    when(autosaveService.autosaveExists()).thenReturn(false);
     long start = System.currentTimeMillis();
     controller.bootstrap();
     long elapsed = System.currentTimeMillis() - start;
     assertThat(elapsed).isGreaterThanOrEqualTo(SplashController.MIN_SPLASH_MILLIS);
-  }
-
-  @Test
-  void bootstrapHandlesBlankSavesDirGracefully() throws Exception {
-    var props = new ClientProperties("", tempDir.resolve("config.json").toString());
-    var i18n = Mockito.mock(I18n.class);
-    var ctl = new SplashController(sceneRouter, props, i18n);
-    SplashController.BootstrapResult result = ctl.bootstrap();
-    assertThat(result.hasAutosave()).isFalse();
   }
 
   @Test

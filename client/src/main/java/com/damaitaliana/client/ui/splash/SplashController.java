@@ -1,11 +1,9 @@
 package com.damaitaliana.client.ui.splash;
 
-import com.damaitaliana.client.app.ClientProperties;
 import com.damaitaliana.client.app.SceneId;
 import com.damaitaliana.client.app.SceneRouter;
 import com.damaitaliana.client.i18n.I18n;
-import java.nio.file.Files;
-import java.nio.file.Path;
+import com.damaitaliana.client.persistence.AutosaveService;
 import java.util.Objects;
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
@@ -20,10 +18,10 @@ import org.springframework.stereotype.Component;
  * (so the JavaFX application thread stays free to draw the indeterminate {@link
  * javafx.scene.control.ProgressIndicator}) and routes to the main menu when finished.
  *
- * <p>The pipeline does only what cannot be done eagerly during Spring context init: it detects
- * whether an autosave file is on disk and signals the next scene via {@link
- * SceneRouter#setAutosavePromptOnNext(boolean)}. Theme stylesheets and the active locale are
- * already applied by the time this controller runs (theme via {@link
+ * <p>The pipeline does only what cannot be done eagerly during Spring context init: it asks {@link
+ * AutosaveService#autosaveExists()} whether an autosave file is on disk and signals the next scene
+ * via {@link SceneRouter#setAutosavePromptOnNext(boolean)}. Theme stylesheets and the active locale
+ * are already applied by the time this controller runs (theme via {@link
  * com.damaitaliana.client.app.ThemeService#applyTheme(javafx.scene.Scene)} on each {@code
  * SceneRouter.show}, locale via {@link com.damaitaliana.client.i18n.LocaleService}'s constructor
  * that reads from {@link com.damaitaliana.client.persistence.PreferencesService}).
@@ -37,17 +35,16 @@ public class SplashController {
 
   private static final Logger log = LoggerFactory.getLogger(SplashController.class);
   static final long MIN_SPLASH_MILLIS = 1500L;
-  static final String AUTOSAVE_FILENAME = "_autosave.json";
 
   private final SceneRouter sceneRouter;
-  private final ClientProperties clientProperties;
+  private final AutosaveService autosaveService;
   private final I18n i18n;
 
   @FXML private Label loadingLabel;
 
-  public SplashController(SceneRouter sceneRouter, ClientProperties clientProperties, I18n i18n) {
+  public SplashController(SceneRouter sceneRouter, AutosaveService autosaveService, I18n i18n) {
     this.sceneRouter = Objects.requireNonNull(sceneRouter, "sceneRouter");
-    this.clientProperties = Objects.requireNonNull(clientProperties, "clientProperties");
+    this.autosaveService = Objects.requireNonNull(autosaveService, "autosaveService");
     this.i18n = Objects.requireNonNull(i18n, "i18n");
   }
 
@@ -73,7 +70,7 @@ public class SplashController {
   /** Synchronous bootstrap work. Visible for testing. */
   BootstrapResult bootstrap() throws InterruptedException {
     long start = System.currentTimeMillis();
-    boolean hasAutosave = autosaveExists();
+    boolean hasAutosave = autosaveService.autosaveExists();
     long elapsed = System.currentTimeMillis() - start;
     long remaining = Math.max(0, MIN_SPLASH_MILLIS - elapsed);
     if (remaining > 0) {
@@ -92,15 +89,6 @@ public class SplashController {
       sceneRouter.setAutosavePromptOnNext(true);
     }
     sceneRouter.show(SceneId.MAIN_MENU);
-  }
-
-  private boolean autosaveExists() {
-    String savesDir = clientProperties.savesDir();
-    if (savesDir == null || savesDir.isBlank()) {
-      return false;
-    }
-    Path autosave = Path.of(savesDir, AUTOSAVE_FILENAME);
-    return Files.exists(autosave);
   }
 
   /** Carrier for the small slice of state the bootstrap step needs to publish to the FX thread. */
