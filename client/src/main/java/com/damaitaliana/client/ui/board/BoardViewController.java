@@ -103,6 +103,7 @@ public class BoardViewController {
         .onChange(thinking -> statusPane.setThinking(thinking, i18n.t("status.thinking")));
     gameController.start(game, boardRenderer);
     moveHistoryView.setItems(gameController.history().rows());
+    Platform.runLater(boardRenderer::requestFocus);
   }
 
   private void bindMenuLabels() {

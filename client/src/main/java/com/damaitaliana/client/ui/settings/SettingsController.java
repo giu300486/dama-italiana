@@ -2,6 +2,7 @@ package com.damaitaliana.client.ui.settings;
 
 import com.damaitaliana.client.app.SceneId;
 import com.damaitaliana.client.app.SceneRouter;
+import com.damaitaliana.client.app.UiScalingService;
 import com.damaitaliana.client.app.UserPromptService;
 import com.damaitaliana.client.i18n.I18n;
 import com.damaitaliana.client.persistence.PreferencesService;
@@ -29,10 +30,9 @@ import org.springframework.stereotype.Component;
  * locale changed, an informational toast asks the user to restart. Runtime locale rebinding is
  * deferred to Fase 11.
  *
- * <p>UI scaling is applied immediately to the live scene by setting {@code -fx-font-size} on the
- * root, which propagates to every {@code em}/relative-sized component declared in {@code
- * theme-light.css}. Persisting it is a separate step on save; the next launch reads it from the
- * config and the global re-apply on each scene switch is finalised by Task 3.20 (Accessibility).
+ * <p>UI scaling is applied immediately to the live scene via {@link UiScalingService} for the
+ * preview while the user picks a step; the same service is invoked from {@link SceneRouter#show} on
+ * every navigation, so the persisted choice carries across screens (Task 3.20).
  *
  * <p>The theme section is intentionally disabled in Fase 3 (PLAN-fase-3 §7.3): only "Light"
  * appears, a localized note announces dark mode for Fase 11.
@@ -48,9 +48,6 @@ public class SettingsController {
   static final int SCALE_150 = 150;
   private static final List<Integer> ALLOWED_SCALES = List.of(SCALE_100, SCALE_125, SCALE_150);
 
-  /** Base font size in points; multiplied by the chosen scale percent at apply time. */
-  private static final double BASE_FONT_SIZE_PX = 14.0;
-
   /** Outcome of {@link #saveSelections(Locale, int)}; surfaced for unit tests. */
   enum SaveOutcome {
     SAVED_NO_RESTART_NEEDED,
@@ -61,6 +58,7 @@ public class SettingsController {
   private final I18n i18n;
   private final PreferencesService preferencesService;
   private final UserPromptService prompt;
+  private final UiScalingService uiScalingService;
 
   @FXML private Label titleLabel;
 
@@ -84,11 +82,13 @@ public class SettingsController {
       SceneRouter sceneRouter,
       I18n i18n,
       PreferencesService preferencesService,
-      UserPromptService prompt) {
+      UserPromptService prompt,
+      UiScalingService uiScalingService) {
     this.sceneRouter = Objects.requireNonNull(sceneRouter, "sceneRouter");
     this.i18n = Objects.requireNonNull(i18n, "i18n");
     this.preferencesService = Objects.requireNonNull(preferencesService, "preferencesService");
     this.prompt = Objects.requireNonNull(prompt, "prompt");
+    this.uiScalingService = Objects.requireNonNull(uiScalingService, "uiScalingService");
   }
 
   @FXML
@@ -163,23 +163,11 @@ public class SettingsController {
     return SCALE_100;
   }
 
-  /**
-   * Applies the chosen scaling to the {@link Scene} by setting {@code -fx-font-size} on its root.
-   * No-op if the scene is not yet attached (e.g. unit tests).
-   */
-  static void applyScalingToScene(Scene scene, int percent) {
-    if (scene == null) {
-      return;
-    }
-    double sizePx = BASE_FONT_SIZE_PX * percent / 100.0;
-    scene.getRoot().setStyle(String.format(Locale.ROOT, "-fx-font-size: %.1fpx;", sizePx));
-  }
-
   @FXML
   void onScalingChanged() {
     int percent = selectedScalingPercent();
     Scene scene = currentScene();
-    applyScalingToScene(scene, percent);
+    uiScalingService.applyTo(scene, percent);
   }
 
   @FXML

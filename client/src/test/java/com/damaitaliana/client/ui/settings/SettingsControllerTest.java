@@ -10,6 +10,7 @@ import static org.mockito.Mockito.when;
 
 import com.damaitaliana.client.app.SceneId;
 import com.damaitaliana.client.app.SceneRouter;
+import com.damaitaliana.client.app.UiScalingService;
 import com.damaitaliana.client.app.UserPromptService;
 import com.damaitaliana.client.i18n.I18n;
 import com.damaitaliana.client.persistence.PreferencesService;
@@ -26,6 +27,7 @@ class SettingsControllerTest {
   private I18n i18n;
   private PreferencesService preferencesService;
   private UserPromptService prompt;
+  private UiScalingService uiScalingService;
   private SettingsController controller;
 
   @BeforeEach
@@ -34,9 +36,11 @@ class SettingsControllerTest {
     i18n = Mockito.mock(I18n.class);
     preferencesService = Mockito.mock(PreferencesService.class);
     prompt = Mockito.mock(UserPromptService.class);
+    uiScalingService = Mockito.mock(UiScalingService.class);
     when(i18n.t(anyString())).thenAnswer(inv -> inv.getArgument(0));
     when(i18n.t(anyString(), any(Object[].class))).thenAnswer(inv -> inv.getArgument(0));
-    controller = new SettingsController(sceneRouter, i18n, preferencesService, prompt);
+    controller =
+        new SettingsController(sceneRouter, i18n, preferencesService, prompt, uiScalingService);
   }
 
   @Test
@@ -95,10 +99,5 @@ class SettingsControllerTest {
 
     verify(sceneRouter).show(SceneId.MAIN_MENU);
     verify(preferencesService, never()).save(any(UserPreferences.class));
-  }
-
-  @Test
-  void applyScalingToSceneIsNullSafe() {
-    SettingsController.applyScalingToScene(null, 125);
   }
 }

@@ -36,12 +36,15 @@ public class SceneRouter {
 
   private final ApplicationContext context;
   private final ThemeService themeService;
+  private final UiScalingService uiScalingService;
   private Stage stage;
   private boolean autosavePromptOnNext;
 
-  public SceneRouter(ApplicationContext context, ThemeService themeService) {
+  public SceneRouter(
+      ApplicationContext context, ThemeService themeService, UiScalingService uiScalingService) {
     this.context = Objects.requireNonNull(context, "context");
     this.themeService = Objects.requireNonNull(themeService, "themeService");
+    this.uiScalingService = Objects.requireNonNull(uiScalingService, "uiScalingService");
   }
 
   /**
@@ -75,6 +78,7 @@ public class SceneRouter {
       scene.setRoot(root);
     }
     themeService.applyTheme(scene);
+    uiScalingService.applyTo(scene);
   }
 
   /** Sets a one-shot flag the next scene can read via {@link #consumeAutosavePromptOnNext()}. */

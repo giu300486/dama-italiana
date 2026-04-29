@@ -41,6 +41,12 @@
     -fx-background-radius: 4;
     -fx-opacity: 0.7;
 }
+.cell-focused-keyboard {
+    -fx-border-color: -color-accent;
+    -fx-border-width: 2;
+    -fx-border-radius: 2;
+    -fx-border-insets: 1;
+}
 
 /* ====== STATUS PANE ====== */
 

@@ -27,6 +27,7 @@ final class BoardCellNode extends Region {
     this.square = square;
     this.dark = BoardLayoutMath.isDarkSquare(square);
     getStyleClass().add(dark ? STYLE_DARK : STYLE_LIGHT);
+    setAccessibleText(CellAccessibleText.describe(square, dark, null));
     addEventHandler(
         MouseEvent.MOUSE_CLICKED,
         ev -> {
@@ -49,6 +50,7 @@ final class BoardCellNode extends Region {
       pieceNode.maxHeightProperty().bind(heightProperty());
       getChildren().add(pieceNode);
     }
+    setAccessibleText(CellAccessibleText.describe(square, dark, piece));
   }
 
   void setLegalTarget(boolean active) {

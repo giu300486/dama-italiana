@@ -97,6 +97,7 @@ public class SinglePlayerController {
     this.busy = false;
     renderer.renderState(state.board());
     renderer.setOnCellClicked(this::onCellClicked);
+    renderer.setOnEscape(this::deselect);
     refreshMandatoryHighlights();
     fireStateChange();
     scheduleAiTurnIfAi();
