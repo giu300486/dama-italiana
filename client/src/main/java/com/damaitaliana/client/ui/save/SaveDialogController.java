@@ -24,6 +24,7 @@ import javafx.stage.Stage;
 import javafx.stage.Window;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
@@ -71,6 +72,7 @@ public class SaveDialogController {
   private Stage stage;
   private boolean saved;
 
+  @Autowired
   public SaveDialogController(SaveService saveService, UserPromptService prompt, I18n i18n) {
     this(saveService, prompt, i18n, Clock.systemUTC());
   }

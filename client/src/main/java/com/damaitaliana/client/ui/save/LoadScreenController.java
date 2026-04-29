@@ -34,6 +34,7 @@ import javafx.scene.control.TableView;
 import javafx.scene.image.ImageView;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
@@ -95,6 +96,7 @@ public class LoadScreenController {
   @FXML private Button deleteButton;
   @FXML private Button loadButton;
 
+  @Autowired
   public LoadScreenController(
       SceneRouter sceneRouter,
       SaveService saveService,
