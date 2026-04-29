@@ -6,6 +6,9 @@
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.Label?>
+<?import javafx.scene.control.Menu?>
+<?import javafx.scene.control.MenuBar?>
+<?import javafx.scene.control.MenuItem?>
 <?import javafx.scene.layout.BorderPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.Priority?>
@@ -13,28 +16,44 @@
 
 <BorderPane xmlns:fx="http://javafx.com/fxml/1"
             fx:controller="com.damaitaliana.client.ui.board.BoardViewController">
-    <padding>
-        <Insets top="16" right="16" bottom="16" left="16"/>
-    </padding>
-
     <top>
-        <HBox spacing="16" alignment="CENTER_LEFT" BorderPane.alignment="CENTER">
-            <Label fx:id="gameTitleLabel" styleClass="label-title"/>
-        </HBox>
+        <VBox>
+            <MenuBar fx:id="menuBar">
+                <Menu fx:id="gameMenu">
+                    <items>
+                        <MenuItem fx:id="saveMenuItem" onAction="#onSaveAs"/>
+                        <MenuItem fx:id="loadMenuItem" onAction="#onLoad"/>
+                        <MenuItem fx:id="terminateMenuItem" onAction="#onTerminate"/>
+                    </items>
+                </Menu>
+            </MenuBar>
+            <HBox spacing="16" alignment="CENTER_LEFT">
+                <padding>
+                    <Insets top="16" right="16" bottom="0" left="16"/>
+                </padding>
+                <Label fx:id="gameTitleLabel" styleClass="label-title"/>
+            </HBox>
+        </VBox>
     </top>
 
     <center>
-        <BoardRenderer fx:id="boardRenderer" minWidth="640" minHeight="640"/>
-    </center>
-
-    <right>
-        <VBox spacing="12" prefWidth="280" styleClass="card-elevated">
+        <BorderPane>
             <padding>
                 <Insets top="16" right="16" bottom="16" left="16"/>
             </padding>
-            <StatusPane fx:id="statusPane"/>
-            <MoveHistoryView fx:id="moveHistoryView" VBox.vgrow="ALWAYS"/>
-            <Button fx:id="backButton" onAction="#onBack" styleClass="button-secondary"/>
-        </VBox>
-    </right>
+            <center>
+                <BoardRenderer fx:id="boardRenderer" minWidth="640" minHeight="640"/>
+            </center>
+            <right>
+                <VBox spacing="12" prefWidth="280" styleClass="card-elevated">
+                    <padding>
+                        <Insets top="16" right="16" bottom="16" left="16"/>
+                    </padding>
+                    <StatusPane fx:id="statusPane"/>
+                    <MoveHistoryView fx:id="moveHistoryView" VBox.vgrow="ALWAYS"/>
+                    <Button fx:id="backButton" onAction="#onBack" styleClass="button-secondary"/>
+                </VBox>
+            </right>
+        </BorderPane>
+    </center>
 </BorderPane>

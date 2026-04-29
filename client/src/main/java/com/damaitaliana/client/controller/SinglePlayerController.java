@@ -291,6 +291,15 @@ public class SinglePlayerController {
     renderer.highlightMandatorySources(sources);
   }
 
+  /**
+   * Snapshot of the live session bundling the current {@link GameState} into a fresh {@link
+   * SinglePlayerGame}. Used by the save dialog (Task 3.15) and the autosave hook (Task 3.16) to
+   * persist the position after every move without re-introducing mutable state.
+   */
+  public SinglePlayerGame currentSnapshot() {
+    return snapshot();
+  }
+
   private SinglePlayerGame snapshot() {
     return new SinglePlayerGame(game.level(), game.humanColor(), game.name(), state, game.rng());
   }

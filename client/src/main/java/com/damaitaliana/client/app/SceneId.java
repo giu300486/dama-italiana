@@ -12,6 +12,7 @@ public enum SceneId {
   MAIN_MENU,
   SP_SETUP,
   BOARD,
+  LOAD,
   RULES,
   SETTINGS
 }

@@ -1,5 +1,6 @@
 package com.damaitaliana.client.controller;
 
+import com.damaitaliana.client.persistence.SavedGame;
 import com.damaitaliana.shared.ai.AiLevel;
 import com.damaitaliana.shared.domain.Color;
 import com.damaitaliana.shared.domain.GameState;
@@ -42,5 +43,17 @@ public record SinglePlayerGame(
     Color humanColor = colorChoice.resolve(rng);
     return Optional.of(
         new SinglePlayerGame(level, humanColor, name.strip(), GameState.initial(), rng));
+  }
+
+  /**
+   * Rebuilds a {@code SinglePlayerGame} from an on-disk {@link SavedGame}. The {@link
+   * RandomGenerator} is re-injected fresh because RNG state is not persisted (Principiante's
+   * pseudo-random move pick stays deterministic only within a single session).
+   */
+  public static SinglePlayerGame fromSaved(SavedGame saved, RandomGenerator rng) {
+    Objects.requireNonNull(saved, "saved");
+    Objects.requireNonNull(rng, "rng");
+    return new SinglePlayerGame(
+        saved.aiLevel(), saved.humanColor(), saved.name(), saved.currentState().toState(), rng);
   }
 }

@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.StackPane?>
+
+<BorderPane xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="com.damaitaliana.client.ui.save.LoadScreenController"
+            prefWidth="1024" prefHeight="768">
+    <padding>
+        <Insets top="24" right="24" bottom="24" left="24"/>
+    </padding>
+
+    <top>
+        <HBox spacing="16" alignment="CENTER_LEFT" BorderPane.alignment="CENTER">
+            <padding>
+                <Insets bottom="16"/>
+            </padding>
+            <Label fx:id="titleLabel" styleClass="label-title"/>
+        </HBox>
+    </top>
+
+    <center>
+        <StackPane>
+            <TableView fx:id="slotsTable">
+                <columns>
+                    <TableColumn fx:id="nameColumn" prefWidth="220"/>
+                    <TableColumn fx:id="dateColumn" prefWidth="160"/>
+                    <TableColumn fx:id="levelColumn" prefWidth="120"/>
+                    <TableColumn fx:id="colorColumn" prefWidth="100"/>
+                    <TableColumn fx:id="moveColumn" prefWidth="80"/>
+                    <TableColumn fx:id="miniatureColumn" prefWidth="100" sortable="false"/>
+                </columns>
+            </TableView>
+            <Label fx:id="emptyLabel" styleClass="label-secondary" managed="false" visible="false"/>
+        </StackPane>
+    </center>
+
+    <bottom>
+        <HBox spacing="12" alignment="CENTER_LEFT" BorderPane.alignment="CENTER">
+            <padding>
+                <Insets top="16"/>
+            </padding>
+            <Button fx:id="backButton" onAction="#onBack" styleClass="button-secondary"/>
+            <Region HBox.hgrow="ALWAYS" maxWidth="Infinity"/>
+            <Button fx:id="deleteButton" onAction="#onDelete" styleClass="button-secondary"/>
+            <Button fx:id="loadButton" onAction="#onLoad" defaultButton="true"/>
+        </HBox>
+    </bottom>
+</BorderPane>
