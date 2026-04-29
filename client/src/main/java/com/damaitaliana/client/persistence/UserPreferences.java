@@ -47,6 +47,14 @@ public record UserPreferences(
     return new UserPreferences(schemaVersion, newLocale, themeId, uiScalePercent, firstLaunch);
   }
 
+  public UserPreferences withUiScalePercent(int newUiScalePercent) {
+    return new UserPreferences(schemaVersion, locale, themeId, newUiScalePercent, firstLaunch);
+  }
+
+  public UserPreferences withThemeId(String newThemeId) {
+    return new UserPreferences(schemaVersion, locale, newThemeId, uiScalePercent, firstLaunch);
+  }
+
   public UserPreferences withFirstLaunch(boolean firstLaunch) {
     return new UserPreferences(schemaVersion, locale, themeId, uiScalePercent, firstLaunch);
   }
