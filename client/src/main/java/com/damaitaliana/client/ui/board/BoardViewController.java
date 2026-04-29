@@ -36,6 +36,8 @@ public class BoardViewController {
   @FXML private MoveHistoryView moveHistoryView;
   @FXML private Button backButton;
 
+  private SinglePlayerController gameController;
+
   public BoardViewController(
       SceneRouter sceneRouter,
       GameSession gameSession,
@@ -60,15 +62,21 @@ public class BoardViewController {
     backButton.setText(i18n.t("common.button.back"));
 
     StatusPaneViewModel statusViewModel = new StatusPaneViewModel(i18n);
-    SinglePlayerController gameController = singlePlayerControllerProvider.getObject();
+    gameController = singlePlayerControllerProvider.getObject();
     gameController.setStateChangeListener(
         state -> statusPane.update(statusViewModel.compute(game, state)));
+    gameController
+        .aiThinkingState()
+        .onChange(thinking -> statusPane.setThinking(thinking, i18n.t("status.thinking")));
     gameController.start(game, boardRenderer);
     moveHistoryView.setItems(gameController.history().rows());
   }
 
   @FXML
   void onBack() {
+    if (gameController != null) {
+      gameController.stop();
+    }
     sceneRouter.show(SceneId.MAIN_MENU);
   }
 }

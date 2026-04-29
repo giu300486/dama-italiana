@@ -33,7 +33,7 @@ class SinglePlayerControllerTest {
   void setUp() {
     renderer = Mockito.mock(BoardRenderer.class);
     autosave = Mockito.mock(AutosaveTrigger.class);
-    controller = new SinglePlayerController(engine, Optional.of(autosave));
+    controller = new SinglePlayerController(engine, Optional.of(autosave), Optional.empty());
     game =
         new SinglePlayerGame(
             AiLevel.ESPERTO, Color.WHITE, "Test", GameState.initial(), new SplittableRandom(42L));
@@ -129,7 +129,8 @@ class SinglePlayerControllerTest {
 
   @Test
   void autosaveTriggerIsOptional() {
-    SinglePlayerController noAutosave = new SinglePlayerController(engine, Optional.empty());
+    SinglePlayerController noAutosave =
+        new SinglePlayerController(engine, Optional.empty(), Optional.empty());
     BoardRenderer freshRenderer = Mockito.mock(BoardRenderer.class);
     noAutosave.start(game, freshRenderer);
 
@@ -167,6 +168,91 @@ class SinglePlayerControllerTest {
 
     // After the move, refreshMandatoryHighlights runs and pushes a (possibly empty) list.
     verify(renderer, times(1)).highlightMandatorySources(any());
+  }
+
+  @Test
+  void aiTurnIsScheduledAfterHumanMove() {
+    AiTurnService aiService = Mockito.mock(AiTurnService.class);
+
+    Move humanMove = engine.legalMoves(GameState.initial()).get(0);
+    GameState afterHuman;
+    try {
+      afterHuman = engine.applyMove(GameState.initial(), humanMove);
+    } catch (com.damaitaliana.shared.rules.IllegalMoveException ex) {
+      throw new AssertionError(ex);
+    }
+    Move aiMove = engine.legalMoves(afterHuman).get(0);
+    Mockito.when(aiService.requestMove(any(), any(), any()))
+        .thenReturn(java.util.concurrent.CompletableFuture.completedFuture(aiMove));
+
+    SinglePlayerController withAi =
+        new SinglePlayerController(engine, Optional.empty(), Optional.of(aiService));
+    withAi.setFxExecutor(Runnable::run);
+    BoardRenderer freshRenderer = Mockito.mock(BoardRenderer.class);
+    withAi.start(game, freshRenderer);
+
+    withAi.onCellClicked(humanMove.from());
+    withAi.onCellClicked(humanMove.to());
+
+    Mockito.verify(aiService).requestMove(any(), any(), any());
+    assertThat(withAi.state().sideToMove()).isEqualTo(Color.WHITE);
+    assertThat(withAi.busy()).isFalse();
+  }
+
+  @Test
+  void clickIsIgnoredWhileAiThinking() {
+    AiTurnService aiService = Mockito.mock(AiTurnService.class);
+    java.util.concurrent.CompletableFuture<Move> pending =
+        new java.util.concurrent.CompletableFuture<>();
+    Mockito.when(aiService.requestMove(any(), any(), any())).thenReturn(pending);
+
+    SinglePlayerController withAi =
+        new SinglePlayerController(engine, Optional.empty(), Optional.of(aiService));
+    withAi.setFxExecutor(Runnable::run);
+    BoardRenderer freshRenderer = Mockito.mock(BoardRenderer.class);
+    withAi.start(game, freshRenderer);
+
+    Move humanMove = engine.legalMoves(GameState.initial()).get(0);
+    withAi.onCellClicked(humanMove.from());
+    withAi.onCellClicked(humanMove.to());
+
+    assertThat(withAi.busy()).isTrue();
+    assertThat(withAi.aiThinkingState().isThinking()).isTrue();
+
+    // Click while busy — must be a no-op (no state change, no exception).
+    Square anyOwn =
+        engine.legalMoves(withAi.state()).stream()
+            .findFirst()
+            .map(Move::from)
+            .orElse(humanMove.from());
+    withAi.onCellClicked(anyOwn);
+    assertThat(withAi.selectedSquare()).isNull();
+
+    pending.cancel(true);
+  }
+
+  @Test
+  void stopCancelsPendingAiRequestAndClearsBusy() {
+    AiTurnService aiService = Mockito.mock(AiTurnService.class);
+    java.util.concurrent.CompletableFuture<Move> pending =
+        new java.util.concurrent.CompletableFuture<>();
+    Mockito.when(aiService.requestMove(any(), any(), any())).thenReturn(pending);
+
+    SinglePlayerController withAi =
+        new SinglePlayerController(engine, Optional.empty(), Optional.of(aiService));
+    withAi.setFxExecutor(Runnable::run);
+    BoardRenderer freshRenderer = Mockito.mock(BoardRenderer.class);
+    withAi.start(game, freshRenderer);
+
+    Move humanMove = engine.legalMoves(GameState.initial()).get(0);
+    withAi.onCellClicked(humanMove.from());
+    withAi.onCellClicked(humanMove.to());
+
+    withAi.stop();
+
+    assertThat(withAi.busy()).isFalse();
+    assertThat(withAi.aiThinkingState().isThinking()).isFalse();
+    assertThat(pending.isCancelled()).isTrue();
   }
 
   /** Picks any white square that has at least one legal move at the start. */

@@ -12,7 +12,10 @@ import com.damaitaliana.shared.rules.RuleEngine;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 import java.util.function.Consumer;
+import javafx.application.Platform;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Scope;
@@ -21,7 +24,8 @@ import org.springframework.stereotype.Component;
 /**
  * Orchestrator for an active single-player session. Owns the live {@link GameState} (the {@link
  * SinglePlayerGame} record stays immutable so the autosave trigger can publish a fresh snapshot on
- * every move) and translates user clicks on the board into legal moves.
+ * every move), translates user clicks on the board into legal moves, and — when it is the AI's turn
+ * — schedules an asynchronous request through {@link AiTurnService}.
  *
  * <p>Click protocol:
  *
@@ -33,10 +37,15 @@ import org.springframework.stereotype.Component;
  *   <li>Otherwise, deselect.
  * </ol>
  *
- * <p>Forward dependencies (animation Task 3.10, AI scheduling Task 3.13) are deliberately not wired
- * here yet; once those tasks land, {@link #applyMove} grows two more steps. The autosave hook is
- * plumbed via {@link AutosaveTrigger}: empty in Fase 3 Task 3.9, replaced by a real disk-backed
- * implementation in Task 3.16.
+ * <p>While the AI is computing, {@link #busy} is true and {@link #onCellClicked} is a no-op. The AI
+ * computation runs on a virtual thread inside {@link AiTurnService}; the resulting {@link
+ * CompletableFuture} is composed onto an FX-thread {@link Executor} (configurable via {@link
+ * #setFxExecutor} for tests) so the move application happens back on the JavaFX thread. The
+ * autosave hook is plumbed via {@link AutosaveTrigger}: empty in production until Task 3.16 wires
+ * the disk-backed implementation, mocked in tests.
+ *
+ * <p>Move animation (Task 3.10) is intentionally still un-wired here; it will be plugged into
+ * {@link #applyMove} once the renderer exposes per-square node lookup.
  */
 @Component
 @Scope("prototype")
@@ -46,33 +55,55 @@ public class SinglePlayerController {
 
   private final RuleEngine ruleEngine;
   private final Optional<AutosaveTrigger> autosaveTrigger;
+  private final Optional<AiTurnService> aiTurnService;
   private final MoveHistoryViewModel history = new MoveHistoryViewModel();
+  private final AiThinkingState aiThinkingState = new AiThinkingState();
 
   private SinglePlayerGame game;
   private BoardRenderer renderer;
   private GameState state;
   private Square selected;
   private Consumer<GameState> stateChangeListener = state -> {};
+  private Executor fxExecutor = Platform::runLater;
+  private boolean busy;
+  private CompletableFuture<Move> pendingAiRequest;
 
-  public SinglePlayerController(RuleEngine ruleEngine, Optional<AutosaveTrigger> autosaveTrigger) {
+  public SinglePlayerController(
+      RuleEngine ruleEngine,
+      Optional<AutosaveTrigger> autosaveTrigger,
+      Optional<AiTurnService> aiTurnService) {
     this.ruleEngine = Objects.requireNonNull(ruleEngine, "ruleEngine");
     this.autosaveTrigger = Objects.requireNonNull(autosaveTrigger, "autosaveTrigger");
+    this.aiTurnService = Objects.requireNonNull(aiTurnService, "aiTurnService");
   }
 
   /**
    * Attaches the controller to a freshly-created game and renderer. Must be called once before any
    * user interaction. Fires the state-change listener once with the initial state so views (status
-   * pane, etc.) render their initial frame.
+   * pane, etc.) render their initial frame, then schedules an AI move if it is already the AI's
+   * turn (the human chose Black).
    */
   public void start(SinglePlayerGame game, BoardRenderer renderer) {
     this.game = Objects.requireNonNull(game, "game");
     this.renderer = Objects.requireNonNull(renderer, "renderer");
     this.state = game.state();
     this.selected = null;
+    this.busy = false;
     renderer.renderState(state.board());
     renderer.setOnCellClicked(this::onCellClicked);
     refreshMandatoryHighlights();
     fireStateChange();
+    scheduleAiTurnIfAi();
+  }
+
+  /** Cancels any pending AI request and clears the busy flag. Call when leaving the board view. */
+  public void stop() {
+    if (pendingAiRequest != null && !pendingAiRequest.isDone()) {
+      pendingAiRequest.cancel(true);
+    }
+    pendingAiRequest = null;
+    busy = false;
+    aiThinkingState.set(false);
   }
 
   /**
@@ -83,10 +114,19 @@ public class SinglePlayerController {
     this.stateChangeListener = listener != null ? listener : state -> {};
   }
 
+  /** Replaces the FX-thread executor for AI completion dispatch. Visible for tests. */
+  public void setFxExecutor(Executor executor) {
+    this.fxExecutor = Objects.requireNonNull(executor, "executor");
+  }
+
   /** Visible for testing. */
   void onCellClicked(Square clicked) {
     Objects.requireNonNull(clicked, "clicked");
-    if (state == null || !state.status().isOngoing()) {
+    if (busy || state == null || !state.status().isOngoing()) {
+      return;
+    }
+    if (state.sideToMove() != game.humanColor()) {
+      // It is the AI's turn: ignore stray clicks even if no request is in flight yet.
       return;
     }
 
@@ -115,6 +155,11 @@ public class SinglePlayerController {
     return history;
   }
 
+  /** Indicator the status pane subscribes to so it can show "AI is thinking…". */
+  public AiThinkingState aiThinkingState() {
+    return aiThinkingState;
+  }
+
   /** Visible for testing. */
   GameState state() {
     return state;
@@ -123,6 +168,11 @@ public class SinglePlayerController {
   /** Visible for testing. */
   Square selectedSquare() {
     return selected;
+  }
+
+  /** Visible for testing. */
+  boolean busy() {
+    return busy;
   }
 
   private Optional<Move> matchLegalMoveTo(Square target) {
@@ -160,6 +210,38 @@ public class SinglePlayerController {
     refreshMandatoryHighlights();
     autosaveTrigger.ifPresent(t -> t.onMoveApplied(snapshot()));
     fireStateChange();
+    scheduleAiTurnIfAi();
+  }
+
+  private void scheduleAiTurnIfAi() {
+    if (!state.status().isOngoing()) {
+      return;
+    }
+    if (state.sideToMove() == game.humanColor()) {
+      return;
+    }
+    if (aiTurnService.isEmpty()) {
+      // No AI bean wired (test harness without AI): leave the game waiting.
+      return;
+    }
+    busy = true;
+    aiThinkingState.set(true);
+    pendingAiRequest = aiTurnService.get().requestMove(state, game.level(), game.rng());
+    pendingAiRequest.whenCompleteAsync(this::onAiCompletion, fxExecutor);
+  }
+
+  private void onAiCompletion(Move move, Throwable error) {
+    aiThinkingState.set(false);
+    busy = false;
+    pendingAiRequest = null;
+    if (error != null) {
+      log.warn("AI move request failed", error);
+      return;
+    }
+    if (move == null) {
+      return;
+    }
+    applyMove(move);
   }
 
   private void fireStateChange() {
