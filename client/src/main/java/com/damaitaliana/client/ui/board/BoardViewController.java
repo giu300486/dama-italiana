@@ -11,6 +11,7 @@ import com.damaitaliana.client.persistence.AutosaveService;
 import com.damaitaliana.client.ui.save.SaveDialogController;
 import java.util.Objects;
 import java.util.Optional;
+import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
@@ -82,7 +83,10 @@ public class BoardViewController {
     bindMenuLabels();
     Optional<SinglePlayerGame> currentGame = gameSession.currentGame();
     if (currentGame.isEmpty()) {
-      sceneRouter.show(SceneId.MAIN_MENU);
+      // Defer past the current SceneRouter.show() call: a synchronous show(MAIN_MENU)
+      // here would be undone when the outer show(BOARD) unwinds and re-attaches the
+      // (empty) board root via scene.setRoot.
+      Platform.runLater(() -> sceneRouter.show(SceneId.MAIN_MENU));
       return;
     }
     SinglePlayerGame game = currentGame.get();

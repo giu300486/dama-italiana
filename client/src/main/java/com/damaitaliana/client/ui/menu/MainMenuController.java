@@ -11,6 +11,7 @@ import com.damaitaliana.client.persistence.SaveService;
 import java.io.UncheckedIOException;
 import java.util.Objects;
 import java.util.Optional;
+import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
@@ -91,7 +92,11 @@ public class MainMenuController {
   void initialize() {
     bindLabels();
     if (sceneRouter.consumeAutosavePromptOnNext()) {
-      handleAutosavePrompt();
+      // Defer past the current SceneRouter.show() call. Running the prompt synchronously
+      // here would block FXML loading, and any sceneRouter.show(BOARD) we trigger from the
+      // resume branch would be overwritten as soon as the outer show(MAIN_MENU) unwinds and
+      // re-attaches the main-menu root via scene.setRoot.
+      Platform.runLater(this::handleAutosavePrompt);
     }
   }
 
