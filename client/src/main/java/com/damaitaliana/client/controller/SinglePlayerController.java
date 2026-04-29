@@ -1,6 +1,8 @@
 package com.damaitaliana.client.controller;
 
 import com.damaitaliana.client.ui.board.BoardRenderer;
+import com.damaitaliana.client.ui.board.MoveHistoryViewModel;
+import com.damaitaliana.shared.domain.Color;
 import com.damaitaliana.shared.domain.GameState;
 import com.damaitaliana.shared.domain.Move;
 import com.damaitaliana.shared.domain.Piece;
@@ -43,6 +45,7 @@ public class SinglePlayerController {
 
   private final RuleEngine ruleEngine;
   private final Optional<AutosaveTrigger> autosaveTrigger;
+  private final MoveHistoryViewModel history = new MoveHistoryViewModel();
 
   private SinglePlayerGame game;
   private BoardRenderer renderer;
@@ -95,6 +98,11 @@ public class SinglePlayerController {
     }
   }
 
+  /** Read-only view of the move history. The {@link BoardRenderer} side panel binds to this. */
+  public MoveHistoryViewModel history() {
+    return history;
+  }
+
   /** Visible for testing. */
   GameState state() {
     return state;
@@ -125,6 +133,7 @@ public class SinglePlayerController {
   }
 
   private void applyMove(Move move) {
+    Color sideThatMoved = state.sideToMove();
     try {
       state = ruleEngine.applyMove(state, move);
     } catch (IllegalMoveException ex) {
@@ -132,6 +141,7 @@ public class SinglePlayerController {
       deselect();
       return;
     }
+    history.appendMove(move, sideThatMoved);
     selected = null;
     renderer.renderState(state.board());
     renderer.clearHighlights();

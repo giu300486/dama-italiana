@@ -32,7 +32,7 @@ public class BoardViewController {
 
   @FXML private BoardRenderer boardRenderer;
   @FXML private Label gameTitleLabel;
-  @FXML private Label sidePanelPlaceholderLabel;
+  @FXML private MoveHistoryView moveHistoryView;
   @FXML private Button backButton;
 
   public BoardViewController(
@@ -56,11 +56,11 @@ public class BoardViewController {
     }
     SinglePlayerGame game = currentGame.get();
     gameTitleLabel.setText(game.name());
-    sidePanelPlaceholderLabel.setText(i18n.t("board.sidepanel.placeholder"));
     backButton.setText(i18n.t("common.button.back"));
 
     SinglePlayerController gameController = singlePlayerControllerProvider.getObject();
     gameController.start(game, boardRenderer);
+    moveHistoryView.setItems(gameController.history().rows());
   }
 
   @FXML
