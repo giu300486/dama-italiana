@@ -10,6 +10,8 @@ import com.damaitaliana.shared.domain.Piece;
 import com.damaitaliana.shared.domain.Square;
 import com.damaitaliana.shared.rules.IllegalMoveException;
 import com.damaitaliana.shared.rules.RuleEngine;
+import java.util.ArrayDeque;
+import java.util.Deque;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -63,6 +65,9 @@ public class SinglePlayerController {
   private final Optional<AiTurnService> aiTurnService;
   private final MoveHistoryViewModel history = new MoveHistoryViewModel();
   private final AiThinkingState aiThinkingState = new AiThinkingState();
+  private final Deque<GameState> undoStack = new ArrayDeque<>();
+  private final Deque<GameState> redoStack = new ArrayDeque<>();
+  private final UndoState undoState = new UndoState();
 
   private SinglePlayerGame game;
   private BoardRenderer renderer;
@@ -95,6 +100,9 @@ public class SinglePlayerController {
     this.state = game.state();
     this.selected = null;
     this.busy = false;
+    this.undoStack.clear();
+    this.redoStack.clear();
+    publishUndoState();
     renderer.renderState(state.board());
     renderer.setOnCellClicked(this::onCellClicked);
     renderer.setOnEscape(this::deselect);
@@ -168,6 +176,71 @@ public class SinglePlayerController {
     return aiThinkingState;
   }
 
+  /**
+   * Observable wrapping the {@code (canUndo, canRedo)} flags. The board view binds menu items and
+   * keyboard shortcuts to it (Task 3.24, FR-SP-06).
+   */
+  public UndoState undoState() {
+    return undoState;
+  }
+
+  /** True when {@link #undoPair()} would change something. */
+  public boolean canUndo() {
+    return !busy && !undoStack.isEmpty();
+  }
+
+  /** True when {@link #redoPair()} would change something. */
+  public boolean canRedo() {
+    return !busy && !redoStack.isEmpty();
+  }
+
+  /**
+   * Undoes the last completed (human + AI) pair, restoring the game to its state before the human
+   * played that round (PLAN-fase-3 §7.13). When the AI is currently thinking ({@link #busy}) the
+   * call is a no-op — wait for the response, then undo. Re-renders the board, rebuilds the history
+   * pane, refreshes mandatory highlights, fires the state-change listener, and triggers an autosave
+   * with the restored snapshot.
+   */
+  public void undoPair() {
+    if (!canUndo()) {
+      return;
+    }
+    GameState target = undoStack.pop();
+    redoStack.push(state);
+    restoreState(target);
+  }
+
+  /**
+   * Redoes the previously undone pair, advancing the game to the state right after that AI
+   * response. No-op while the AI is computing or if there is nothing to redo (the redo stack is
+   * cleared whenever a fresh human move is played).
+   */
+  public void redoPair() {
+    if (!canRedo()) {
+      return;
+    }
+    GameState target = redoStack.pop();
+    undoStack.push(state);
+    restoreState(target);
+  }
+
+  private void restoreState(GameState target) {
+    selected = null;
+    state = target;
+    renderer.renderState(state.board());
+    renderer.clearHighlights();
+    history.replaceWithHistory(state.history());
+    refreshMandatoryHighlights();
+    autosaveTrigger.ifPresent(t -> t.onMoveApplied(snapshot()));
+    fireStateChange();
+    publishUndoState();
+    scheduleAiTurnIfAi();
+  }
+
+  private void publishUndoState() {
+    undoState.set(canUndo(), canRedo());
+  }
+
   /** Visible for testing. */
   GameState state() {
     return state;
@@ -221,6 +294,8 @@ public class SinglePlayerController {
     if (stopped) {
       return;
     }
+    GameState preMove = state;
+    boolean isHumanMove = sideThatMoved == game.humanColor();
     try {
       state = ruleEngine.applyMove(state, move);
     } catch (IllegalMoveException ex) {
@@ -228,6 +303,10 @@ public class SinglePlayerController {
       deselect();
       busy = false;
       return;
+    }
+    if (isHumanMove) {
+      undoStack.push(preMove);
+      redoStack.clear();
     }
     history.appendMove(move, sideThatMoved);
     selected = null;
@@ -237,6 +316,7 @@ public class SinglePlayerController {
     autosaveTrigger.ifPresent(t -> t.onMoveApplied(snapshot()));
     fireStateChange();
     busy = false;
+    publishUndoState();
     scheduleAiTurnIfAi();
   }
 
@@ -253,6 +333,7 @@ public class SinglePlayerController {
     }
     busy = true;
     aiThinkingState.set(true);
+    publishUndoState();
     pendingAiRequest = aiTurnService.get().requestMove(state, game.level(), game.rng());
     pendingAiRequest.whenCompleteAsync(this::onAiCompletion, fxExecutor);
   }
@@ -266,9 +347,11 @@ public class SinglePlayerController {
     pendingAiRequest = null;
     if (error != null) {
       log.warn("AI move request failed", error);
+      publishUndoState();
       return;
     }
     if (move == null) {
+      publishUndoState();
       return;
     }
     applyMove(move);

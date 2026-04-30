@@ -115,4 +115,42 @@ class MoveHistoryViewModelTest {
     assertThatNullPointerException()
         .isThrownBy(() -> vm.appendMove(new SimpleMove(new Square(2, 2), new Square(3, 3)), null));
   }
+
+  @Test
+  void replaceWithHistoryRebuildsRowsAlternatingFromWhite() {
+    SimpleMove white1 = new SimpleMove(new Square(2, 2), new Square(3, 3));
+    SimpleMove black1 = new SimpleMove(new Square(0, 4), new Square(1, 3));
+    SimpleMove white2 = new SimpleMove(new Square(4, 2), new Square(5, 3));
+    vm.appendMove(white1, Color.WHITE);
+    vm.appendMove(black1, Color.BLACK);
+    vm.appendMove(white2, Color.WHITE);
+
+    SimpleMove other = new SimpleMove(new Square(2, 2), new Square(1, 3));
+    vm.replaceWithHistory(List.of(other));
+
+    assertThat(vm.rows()).hasSize(1);
+    assertThat(vm.rows().get(0).whiteFid()).isEqualTo(MoveHistoryViewModel.formatFid(other));
+    assertThat(vm.rows().get(0).hasBlackMove()).isFalse();
+  }
+
+  @Test
+  void replaceWithHistoryAcceptsEmptyHistoryAndClearsRows() {
+    vm.appendMove(new SimpleMove(new Square(2, 2), new Square(3, 3)), Color.WHITE);
+    vm.replaceWithHistory(List.of());
+    assertThat(vm.rows()).isEmpty();
+  }
+
+  @Test
+  void replaceWithHistoryRebuildsTwoFullTurns() {
+    SimpleMove w1 = new SimpleMove(new Square(2, 2), new Square(3, 3));
+    SimpleMove b1 = new SimpleMove(new Square(0, 4), new Square(1, 3));
+    SimpleMove w2 = new SimpleMove(new Square(4, 2), new Square(5, 3));
+    SimpleMove b2 = new SimpleMove(new Square(0, 6), new Square(1, 5));
+
+    vm.replaceWithHistory(List.of(w1, b1, w2, b2));
+
+    assertThat(vm.rows()).hasSize(2);
+    assertThat(vm.rows().get(0).hasBlackMove()).isTrue();
+    assertThat(vm.rows().get(1).hasBlackMove()).isTrue();
+  }
 }

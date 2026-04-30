@@ -255,6 +255,153 @@ class SinglePlayerControllerTest {
     assertThat(pending.isCancelled()).isTrue();
   }
 
+  // ---------------------------------------------------------------------------------------------
+  // Undo/redo (FR-SP-06, Task 3.24)
+  // ---------------------------------------------------------------------------------------------
+
+  @Test
+  void freshControllerCannotUndoOrRedo() {
+    assertThat(controller.canUndo()).isFalse();
+    assertThat(controller.canRedo()).isFalse();
+  }
+
+  @Test
+  void undoAfterHumanMoveRestoresInitialState() {
+    Move humanMove = engine.legalMoves(GameState.initial()).get(0);
+    controller.onCellClicked(humanMove.from());
+    controller.onCellClicked(humanMove.to());
+
+    assertThat(controller.state().sideToMove()).isEqualTo(Color.BLACK);
+    assertThat(controller.canUndo()).isTrue();
+    assertThat(controller.canRedo()).isFalse();
+
+    controller.undoPair();
+
+    assertThat(controller.state().sideToMove()).isEqualTo(Color.WHITE);
+    assertThat(controller.state().history()).isEmpty();
+    assertThat(controller.canUndo()).isFalse();
+    assertThat(controller.canRedo()).isTrue();
+  }
+
+  @Test
+  void redoReappliesPreviouslyUndoneMove() {
+    Move humanMove = engine.legalMoves(GameState.initial()).get(0);
+    controller.onCellClicked(humanMove.from());
+    controller.onCellClicked(humanMove.to());
+    GameState afterHuman = controller.state();
+    controller.undoPair();
+
+    controller.redoPair();
+
+    assertThat(controller.state().board()).isEqualTo(afterHuman.board());
+    assertThat(controller.state().sideToMove()).isEqualTo(afterHuman.sideToMove());
+    assertThat(controller.state().history()).hasSameSizeAs(afterHuman.history());
+    assertThat(controller.canUndo()).isTrue();
+    assertThat(controller.canRedo()).isFalse();
+  }
+
+  @Test
+  void newMoveAfterUndoClearsRedoStack() {
+    Move firstMove = engine.legalMoves(GameState.initial()).get(0);
+    controller.onCellClicked(firstMove.from());
+    controller.onCellClicked(firstMove.to());
+    controller.undoPair();
+    assertThat(controller.canRedo()).isTrue();
+
+    Move otherMove =
+        engine.legalMoves(GameState.initial()).stream()
+            .filter(m -> !m.equals(firstMove))
+            .findFirst()
+            .orElseThrow();
+    controller.onCellClicked(otherMove.from());
+    controller.onCellClicked(otherMove.to());
+
+    assertThat(controller.canRedo()).isFalse();
+    assertThat(controller.canUndo()).isTrue();
+  }
+
+  @Test
+  void undoIsNoOpWhenStackEmpty() {
+    controller.undoPair();
+    assertThat(controller.state().sideToMove()).isEqualTo(Color.WHITE);
+    assertThat(controller.canUndo()).isFalse();
+  }
+
+  @Test
+  void undoRebuildsMoveHistoryView() {
+    Move humanMove = engine.legalMoves(GameState.initial()).get(0);
+    controller.onCellClicked(humanMove.from());
+    controller.onCellClicked(humanMove.to());
+    assertThat(controller.history().rows()).hasSize(1);
+
+    controller.undoPair();
+
+    assertThat(controller.history().rows()).isEmpty();
+  }
+
+  @Test
+  void undoFiresStateChangeAndAutosaveTrigger() {
+    Move humanMove = engine.legalMoves(GameState.initial()).get(0);
+    controller.onCellClicked(humanMove.from());
+    controller.onCellClicked(humanMove.to());
+    Mockito.clearInvocations(autosave);
+
+    controller.undoPair();
+
+    verify(autosave, times(1)).onMoveApplied(any(SinglePlayerGame.class));
+  }
+
+  @Test
+  void undoIsBlockedWhileAiIsThinking() {
+    AiTurnService aiService = Mockito.mock(AiTurnService.class);
+    java.util.concurrent.CompletableFuture<Move> pending =
+        new java.util.concurrent.CompletableFuture<>();
+    Mockito.when(aiService.requestMove(any(), any(), any())).thenReturn(pending);
+
+    SinglePlayerController withAi =
+        new SinglePlayerController(engine, Optional.empty(), Optional.of(aiService));
+    withAi.setFxExecutor(Runnable::run);
+    BoardRenderer freshRenderer = Mockito.mock(BoardRenderer.class);
+    withAi.start(game, freshRenderer);
+
+    Move humanMove = engine.legalMoves(GameState.initial()).get(0);
+    withAi.onCellClicked(humanMove.from());
+    withAi.onCellClicked(humanMove.to());
+
+    assertThat(withAi.busy()).isTrue();
+    assertThat(withAi.canUndo()).isFalse();
+
+    withAi.undoPair();
+    assertThat(withAi.state().sideToMove()).isEqualTo(Color.BLACK);
+
+    pending.cancel(true);
+  }
+
+  @Test
+  void undoStateListenerFiresOnTransitions() {
+    java.util.concurrent.atomic.AtomicReference<Boolean> latestUndo =
+        new java.util.concurrent.atomic.AtomicReference<>(null);
+    java.util.concurrent.atomic.AtomicReference<Boolean> latestRedo =
+        new java.util.concurrent.atomic.AtomicReference<>(null);
+    controller
+        .undoState()
+        .onChange(
+            (canUndo, canRedo) -> {
+              latestUndo.set(canUndo);
+              latestRedo.set(canRedo);
+            });
+
+    Move humanMove = engine.legalMoves(GameState.initial()).get(0);
+    controller.onCellClicked(humanMove.from());
+    controller.onCellClicked(humanMove.to());
+    assertThat(latestUndo.get()).isTrue();
+    assertThat(latestRedo.get()).isFalse();
+
+    controller.undoPair();
+    assertThat(latestUndo.get()).isFalse();
+    assertThat(latestRedo.get()).isTrue();
+  }
+
   /** Picks any white square that has at least one legal move at the start. */
   private Square aWhiteSourceWithLegalMoves() {
     return engine.legalMoves(GameState.initial()).get(0).from();

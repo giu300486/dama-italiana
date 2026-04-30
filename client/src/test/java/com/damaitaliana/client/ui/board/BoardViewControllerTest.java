@@ -107,4 +107,23 @@ class BoardViewControllerTest {
     assertThat(opened).isFalse();
     Mockito.verifyNoInteractions(dialogProvider);
   }
+
+  @Test
+  void onUndoDelegatesToControllerUndoPair() {
+    controller.onUndo();
+    verify(gameController).undoPair();
+  }
+
+  @Test
+  void onRedoDelegatesToControllerRedoPair() {
+    controller.onRedo();
+    verify(gameController).redoPair();
+  }
+
+  @Test
+  void onUndoIsNoOpWhenNoActiveGame() {
+    controller.setGameControllerForTest(null);
+    controller.onUndo();
+    Mockito.verify(gameController, Mockito.never()).undoPair();
+  }
 }

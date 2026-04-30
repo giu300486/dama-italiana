@@ -115,6 +115,34 @@ class SinglePlayerE2ETest {
     assertThat(after.status().isOngoing()).isTrue();
   }
 
+  @Test
+  void undoRedoCycleRestoresAndReappliesHumanMove() {
+    SinglePlayerController controller =
+        startGame(SerializedGameState.fromState(GameState.initial()));
+
+    Move firstWhiteMove =
+        RULES.legalMoves(controller.state()).stream()
+            .findFirst()
+            .orElseThrow(() -> new AssertionError("initial position has no legal moves"));
+    controller.onCellClicked(firstWhiteMove.from());
+    controller.onCellClicked(firstWhiteMove.to());
+
+    GameState afterMove = controller.state();
+    assertThat(controller.canUndo()).isTrue();
+    assertThat(controller.canRedo()).isFalse();
+
+    controller.undoPair();
+    assertThat(controller.state().history()).isEmpty();
+    assertThat(controller.state().sideToMove()).isEqualTo(Color.WHITE);
+    assertThat(controller.canUndo()).isFalse();
+    assertThat(controller.canRedo()).isTrue();
+
+    controller.redoPair();
+    assertThat(controller.state().board()).isEqualTo(afterMove.board());
+    assertThat(controller.state().history()).hasSameSizeAs(afterMove.history());
+    assertThat(controller.canRedo()).isFalse();
+  }
+
   private SinglePlayerController startGame(SerializedGameState position) {
     SinglePlayerController controller =
         new SinglePlayerController(RULES, Optional.of(autosave), Optional.empty());

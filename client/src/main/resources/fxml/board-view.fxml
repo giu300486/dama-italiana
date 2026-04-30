@@ -21,6 +21,8 @@
             <MenuBar fx:id="menuBar">
                 <Menu fx:id="gameMenu">
                     <items>
+                        <MenuItem fx:id="undoMenuItem" onAction="#onUndo"/>
+                        <MenuItem fx:id="redoMenuItem" onAction="#onRedo"/>
                         <MenuItem fx:id="saveMenuItem" onAction="#onSaveAs"/>
                         <MenuItem fx:id="loadMenuItem" onAction="#onLoad"/>
                         <MenuItem fx:id="rulesMenuItem" onAction="#onShowRules"/>

@@ -18,6 +18,9 @@ import javafx.scene.control.Label;
 import javafx.scene.control.Menu;
 import javafx.scene.control.MenuBar;
 import javafx.scene.control.MenuItem;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyCodeCombination;
+import javafx.scene.input.KeyCombination;
 import javafx.stage.Window;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.annotation.Scope;
@@ -48,6 +51,8 @@ public class BoardViewController {
 
   @FXML private MenuBar menuBar;
   @FXML private Menu gameMenu;
+  @FXML private MenuItem undoMenuItem;
+  @FXML private MenuItem redoMenuItem;
   @FXML private MenuItem saveMenuItem;
   @FXML private MenuItem loadMenuItem;
   @FXML private MenuItem rulesMenuItem;
@@ -101,17 +106,38 @@ public class BoardViewController {
     gameController
         .aiThinkingState()
         .onChange(thinking -> statusPane.setThinking(thinking, i18n.t("status.thinking")));
+    gameController.undoState().onChange(this::refreshUndoMenuState);
     gameController.start(game, boardRenderer);
     moveHistoryView.setItems(gameController.history().rows());
+    refreshUndoMenuState(gameController.canUndo(), gameController.canRedo());
+    bindUndoShortcuts();
     Platform.runLater(boardRenderer::requestFocus);
   }
 
   private void bindMenuLabels() {
     gameMenu.setText(i18n.t("board.menu.game"));
+    undoMenuItem.setText(i18n.t("board.menu.undo"));
+    redoMenuItem.setText(i18n.t("board.menu.redo"));
     saveMenuItem.setText(i18n.t("board.menu.save"));
     loadMenuItem.setText(i18n.t("board.menu.load"));
     rulesMenuItem.setText(i18n.t("board.menu.rules"));
     terminateMenuItem.setText(i18n.t("board.menu.terminate"));
+  }
+
+  private void bindUndoShortcuts() {
+    // Ctrl+Z / Ctrl+Y on every desktop OS the JavaFX runtime targets. SHORTCUT_DOWN maps to ⌘ on
+    // macOS, Ctrl on Linux/Windows, so the shortcut feels native everywhere.
+    undoMenuItem.setAccelerator(new KeyCodeCombination(KeyCode.Z, KeyCombination.SHORTCUT_DOWN));
+    redoMenuItem.setAccelerator(new KeyCodeCombination(KeyCode.Y, KeyCombination.SHORTCUT_DOWN));
+  }
+
+  private void refreshUndoMenuState(boolean canUndo, boolean canRedo) {
+    if (undoMenuItem != null) {
+      undoMenuItem.setDisable(!canUndo);
+    }
+    if (redoMenuItem != null) {
+      redoMenuItem.setDisable(!canRedo);
+    }
   }
 
   @FXML
@@ -120,6 +146,20 @@ public class BoardViewController {
       gameController.stop();
     }
     sceneRouter.show(SceneId.MAIN_MENU);
+  }
+
+  @FXML
+  void onUndo() {
+    if (gameController != null) {
+      gameController.undoPair();
+    }
+  }
+
+  @FXML
+  void onRedo() {
+    if (gameController != null) {
+      gameController.redoPair();
+    }
   }
 
   @FXML

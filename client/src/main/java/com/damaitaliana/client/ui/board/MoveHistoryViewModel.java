@@ -28,6 +28,22 @@ public class MoveHistoryViewModel {
     return rows;
   }
 
+  /**
+   * Replaces every row with a fresh sequence rebuilt from {@code history}, alternating colours
+   * starting from White (Italian Draughts convention — first move is always White, ADR-013). Used
+   * when undoing or redoing a pair (Task 3.24): the controller restores a snapshot and asks the
+   * view-model to mirror its history.
+   */
+  public void replaceWithHistory(List<Move> history) {
+    Objects.requireNonNull(history, "history");
+    rows.clear();
+    Color next = Color.WHITE;
+    for (Move move : history) {
+      appendMove(move, next);
+      next = (next == Color.WHITE) ? Color.BLACK : Color.WHITE;
+    }
+  }
+
   public void appendMove(Move move, Color color) {
     Objects.requireNonNull(move, "move");
     Objects.requireNonNull(color, "color");
