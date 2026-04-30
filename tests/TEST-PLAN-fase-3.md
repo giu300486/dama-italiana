@@ -212,11 +212,11 @@ Se emergono crash o regressioni: aprire finding `BUG, severity ≥ High` in REVI
 
 ### 7.4 Log di esecuzione
 
-> _Da compilare al primo run manuale._
+| Data       | Esito           | N. mosse | Sotto-feature OK | Eccezioni / note                                        | Eseguito da    |
+|------------|-----------------|---------:|------------------|---------------------------------------------------------|----------------|
+| 2026-04-30 | OK (no crash UI) |  manual | tutte (6/6)      | Nessuna eccezione, nessun glitch grafico, nessuna regressione osservata | Giuseppe Fornaro |
 
-| Data       | Esito           | N. mosse | Sotto-feature OK | Eccezioni / note      | Eseguito da |
-|------------|-----------------|---------:|------------------|-----------------------|-------------|
-| _TBD_      | _TBD_           |    _TBD_ | _TBD_            | _TBD_                 | _TBD_       |
+**Esito**: A3.3 ✅ COVERED via manual validation, REVIEW-fase-3 finding F-002 RESOLVED.
 
 ---
 
@@ -273,15 +273,15 @@ Stato al **2026-04-30**, commit `fc7b68c`:
 - [x] Coverage target raggiunti — `client` 74.18% line / 60.95% branch (gate JaCoCo `BUNDLE` ≥ 60% line+branch superato; vedi §2.2 e §8). `shared` ≥ 80% (NFR-M-01) confermato dalle suite corpus + AI.
 - [x] Traceability matrix aggiornata — ogni FR/NFR/AC della Fase 3 ha almeno un test reale o "manual" esplicito (post Task 3.24 + F-003 closure; vedi §6).
 - [x] Test corpus regole italiane invariato — 48 posizioni F1 + 5 tactical golden F2 tutte verdi nella regressione di §8.
-- [ ] **§7.4 popolato** con esito della validazione manuale A3.3 (F-002 RESOLVED via manual) — **PENDING utente**: procedura da eseguire prima dell'inizio del Task 3.5.6 di Fase 3.5 (riskinning del board), poiché valida la UI corrente `gestionale` di F3.
+- [x] **§7.4 popolato** con esito della validazione manuale A3.3 (F-002 RESOLVED via manual) — eseguita dall'utente il 2026-04-30, esito OK su tutte e 6 le sotto-feature, nessuna eccezione né regressione.
 - [x] `mvn verify` (default `-DexcludedGroups=slow,performance`) passa pulito su tutti i moduli — verificato come parte di §8 (la suite default è un sottoinsieme di quella full-tag).
 - [x] `mvn clean verify` con `slow`+`performance` inclusi BUILD SUCCESS almeno una volta (regression F1+F2) — eseguito al commit `fc7b68c`, durata 16:25 min, 673/673 verdi (vedi §8).
 - [x] Test plan documenta scelte e copertura — questo file (sezioni 1-10 popolate).
 - [x] Nessun test in stato `@Disabled`/`@Ignore` senza issue tracciata — verificato via `mvn` output: `Tests run: 673, Failures: 0, Errors: 0, Skipped: 0` su tutti i moduli.
 
-**Stato finale**: 7 di 8 voci spuntate. La voce manuale §7.4 è esplicitamente differita all'utente e tracciata in `AI_CONTEXT.md` come prerequisito di F3.5 Task 3.5.6.
+**Stato finale**: 8 di 8 voci spuntate.
 
-**Sotto-fase TEST F3 chiusa** (parzialmente — chiusura completa una volta che §7.4 sarà compilato dall'utente). Closure documentata nel commit `docs(tests): close TEST F3 debt as task 3.5.0`.
+**Sotto-fase TEST F3 chiusa** il 2026-04-30. Closure documentata nei commit `docs(tests): close TEST F3 debt as task 3.5.0` (sezioni 2-6, 8-10) e `docs(tests): record manual A3.3 run (F-002 resolved)` (§7.4).
 
 ---
 
