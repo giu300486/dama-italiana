@@ -19,11 +19,11 @@
 | FR-SP-02  | Tre livelli di difficoltà (Principiante / Esperto / Campione) — UI       | `SinglePlayerSetupController` (ToggleGroup `levelGroup` con 3 RadioButton mappati 1-a-1 sull'enum `AiLevel`) | Verificato anche dal corpus AI di F2 + lancio manuale | Manual + F2 unit |
 | FR-SP-03  | Scelta colore Bianco / Nero / Casuale                                    | `SinglePlayerSetupController.selectedColorChoice` (visible via FXML) | Default Bianco; `ColorChoice.RANDOM` risolto via `RandomGenerator` iniettato | Manual |
 | FR-SP-04  | Highlight mosse legali al click sulla pedina (UI)                        | `SinglePlayerControllerTest` + `SinglePlayerE2ETest` | `selectedSquare`+`highlightLegalTargets` capture, A3.7 in-UI verifica           | Unit + E2E |
-| FR-SP-05  | Highlight cattura obbligatoria (style `pulse-mandatory`)                 | `SinglePlayerControllerTest` + `BoardRendererTest` | `mandatoryCaptureCellsAreFlaggedAtSelectionTime` + cell rendering   | Unit |
-| FR-SP-06  | Undo/redo illimitato (coppia umana+IA come unità)                        | `SinglePlayerControllerTest`                     | `undoRevertsBothHumanAndAiPlies`, `redoReappliesPair`               | Unit |
+| FR-SP-05  | Highlight cattura obbligatoria (style `pulse-mandatory`)                 | `SinglePlayerControllerTest` + `BoardRendererTest` | `mandatoryHighlightsRecomputeAfterEachMove` + cell rendering        | Unit |
+| FR-SP-06  | Undo/redo illimitato (coppia umana+IA come unità)                        | `SinglePlayerControllerTest` + `SinglePlayerE2ETest` + `BoardViewControllerTest` | `undoPair*`/`redoPair*` (9 test su Task 3.24), `undoRedoCycleRestoresAndReappliesHumanMove` (E2E), `onUndo/onRedoDelegatesToControllerUndoPair/RedoPair` (UI binding) | Unit + E2E |
 | FR-SP-07  | Multi-slot save (lista, carica, riprendi)                                | `SaveServiceTest` + `LoadScreenControllerTest` + `SaveLoadE2ETest` | save/load/list/delete + UI filter+sort, round-trip byte-equal      | Unit + E2E |
 | FR-SP-08  | Autosave write-through dopo ogni mossa + recovery prompt al riavvio      | `AutosaveServiceTest` + `SinglePlayerAutosaveTriggerTest` + `AutosaveE2ETest` | Round-trip recovery, schema mismatch toast, IO error tolerated     | Unit + E2E |
-| FR-SP-09  | Cronologia mosse in notazione FID                                        | `MoveHistoryViewModelTest` + `FidNotationTest`   | `displaysMovesInFidNotation`, alternanza Bianco/Nero, prefix "Bianco" | Unit |
+| FR-SP-09  | Cronologia mosse in notazione FID                                        | `MoveHistoryViewModelTest` + `FidNotationTest`   | `appendingWhiteMoveCreatesNewRow`, `appendingBlackMoveCompletesRow`, `formatsCaptureSequenceWithCrossNotation`, `replaceWithHistory*` | Unit |
 | FR-RUL-02 | Navigazione 7 sezioni regole                                             | `RulesControllerTest` + `RulesScreenE2ETest`     | `allSevenSectionsAreExposedInDisplayOrder`, `openRulesAndNavigateSections` | Unit + E2E |
 | FR-RUL-03 | ≥ 5 diagrammi statici su ≥ 4 sezioni                                     | `RuleDiagramLoaderTest`                          | `coverageHasAtLeastFiveDiagramsAcrossAtLeastFourSections`           | Unit |
 | FR-RUL-04 | Mini-animazioni regole (opzionale §7.6)                                  | `RulesAnimationsTest`                            | 8 test su 3 Kind (SIMPLE_CAPTURE/MULTI_CAPTURE/PROMOTION) + animation builder | Unit |
@@ -68,9 +68,9 @@
 | A3.3  | Partita end-to-end vs IA chiusa fino a stato terminale senza crash UI                                | `SinglePlayerE2ETest#humanFirstMoveAdvancesGameStateAndHistory` (light), full game manuale |
 | A3.4  | Salva con nome → ricarica → riprendi                                                                 | `SaveLoadE2ETest#saveThenLoadResumesAtSameState`                                    |
 | A3.5  | Autosave recovery (chiudi finestra → riapri → prompt riprendi)                                      | `AutosaveE2ETest#promptOnRestartWhenAutosavePresent`                                 |
-| A3.6  | Highlight cattura obbligatoria (`pulse-mandatory`)                                                  | `SinglePlayerControllerTest#mandatoryCaptureCellsAreFlaggedAtSelectionTime` + `BoardRendererTest` |
-| A3.7  | Highlight mosse legali al click pedina propria                                                      | `SinglePlayerE2ETest#manCannotCaptureKingInUi` (verifica `highlightLegalTargets`) + `SinglePlayerControllerTest` |
-| A3.8  | Cronologia mosse in notazione FID (alternanza Bianco/Nero)                                           | `MoveHistoryViewModelTest#displaysMovesInFidNotation`                                |
+| A3.6  | Highlight cattura obbligatoria (`pulse-mandatory`)                                                  | `SinglePlayerControllerTest#mandatoryHighlightsRecomputeAfterEachMove` + `BoardRendererTest` |
+| A3.7  | Highlight mosse legali al click pedina propria                                                      | `SinglePlayerE2ETest#manCannotCaptureKingInUi` (verifica `highlightLegalTargets`) + `SinglePlayerControllerTest#clickOnOwnPieceHighlightsLegalTargets` |
+| A3.8  | Cronologia mosse in notazione FID (alternanza Bianco/Nero)                                           | `MoveHistoryViewModelTest#appendingWhiteMoveCreatesNewRow`, `appendingBlackMoveCompletesRow`, `multipleTurnsProduceMultipleRows` |
 | A3.9  | Localizzazione IT/EN funzionante, no stringhe hardcoded                                              | `LocalizationE2ETest` (87 chiavi IT+EN) + `MessageSourceConfigTest#bothBundlesHaveSameKeySet` |
 | A3.10 | Sezione regole accessibile + navigazione 7 sezioni                                                   | `RulesScreenE2ETest#openRulesAndNavigateSections`                                    |
 | A3.11 | Pedina non cattura dama (end-to-end UI)                                                              | `SinglePlayerE2ETest#manCannotCaptureKingInUi`                                       |
@@ -82,8 +82,8 @@
 | A3.17 | Nessun TODO/FIXME pending in `client/src/main/java/`                                                | grep                                                                                |
 | A3.18 | Test corpus regole F1 + gating IA F2 continuano a passare (regression)                              | `RuleEngineCorpusTest` + `AiTournamentSimulationTest` verdi                          |
 | A3.19 | `mvn clean verify` (root) BUILD SUCCESS                                                             | Output Maven                                                                        |
-| A3.20 | Schema versionato saves: `"schemaVersion": 1` + rifiuto versioni ignote                             | `SaveServiceTest#rejectsUnknownSchemaVersion`                                        |
-| A3.21 | Atomicità autosave (write-temp + ATOMIC_MOVE)                                                       | `SaveServiceTest#autosaveIsAtomic` + `AutosaveE2ETest#writeFailureToleratedWhenSavesDirIsAFile` |
+| A3.20 | Schema versionato saves: `"schemaVersion": 1` + rifiuto versioni ignote                             | `SaveServiceTest#loadFailsOnUnknownSchemaVersion`                                    |
+| A3.21 | Atomicità autosave (write-temp + ATOMIC_MOVE)                                                       | `SaveServiceTest#saveOverwritesExistingSlotAtomically` + `saveDoesNotLeaveTempFileBehind` + `AutosaveE2ETest#writeFailureToleratedWhenSavesDirIsAFile` |
 
 ---
 

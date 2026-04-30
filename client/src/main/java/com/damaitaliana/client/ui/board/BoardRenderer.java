@@ -43,6 +43,8 @@ public class BoardRenderer extends Region {
       }
     }
     getStyleClass().add("board-renderer");
+    // English-only in Fase 3 (matches CellAccessibleText / PieceAccessibleText); a11y i18n is a
+    // Fase 11 concern.
     setAccessibleText("Italian draughts board, 8 by 8 grid");
     setFocusTraversable(true);
     addEventHandler(KeyEvent.KEY_PRESSED, this::onKeyPressed);
