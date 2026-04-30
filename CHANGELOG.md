@@ -26,11 +26,10 @@ Il formato è basato su [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1
 
 ### Notes
 
-- **TEST sotto-fase Fase 3 — DEFERRED post-tag v0.3.0** (deviazione una-tantum dal workflow CLAUDE.md §2). L'utente ha esplicitamente autorizzato lo skip della sotto-fase TEST per accelerare il merge a develop+main e la chiusura amministrativa di Fase 3 (incluso contributor cleanup). Stato del debito al tag v0.3.0:
-  - `tests/TEST-PLAN-fase-3.md` esiste in stato DRAFT (commit `603306f`) con sezione 7 (procedura manuale A3.3) completa; sezioni 2-6, 8-10 da popolare.
-  - 280 test verdi sul modulo `client` (commit `74de2af`), JaCoCo gate ✅ (line 74.18% / branch 60.95%, soglia 60% line+branch `haltOnFailure=true`), SpotBugs 0 High, Spotless OK.
-  - Regression `mvn clean verify -DexcludedGroups=slow,performance` (root) BUILD SUCCESS.
-  - **Debito**: completare TEST-PLAN-fase-3.md, eseguire `mvn clean verify` con `slow`+`performance` inclusi (~16 min, regression F1 corpus + F2 gating IA), eseguire la procedura manuale A3.3 documentata in §7 e popolare il log §7.4. **DEVE essere chiuso prima di aprire la sotto-fase PIANIFICA di Fase 4** (CLAUDE.md §11.1 "Per iniziare una nuova fase" rimane il riferimento).
+- **TEST sotto-fase Fase 3 — DEBITO ESTINTO il 2026-04-30** come **Task 3.5.0** dentro Fase 3.5 (deviazione una-tantum dal workflow CLAUDE.md §2 autorizzata in fase di chiusura F3). Output:
+  - `tests/TEST-PLAN-fase-3.md` finalizzato (commit pending Task 3.5.0): popolate sezioni 2 (composizione test 46 file × 280 test, coverage 74.18%/60.95% line/branch, SAST clean), 3 (corpus regole F1 48 + tactical F2 5 invariati), 4 (naming convention con esempi), 5 (tag JUnit `slow`+`performance` ereditati da F2), 6 (TRACEABILITY history Task 3.23 + Task 3.24 + F-003 closure), 8 (regression cross-modulo full-tag), 9 (debiti F3-D1..F3-D6), 10 (closure checklist 7/8 voci spuntate; voce manuale §7.4 esplicitamente deferita all'utente come prerequisito di Task 3.5.6).
+  - **Regressione full-tag** `mvn clean verify` (root, con `slow`+`performance`) eseguita su commit `fc7b68c`: BUILD SUCCESS in **16:25 min**, **673/673 test verdi** (shared 391 + core-server 1 + client 280 + server 1, 0 failures / 0 errors / 0 skipped). Gating F2 `AiTournamentSimulationTest#campionWinsAtLeast95OutOf100AgainstPrincipiante` PASS (885.2s wall-clock, soglia ≥ 95/100). Gate JaCoCo, Spotless, SpotBugs, Maven Enforcer tutti verdi.
+  - **Voce residua deliberatamente aperta**: §7.4 (log validazione manuale A3.3) — l'utente eseguirà la procedura `mvn -pl client javafx:run` partita full vs Esperto **prima dell'inizio del Task 3.5.6** di F3.5 (visual reskinning della board), perché valida la UI corrente "gestionale" di F3 prima di sostituirla.
 
 ### Added
 
