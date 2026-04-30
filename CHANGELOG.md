@@ -6,7 +6,41 @@ Il formato è basato su [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1
 
 ## [Unreleased]
 
+### Changed
+
+- **SPEC.md v2.1** (2026-04-30) — clarifiche post-REVIEW Fase 3, applicate a chiusura del flusso CR (CLAUDE.md §1):
+  - **§4.1 FR-SP-06**: aggiunta nota di granularità undo/redo: una coppia (mossa umana + risposta IA) annullata come unità singola, depth limitata solo dalla memoria. Allinea SPEC alla semantica fissata in PLAN-fase-3 §7.13 (stop point opzione A) e implementata in Task 3.24 (commit `74de2af`).
+  - **§13.5 Accessibilità**: aggiunta annotazione "*Implementazione per fase*" che documenta esplicitamente quanto è in F3 (`accessibleText` inglese univoco, scaling 100/125/150, keyboard nav board) e cosa è **deferred F11** (localizzazione IT/EN dei testi `accessibleText`, pattern daltonismo). Risolve il REQUIREMENT_GAP latente che la REVIEW Fase 3 ha evidenziato come finding F-005 (DOC_GAP).
+  - **§16 Fase 11**: aggiunto bullet "Deferral consci da Fase 3" che enumera le voci formalmente deferred dalla REVIEW Fase 3: a11y i18n, daltonismo, misura formale 60 FPS (NFR-P-01 / AC §17.2.3), verifica tool-based contrasto WCAG AA su entrambi i temi (NFR-U-04 / AC §17.2.7).
+  - **Frontmatter**: bump versione 2.0 → 2.1 con storico versioni inline.
+  - **Decisione utente** (2026-04-30, in-thread): "S1 ok, S2 ok, S3 ok, S4 ok". Nessuna SPEC change request lasciata pendente.
+
+### Notes
+
+- **TEST sotto-fase Fase 3 — DEFERRED post-tag v0.3.0** (deviazione una-tantum dal workflow CLAUDE.md §2). L'utente ha esplicitamente autorizzato lo skip della sotto-fase TEST per accelerare il merge a develop+main e la chiusura amministrativa di Fase 3 (incluso contributor cleanup). Stato del debito al tag v0.3.0:
+  - `tests/TEST-PLAN-fase-3.md` esiste in stato DRAFT (commit `603306f`) con sezione 7 (procedura manuale A3.3) completa; sezioni 2-6, 8-10 da popolare.
+  - 280 test verdi sul modulo `client` (commit `74de2af`), JaCoCo gate ✅ (line 74.18% / branch 60.95%, soglia 60% line+branch `haltOnFailure=true`), SpotBugs 0 High, Spotless OK.
+  - Regression `mvn clean verify -DexcludedGroups=slow,performance` (root) BUILD SUCCESS.
+  - **Debito**: completare TEST-PLAN-fase-3.md, eseguire `mvn clean verify` con `slow`+`performance` inclusi (~16 min, regression F1 corpus + F2 gating IA), eseguire la procedura manuale A3.3 documentata in §7 e popolare il log §7.4. **DEVE essere chiuso prima di aprire la sotto-fase PIANIFICA di Fase 4** (CLAUDE.md §11.1 "Per iniziare una nuova fase" rimane il riferimento).
+
 ### Added
+
+- **Task 3.24** — Undo/redo della coppia umana+IA (Fase 3, fix REVIEW finding F-001 opzione A, branch `feature/3-ui-singleplayer`):
+  - `SinglePlayerController`: `Deque<GameState> undoStack`/`redoStack`, push del pre-state SOLO sulle mosse umane (filtrato da `sideThatMoved == game.humanColor()` in `finalizeMove`); le mosse IA non pushano (il loro pre-state è già parte della coppia). API pubblica: `undoPair()` / `redoPair()` / `canUndo()` / `canRedo()` / `undoState()` (observable).
+  - Nuovo `client/controller/UndoState.java`: pattern matchea `AiThinkingState`, ma usa `BiConsumer<Boolean, Boolean>` listener per i due flag compound `(canUndo, canRedo)` settati insieme via `set(boolean, boolean)`. Niente JavaFX BooleanProperty per restare testabile sul thread del test.
+  - `MoveHistoryViewModel.replaceWithHistory(List<Move>)`: ricostruisce le row da una history arbitraria alternando WHITE/BLACK partendo da WHITE (Italian Draughts ADR-013, primo turno sempre bianco).
+  - `BoardViewController`: aggiunti `@FXML MenuItem undoMenuItem`/`redoMenuItem` con accelerator `Ctrl+Z` / `Ctrl+Y` (cross-platform via `KeyCombination.SHORTCUT_DOWN`); listener su `gameController.undoState()` aggiorna il `setDisable` dei menu item; deleghe `onUndo()` / `onRedo()` al controller.
+  - `client/src/main/resources/fxml/board-view.fxml`: aggiunti i 2 `MenuItem` in cima al menu Partita.
+  - i18n IT/EN: `board.menu.undo` ("Annulla mossa" / "Undo move"), `board.menu.redo` ("Ripeti mossa" / "Redo move").
+  - 16 nuovi test: 9 unit in `SinglePlayerControllerTest` (push solo human, redo dopo undo, redo cleared on new move, busy guard durante AI thinking, observable propagation), 3 in `BoardViewControllerTest` (delegation onUndo/onRedo, no-op when controller null), 3 in `MoveHistoryViewModelTest` (`replaceWithHistory*`), 1 E2E in `SinglePlayerE2ETest#undoRedoCycleRestoresAndReappliesHumanMove`.
+  - `mvn -pl client verify -DexcludedGroups=slow,performance` BUILD SUCCESS, **280 test totali** (+16 vs Task 3.23), JaCoCo line 74.18% / branch 60.95%, SpotBugs 0 High, Spotless OK.
+  - Risolve REVIEW-fase-3 finding **F-001 [REQUIREMENT_GAP, High]** (commit `74de2af`).
+
+- **REVIEW Fase 3 closure** (commit `6eeb332`, file `reviews/REVIEW-fase-3.md`): tutti i 5 findings RESOLVED.
+  - **F-001 High** (FR-SP-06 Undo/redo non implementato) → opzione A, Task 3.24, commit `74de2af`.
+  - **F-002 Medium** (A3.3 partita end-to-end light) → opzione B, procedura manuale documentata in `tests/TEST-PLAN-fase-3.md` §7 (commit `603306f`).
+  - **F-003 / F-004 / F-005 Low** (DOC_GAP: TRACEABILITY drift, ADR-031 wording, a11y i18n deferral comment) → singolo commit `docs(claude)` `59bedc7`.
+  - **CR-001 WITHDRAWN** (rimasta PENDING solo finché F-001 non era deciso; opzione A → no SPEC change).
 
 - **Task 3.23** — Documentazione, ADR, TRACEABILITY, README, CHANGELOG (Fase 3, chiusura sotto-fase IMPLEMENTA, branch `feature/3-ui-singleplayer`):
   - `ARCHITECTURE.md`: appendiati 5 ADR per le decisioni di design emerse durante l'IMPLEMENTA: **ADR-029** (bootstrap JavaFX con Spring Boot DI non-web — `ClientApplication` Spring main → `Application.launch(JavaFxApp.class)` con `JavaFxAppContextHolder` come bridge singleton), **ADR-030** (architettura schermate FXML + `setControllerFactory(applicationContext::getBean)` con controller `@Component @Scope("prototype")` per evitare reset di `@FXML` al re-load — vedi anche memory `feedback_spring_ui_tests`), **ADR-031** (schema saves v1: JSON con `schemaVersion`, `kind`, `aiLevel`, `humanColor`, `currentState` riusando `SerializedGameState` 4-FID-list e `moves` future-proof, rifiuto `schemaVersion` ignote via `UnknownSchemaVersionException` tipata), **ADR-032** (autosave atomico tramite write-temp + `Files.move(tmp, target, ATOMIC_MOVE, REPLACE_EXISTING)` con fallback `REPLACE_EXISTING` solo per FS che non supportano `ATOMIC_MOVE` + `SinglePlayerAutosaveTrigger` failure-tolerant che swallowa `UncheckedIOException` con log WARN), **ADR-033** (localizzazione: `MessageSource` Spring + `LocaleService` bridge + `I18n` wrapper con `[code]` placeholder per chiavi mancanti; default locale Italian fallback chain, encoding UTF-8 esplicito; cambio lingua richiede riavvio in F3, runtime dynamic in F11; chiavi gerarchiche `screen.element.role`).

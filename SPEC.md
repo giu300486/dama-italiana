@@ -1,8 +1,10 @@
 # SPEC — Dama Italiana Multiplayer (Desktop)
 
 > **Documento di specifica per Spec-Driven Development con Claude Code**
-> Versione: 2.0 · Data: 2026-04-26 · Linguaggio: Italiano
+> Versione: 2.1 · Data: 2026-04-30 · Linguaggio: Italiano
 > Tipo progetto: Applicazione desktop Java + Server centrale Spring Boot
+>
+> Storico versioni: 2.0 (2026-04-26 — baseline post-Fase 0); 2.0 + CR-001 (2026-04-28 — repetition/40-mosse via reference incrementale, deferred F4); **2.1 (2026-04-30 — clarifiche post-REVIEW Fase 3: granularità undo/redo §4.1, deferral a11y i18n + daltonismo §13.5, deferral consci enumerati in Fase 11)**.
 
 ---
 
@@ -158,7 +160,7 @@ Notazione FID: caselle numerate da 1 a 32 (solo case scure).
 | FR-SP-03 | Scelta del colore (Bianco / Nero / Casuale). |
 | FR-SP-04 | Highlight delle mosse legali al click sulla pedina. |
 | FR-SP-05 | Highlight rosso pulsante per cattura obbligatoria. |
-| FR-SP-06 | Undo/redo illimitato. |
+| FR-SP-06 | Undo/redo illimitato. *Granularità: una coppia (mossa umana + risposta IA) annullata come unità singola; non è possibile annullare un solo half-ply. Profondità non vincolata da policy: limitata solo dalla memoria disponibile.* |
 | FR-SP-07 | **Salvataggio multi-slot**: ogni partita salvata è un file dedicato; l'utente può nominarla; la lista delle partite salvate è visibile e ordinabile. |
 | FR-SP-08 | Autosave continuo della partita corrente (slot speciale `_autosave`); alla riapertura del client, prompt "Riprendi partita interrotta?". |
 | FR-SP-09 | Cronologia mosse in notazione FID nel pannello laterale. |
@@ -1293,6 +1295,8 @@ JavaFX Media. Suoni discreti: click mossa, tonfo cattura, chime promozione, fanf
 - Modalità daltonismo: pattern (linee, puntini) sui pezzi oltre al colore.
 - Scaling UI 100% / 125% / 150% (preferenza salvata).
 
+> **Implementazione per fase**: Fase 3 implementa `accessibleText` (formato univoco screen-reader-friendly inglese, stabile e indipendente dal locale attivo) + scaling UI 100/125/150 + keyboard navigation board. **Deferred a Fase 11** (vedi §16): (a) localizzazione IT/EN dei testi `accessibleText` (NFR-U-01 — il deferral è giustificato dal fatto che ogni cell read screen-reader riprodurrebbe la stessa frase da ~30 chiavi i18n aggiunte; valutazione costi/benefici a F11), (b) pattern daltonismo sui pezzi (feature di a11y avanzata).
+
 ### 13.6 Localizzazione
 
 - ResourceBundle `messages_it.properties` / `messages_en.properties`.
@@ -1486,6 +1490,11 @@ Fasi sequenziali. Ogni fase è autonomamente verificabile. Claude Code DEVE comp
 - Docker image server.
 - Monitoring stack (Prometheus + Grafana dashboard).
 - Documentazione utente.
+- **Deferral consci da Fase 3** (formalizzati nella REVIEW-fase-3 chiusa il 2026-04-30):
+  - Localizzazione IT/EN dei testi `accessibleText` su pezzi e celle (NFR-U-01, vedi §13.5).
+  - Pattern daltonismo sui pezzi (§13.5).
+  - Misura formale del target 60 FPS durante animazioni (NFR-P-01, AC §17.2.3) — valutazione tool-based su hardware target (Intel UHD 620+).
+  - Verifica tool-based del contrasto WCAG AA su entrambi i temi (AC §17.2.7) — light implementato in F3 by-design, dark e check automatico in F11.
 
 **Acceptance**: utente scarica installer, registra, gioca in tutte le modalità, accede a profilo e replay.
 
