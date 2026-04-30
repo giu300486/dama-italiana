@@ -9,7 +9,7 @@ Applicazione desktop Java per giocare a **Dama Italiana** in tre modalità: cont
 
 ## Stato del progetto
 
-Fase corrente: **Fase 0 — Setup infrastruttura** (vedi [`plans/PLAN-fase-0.md`](plans/PLAN-fase-0.md)).
+Fase corrente: **Fase 3 — Client UI single-player** (vedi [`plans/PLAN-fase-3.md`](plans/PLAN-fase-3.md)).
 
 Stato runtime corrente: vedi [`AI_CONTEXT.md`](AI_CONTEXT.md).
 
@@ -93,6 +93,50 @@ mvn clean verify
 ```
 
 Atteso: `BUILD SUCCESS` su parent + 4 moduli (`shared`, `core-server`, `client`, `server`). Tempo indicativo primo run: 1–2 minuti (download dipendenze).
+
+---
+
+## Eseguire il client (Fase 3+)
+
+Il client desktop JavaFX si lancia tramite il `javafx-maven-plugin`:
+
+```bash
+mvn -pl client javafx:run
+```
+
+Pre-requisito una tantum (popola il local repo Maven con i parent + i moduli `shared` e `core-server`):
+
+```bash
+mvn install -pl .,shared,core-server -DskipTests -Dspotless.check.skip=true -Dspotbugs.skip=true -Djacoco.skip=true
+```
+
+Atteso: splash screen → main menu (Single Player / LAN [Fase 7] / Online [Fase 6] / Regole / Impostazioni). Il primo avvio applica la lingua di sistema (con fallback Italiano) e crea la directory utente `~/.dama-italiana/` per preferenze e salvataggi.
+
+### Storage utente
+
+Il client persiste su file:
+
+| Path                                          | Contenuto                                                                 |
+|-----------------------------------------------|---------------------------------------------------------------------------|
+| `~/.dama-italiana/config.json`                | Preferenze (locale, scaling UI 100/125/150%, theme placeholder).           |
+| `~/.dama-italiana/saves/<slot>.json`          | Salvataggi multi-slot single-player (FR-SP-07).                           |
+| `~/.dama-italiana/saves/_autosave.json`       | Autosave riservato; sovrascritto ad ogni mossa (FR-SP-08, ATOMIC_MOVE).   |
+
+Schema dei salvataggi documentato in [`ARCHITECTURE.md`](ARCHITECTURE.md) ADR-031. Per resettare lo stato utente è sufficiente cancellare la directory `~/.dama-italiana/`.
+
+### Toggle lingua
+
+Le lingue disponibili in Fase 3 sono **Italiano** (default) e **Inglese**. Il cambio avviene da Settings → Lingua e richiede il riavvio del client (runtime hot-swap rinviato a Fase 11; vedi ADR-033).
+
+### Headless / dev mode
+
+I test FXML smoke usano `Platform.startup` con guard `Assumptions.assumeTrue(fxToolkitReady)`: in ambienti senza display vengono saltati anziché fallire. Per il fast loop di sviluppo F3:
+
+```bash
+mvn -pl client verify -DexcludedGroups=slow,performance
+```
+
+Tempo indicativo: ~30s. Esegue 264 test JUnit + JaCoCo (gate 60% line+branch) + Spotless + SpotBugs.
 
 ---
 
