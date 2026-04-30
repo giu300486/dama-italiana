@@ -1,0 +1,26 @@
+[
+  {
+    "captionKey": "rules.diagram.promotion.before",
+    "position": {
+      "whiteMen": [5],
+      "whiteKings": [],
+      "blackMen": [],
+      "blackKings": [],
+      "sideToMove": "WHITE",
+      "halfmoveClock": 0,
+      "history": []
+    }
+  },
+  {
+    "captionKey": "rules.diagram.promotion.after",
+    "position": {
+      "whiteMen": [],
+      "whiteKings": [1],
+      "blackMen": [],
+      "blackKings": [],
+      "sideToMove": "BLACK",
+      "halfmoveClock": 0,
+      "history": []
+    }
+  }
+]

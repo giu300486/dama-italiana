@@ -121,19 +121,91 @@
       <plugin>
         <groupId>org.jacoco</groupId>
         <artifactId>jacoco-maven-plugin</artifactId>
+        <executions>
+          <!-- Skip pure-JavaFX bootstrap and anonymous cell-factory inner classes from the report
+               and the gate (PLAN-fase-3 §Task 3.22). These classes can only be exercised through
+               a real JavaFX runtime / TestFX harness; their lines and branches in unit tests
+               would be artificial. -->
+          <execution>
+            <id>jacoco-report</id>
+            <phase>verify</phase>
+            <goals>
+              <goal>report</goal>
+            </goals>
+            <configuration>
+              <excludes>
+                <!-- JavaFX / Spring bootstrap glue (no testable logic). -->
+                <exclude>**/JavaFxApp.class</exclude>
+                <exclude>**/JavaFxAppContextHolder.class</exclude>
+                <exclude>**/ClientApplication.class</exclude>
+                <!-- JavaFX Alert wrapper. The UserPromptService interface is what tests mock;
+                     this implementation is only reachable on a live JavaFX thread. -->
+                <exclude>**/JavaFxUserPromptService.class</exclude>
+                <!-- Pure JavaFX cell-factory inner classes (TableCell / ListCell / Task /
+                     StringConverter) — instantiated by the FX runtime, no business logic. -->
+                <exclude>**/MoveHistoryView$MoveHistoryCell.class</exclude>
+                <exclude>**/LoadScreenController$MiniatureCell.class</exclude>
+                <exclude>**/RulesController$1.class</exclude>
+                <exclude>**/SettingsController$1.class</exclude>
+                <exclude>**/SplashController$1.class</exclude>
+              </excludes>
+            </configuration>
+          </execution>
+          <!-- Coverage gate for client (NFR-M-02): >= 60% line + branch on the BUNDLE.
+               haltOnFailure=true makes `mvn -pl client verify` fail when coverage regresses. -->
+          <execution>
+            <id>jacoco-check</id>
+            <phase>verify</phase>
+            <goals>
+              <goal>check</goal>
+            </goals>
+            <configuration>
+              <haltOnFailure>true</haltOnFailure>
+              <excludes>
+                <exclude>**/JavaFxApp.class</exclude>
+                <exclude>**/JavaFxAppContextHolder.class</exclude>
+                <exclude>**/ClientApplication.class</exclude>
+                <exclude>**/JavaFxUserPromptService.class</exclude>
+                <exclude>**/MoveHistoryView$MoveHistoryCell.class</exclude>
+                <exclude>**/LoadScreenController$MiniatureCell.class</exclude>
+                <exclude>**/RulesController$1.class</exclude>
+                <exclude>**/SettingsController$1.class</exclude>
+                <exclude>**/SplashController$1.class</exclude>
+              </excludes>
+              <rules>
+                <rule>
+                  <element>BUNDLE</element>
+                  <limits>
+                    <limit>
+                      <counter>LINE</counter>
+                      <value>COVEREDRATIO</value>
+                      <minimum>0.60</minimum>
+                    </limit>
+                    <limit>
+                      <counter>BRANCH</counter>
+                      <value>COVEREDRATIO</value>
+                      <minimum>0.60</minimum>
+                    </limit>
+                  </limits>
+                </rule>
+              </rules>
+            </configuration>
+          </execution>
+        </executions>
       </plugin>
       <plugin>
         <groupId>com.github.spotbugs</groupId>
         <artifactId>spotbugs-maven-plugin</artifactId>
       </plugin>
-      <!-- javafx-maven-plugin: only declared (not bound to verify lifecycle).
-           In Fase 0 there is no main class yet; it will be wired in Fase 3
-           (FR-SP-* and SPEC §13). Invocable manually via `mvn javafx:run`
-           once the bootstrap class exists.
-           TODO Fase 3: add <configuration><mainClass>com.damaitaliana.client.ClientApplication</mainClass></configuration>. -->
+      <!-- javafx-maven-plugin: invocable via `mvn -pl client javafx:run`.
+           Not bound to the verify lifecycle: launching the UI is a developer action,
+           not part of automated builds. -->
       <plugin>
         <groupId>org.openjfx</groupId>
         <artifactId>javafx-maven-plugin</artifactId>
+        <configuration>
+          <mainClass>com.damaitaliana.client.ClientApplication</mainClass>
+        </configuration>
       </plugin>
     </plugins>
   </build>
