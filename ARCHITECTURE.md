@@ -217,6 +217,81 @@ Riferimento autoritativo: `SPEC.md` Appendice B.
   - "Seconda migliore per score": più sottile ma non è ciò che dice SPEC; richiede ricerca duplicata o dell'intero `List<MoveScore>` invece del solo `bestMove`.
   - Epsilon-greedy sul punteggio: più "smooth" ma cambia il senso di "subottima".
 
+### ADR-029 — Bootstrap JavaFX con Spring Boot DI non-web
+
+- **Data**: 2026-04-28
+- **Stato**: Accepted (Fase 3)
+- **Contesto**: Il client deve avere DI completa (per riuso in mode "host LAN" che attiverà Jetty embedded in Fase 7) ma è una desktop app, non un server. JavaFX richiede che `Application.launch(...)` sia chiamato dal main thread; Spring Boot vuole il suo `ApplicationContext` come singleton. I due framework hanno tradizioni incompatibili sul ciclo di vita.
+- **Decisione**: `ClientApplication` è il `@SpringBootApplication` main: avvia il container con `webEnvironment=NONE` (no Tomcat, no Jetty), poi delega a `Application.launch(JavaFxApp.class)`. `JavaFxApp` riceve l'`ApplicationContext` via singleton statico `JavaFxAppContextHolder` (settato da `ClientApplication` prima del launch). `JavaFxApp.start(Stage)` istanzia `SceneRouter` (recuperato dal context) e mostra la prima scena. Lo shutdown chiude il context Spring nel `stop()` JavaFX.
+- **Conseguenze**:
+  - L'ordine di bootstrap è fissato: Spring start → context holder set → JavaFX launch → first scene.
+  - I bean `@Component`/`@Configuration` sono usabili dovunque, inclusi i FXML controller (vedi ADR-030).
+  - Test `@SpringBootTest` con `webEnvironment=NONE` non avviano JavaFX; i test FXML usano `Platform.startup` esplicitamente con guard `Assumptions.assumeTrue(fxToolkitReady)`.
+  - Una sessione "LAN host" (Fase 7) potrà cambiare il `webEnvironment` runtime profile-driven senza toccare l'entry point.
+- **Alternative considerate**:
+  - Spring senza Boot (`AnnotationConfigApplicationContext`): più leggero ma perde profili, `@ConfigurationProperties`, auto-configuration. Costo di config troppo alto.
+  - JavaFX prima di Spring (Application come main, Spring lazy): rompe `@ConfigurationProperties` binding al boot e complica i test.
+
+### ADR-030 — Architettura schermate: FXML + controller-factory Spring-aware
+
+- **Data**: 2026-04-28
+- **Stato**: Accepted (Fase 3)
+- **Contesto**: Ogni schermata della UI è un FXML con un controller annotato `@FXML`. Senza intervento, `FXMLLoader` istanzia il controller via `Class.newInstance()` — niente DI, niente accesso ai bean (`I18n`, `SceneRouter`, services).
+- **Decisione**: Ogni `FXMLLoader` configurato con `loader.setControllerFactory(applicationContext::getBean)`. I controller sono `@Component @Scope("prototype")`: prototype perché `FXMLLoader.load()` può essere chiamato più volte nella stessa sessione (es. modal save dialog) e ogni invocazione deve avere campi FXML freschi. Singleton sarebbe un bug: il secondo `load()` resetterebbe i `@FXML` del primo. `SceneRouter.show` carica FXML, applica tema + scaling globale, mostra. Splash è l'unica schermata `@Component` non-prototype perché unica e "first loaded".
+- **Conseguenze**:
+  - I controller possono avere ctor `(SceneRouter, I18n, ...services)` con parametri arbitrari, iniettati da Spring.
+  - I test "context-resolution" verificano che il bean si risolva nel context (lezione `feedback_spring_ui_tests`: i ctor multi-arg di `@Component` possono ingannare i test unit ma fallire al runtime se Spring non sa quale scegliere).
+  - I test "FXML smoke" verificano che `loader.load()` non lanci eccezioni — copertura della parte FXML che il context-resolution test non vede.
+- **Alternative considerate**:
+  - DI manuale con setter: scala male, errori di ordine difficili da diagnosticare.
+  - Singleton scope con reinizializzazione manuale: più boilerplate, errori silenti.
+
+### ADR-031 — Schema file salvataggi v1
+
+- **Data**: 2026-04-28
+- **Stato**: Accepted (Fase 3)
+- **Contesto**: SPEC §11 specifica multi-slot save + autosave. Serve uno schema JSON forward-compatible: il client di domani deve riconoscere i file di oggi e rifiutare in modo controllato file di un domani che non capisce.
+- **Decisione**: File JSON con campi top-level: `schemaVersion` (intero, attualmente `1`), `kind` (string discriminante; in F3 univoca `"SINGLE_PLAYER_GAME"` — vedi `SavedGame.KIND_SINGLE_PLAYER`; future fasi 6/7 introdurranno valori distinti per match LAN/Internet), `name` (string user-facing), `createdAt` / `updatedAt` (ISO-8601 UTC), `aiLevel` (`"PRINCIPIANTE"` | `"ESPERTO"` | `"CAMPIONE"`), `humanColor` (`"WHITE"` | `"BLACK"`), `currentState` (oggetto annidato: `whiteMen`, `whiteKings`, `blackMen`, `blackKings` — quattro liste FID disgiunte; `sideToMove`, `halfmoveClock`, `history` — lista di mosse FID-encoded). La distinzione **manuale ↔ autosave** non è codificata in `kind` ma nel **nome del file**: gli autosave usano lo slot riservato `_autosave.json` (escluso da `SaveService.listSlots`), i salvataggi manuali usano slot user-named. `SaveService.load` rifiuta `schemaVersion != 1` con `UnknownSchemaVersionException` (eccezione tipata, propagata fino a un toast localizzato).
+- **Conseguenze**:
+  - La rappresentazione `currentState` riusa `SerializedGameState` (4 liste FID), già scelto come canonical board format dal corpus regole (ADR-022). Coerenza: stesso formato in test + saves.
+  - Lista `moves` esposta nella rappresentazione interna del salvataggio per future viste "replay"; oggi `SinglePlayerGame.fromSaved` non la consuma — `currentState` è bastante per riprendere, gli `RandomGenerator` sono ricostruiti freschi.
+  - Una migrazione schema v2 (futuro) deve introdurre un loader specifico e fall-through controllato; il toast `[load|autosave].toast.error.schema.*` esiste già IT/EN.
+- **Alternative considerate**:
+  - Solo `moves` (replay-from-start) senza `currentState`: economico in spazio ma costa O(n) ad ogni load + non funziona per posizioni hand-built. Rifiutato.
+  - Solo `currentState` senza `moves`: niente replay/storia visibile per future feature. La storia è già mantenuta dentro `currentState.history`, ma `moves` rimane come campo future-proof dedicato.
+  - Binary format (Protobuf, Kryo): forward-compat più rigida, ma diff in code-review impossibili e debugging tedioso. JSON va bene per il volume di dati attesi.
+
+### ADR-032 — Autosave atomico (write-temp + ATOMIC_MOVE)
+
+- **Data**: 2026-04-28
+- **Stato**: Accepted (Fase 3)
+- **Contesto**: L'autosave si scrive ad ogni `applyMove` (umana e IA). Una scrittura interrotta a metà (kill, crash, batteria) lascerebbe `_autosave.json` corrotto, il che a riavvio si manifesta come "schema mismatch" o JSON parse error sul flusso più caldo del recovery — peggio dell'assenza dell'autosave.
+- **Decisione**: `SaveService.save` (e per estensione `AutosaveService.writeAutosave`) scrive prima su `<target>.tmp` nella stessa directory, poi `Files.move(tmp, target, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING)`. Su file system che non supportano `ATOMIC_MOVE` (FAT32, alcune share di rete) il fallback è `REPLACE_EXISTING` solo, con log WARN. Il file `.tmp` orfano (se la rename fallisce a metà) è ripulito al prossimo write.
+- **Conseguenze**:
+  - Nessun half-write visibile a un altro processo (es. il prossimo riavvio del client).
+  - `SinglePlayerAutosaveTrigger` swallowa `UncheckedIOException` con log WARN: la mossa successiva ritenta naturalmente, no popup d'errore (failure-tolerant per FR-SP-08).
+  - Il test `AutosaveE2ETest#writeFailureToleratedWhenSavesDirIsAFile` verifica che un `savesDir` impossibile da creare non rompa il flusso di gioco.
+- **Alternative considerate**:
+  - File lock: complica il polling cross-platform e aggiunge race tra processi diversi (improbabile per desktop single-user, ma overkill).
+  - Fsync esplicito: ortogonale; `Files.move` con `ATOMIC_MOVE` è già la primitiva giusta.
+  - Append-only log + replay: storage robusto ma file unbounded; gli autosave restano in posto fino a Termina/cancel.
+
+### ADR-033 — Localizzazione: `MessageSource` Spring + `LocaleService` bridge
+
+- **Data**: 2026-04-28
+- **Stato**: Accepted (Fase 3)
+- **Contesto**: SPEC §13.6 e NFR-U-01 richiedono IT/EN runtime-toggleable. L'utente cambia lingua in Settings → la UI riflette immediatamente. JavaFX `ResourceBundle` ha API ingombrante (FXML `%key` lookup) e niente fallback chain; Spring `MessageSource` è la primitiva di riuso.
+- **Decisione**: `MessageSourceConfig` espone un `ReloadableResourceBundleMessageSource` su `classpath:i18n/messages` con encoding UTF-8 esplicito (default Windows = `windows-1252` mangia gli accenti) e `defaultLocale=ITALIAN` (fallback). `useCodeAsDefaultMessage=false` → chiavi mancanti lanciano `NoSuchMessageException`. `LocaleService` (`@Component`) è il bridge tra `UserPreferences.locale()` e `Locale.setDefault(...)`, ed espone `current()`. `I18n` (`@Component`) wrappa `MessageSource.getMessage(code, args, localeService.current())` e converte `NoSuchMessageException` in `[code]` (placeholder visibilmente sbagliato durante lo sviluppo, niente crash a runtime). I FXML controller iniettano `I18n` (no `MessageSource` né `LocaleService` direttamente). Convenzione chiavi: hierarchical lowercase dotted (`screen.element.role`, es. `menu.singleplayer.title`, `setup.button.confirm`).
+- **Conseguenze**:
+  - Cambio lingua in Fase 3 richiede riavvio (§7.10 opzione A): `Locale.setDefault` non re-trigger-a i `setText` già emessi; runtime dynamic toggle in Fase 11 con observable bindings.
+  - `MessageSourceConfigTest#bothBundlesHaveSameKeySet` enforce parità IT↔EN: ogni nuova chiave aggiunta da un task deve apparire in entrambi i file properties altrimenti la build fallisce.
+  - `LocalizationE2ETest` (Task 3.21) pinna la contract controller→bundle per 87 chiavi referenziate dai controller principali.
+  - I diagrammi delle regole (ADR-022 schema posizioni) hanno caption keys `rules.diagram.<id>.caption` localizzati IT/EN, non strings hardcoded.
+- **Alternative considerate**:
+  - JavaFX `ResourceBundle` puro (`%key` in FXML): niente `MessageFormat` automatico, niente fallback chain elegante, niente integrazione DI. Rifiutato.
+  - i18next-style JSON: dipendenza extra, niente vantaggio per IT/EN-only.
+  - String catalog Java 21: ancora preview/incubator, troppo presto.
+
 ---
 
 ## Vincoli architetturali invariabili

@@ -1,0 +1,158 @@
+/*
+ * Light theme. Mirrors SPEC §13.2 design tokens.
+ *
+ * JavaFX CSS supports looked-up colors but not arbitrary value lookups, so spacing/radius/
+ * font-size tokens are inlined with a comment indicating their semantic name. Color tokens
+ * are real lookups and can be referenced by other stylesheets and overridden by the dark
+ * theme stub (theme-dark.css).
+ */
+
+.root {
+    /* Palette */
+    -color-bg-primary: #FAFAFA;
+    -color-bg-surface: #FFFFFF;
+    -color-bg-elevated: #FFFFFF;
+    -color-border-subtle: #E5E5E5;
+    -color-border-default: #D4D4D4;
+    -color-text-primary: #18181B;
+    -color-text-secondary: #71717A;
+    -color-accent: #2563EB;
+    -color-accent-hover: #1D4ED8;
+    -color-success: #16A34A;
+    -color-warning: #EAB308;
+    -color-danger: #DC2626;
+
+    /* Damiera */
+    -color-board-light: #F0D9B5;
+    -color-board-dark: #B58863;
+    -color-piece-white: #FAFAFA;
+    -color-piece-black: #1F2937;
+    -color-highlight-legal: #FBBF24;
+    -color-highlight-mandatory: #DC2626;
+
+    /* Typography (SPEC §13.2 font-family-base, font-size-md) */
+    -fx-font-family: "Inter", "Segoe UI", "Helvetica Neue", sans-serif;
+    -fx-font-size: 16px;
+
+    /* Base */
+    -fx-background-color: -color-bg-primary;
+    -fx-text-fill: -color-text-primary;
+}
+
+.label-title {
+    -fx-font-size: 24px; /* font-size-xl */
+    -fx-font-weight: bold;
+}
+
+.label-subtitle {
+    -fx-font-size: 20px; /* font-size-lg */
+    -fx-text-fill: -color-text-secondary;
+}
+
+.label-secondary {
+    -fx-text-fill: -color-text-secondary;
+    -fx-font-size: 14px; /* font-size-sm */
+}
+
+/* Button: default + 5 interactive states required by SPEC §13.2 */
+.button {
+    -fx-background-color: -color-accent;
+    -fx-text-fill: white;
+    -fx-padding: 8 16 8 16; /* spacing-2 spacing-4 */
+    -fx-background-radius: 8; /* radius-md */
+    -fx-cursor: hand;
+}
+.button:hover {
+    -fx-background-color: -color-accent-hover;
+}
+.button:pressed {
+    -fx-background-color: derive(-color-accent-hover, -10%);
+}
+.button:focused {
+    -fx-effect: dropshadow(gaussian, -color-accent, 6, 0.5, 0, 0);
+}
+.button:disabled {
+    -fx-opacity: 0.5;
+    -fx-cursor: default;
+}
+
+.button-secondary {
+    -fx-background-color: -color-bg-surface;
+    -fx-text-fill: -color-text-primary;
+    -fx-border-color: -color-border-default;
+    -fx-border-radius: 8;
+}
+.button-secondary:hover {
+    -fx-background-color: derive(-color-bg-surface, -3%);
+}
+
+/* Card: default + hover + focused */
+.card {
+    -fx-background-color: -color-bg-surface;
+    -fx-border-color: -color-border-subtle;
+    -fx-border-radius: 8;
+    -fx-background-radius: 8;
+    -fx-padding: 16;
+}
+.card:hover {
+    -fx-border-color: -color-border-default;
+}
+.card:focused {
+    -fx-border-color: -color-accent;
+}
+.card:disabled {
+    -fx-opacity: 0.5;
+}
+
+/* Card elevated with soft shadow */
+.card-elevated {
+    -fx-background-color: -color-bg-elevated;
+    -fx-background-radius: 8;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.10), 8, 0, 0, 2);
+    -fx-padding: 16;
+}
+
+.popover {
+    -fx-background-color: -color-bg-elevated;
+    -fx-background-radius: 12; /* radius-lg */
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.15), 16, 0, 0, 4);
+}
+
+/* Text field */
+.text-field {
+    -fx-background-color: -color-bg-surface;
+    -fx-border-color: -color-border-default;
+    -fx-border-radius: 4;  /* radius-sm */
+    -fx-background-radius: 4;
+    -fx-padding: 8 12 8 12;
+    -fx-text-fill: -color-text-primary;
+}
+.text-field:hover {
+    -fx-border-color: -color-text-secondary;
+}
+.text-field:focused {
+    -fx-border-color: -color-accent;
+}
+.text-field:disabled {
+    -fx-opacity: 0.5;
+}
+
+/* List cell */
+.list-cell {
+    -fx-padding: 8 12 8 12;
+    -fx-background-color: -color-bg-surface;
+    -fx-text-fill: -color-text-primary;
+}
+.list-cell:hover {
+    -fx-background-color: derive(-color-bg-surface, -3%);
+}
+.list-cell:selected {
+    -fx-background-color: -color-accent;
+    -fx-text-fill: white;
+}
+.list-cell:focused {
+    -fx-background-color: derive(-color-accent, 30%);
+}
+.list-cell:disabled {
+    -fx-opacity: 0.5;
+}

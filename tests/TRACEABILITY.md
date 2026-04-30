@@ -15,6 +15,19 @@
 | FR-SP-09  | Cronologia mosse in notazione FID                                        | `FidNotationTest`                                | `formatsSimpleMove`, `formatsMultiCapture`, `roundTrip*`              | Unit  |
 | FR-COM-01 | Validazione mosse server-side (engine canonico)                          | `ItalianRuleEngineMovementsTest` (applyMove path) | `applyMoveRejectsIllegalMove`                                       | Unit  |
 | FR-RUL-01 | Sezione Regole accessibile (regole eseguibili)                           | `RuleEngineCorpusTest`                           | tutte le 48 posizioni del corpus = regolamento eseguibile           | Unit  |
+| FR-SP-01  | Avvio partita SP vs CPU offline                                          | `MainMenuControllerTest` + `SinglePlayerSetupController` (manuale via `mvn javafx:run`) | Click su "Single Player" apre setup → conferma crea `SinglePlayerGame` e naviga BOARD | Unit + manual |
+| FR-SP-02  | Tre livelli di difficoltà (Principiante / Esperto / Campione) — UI       | `SinglePlayerSetupController` (ToggleGroup `levelGroup` con 3 RadioButton mappati 1-a-1 sull'enum `AiLevel`) | Verificato anche dal corpus AI di F2 + lancio manuale | Manual + F2 unit |
+| FR-SP-03  | Scelta colore Bianco / Nero / Casuale                                    | `SinglePlayerSetupController.selectedColorChoice` (visible via FXML) | Default Bianco; `ColorChoice.RANDOM` risolto via `RandomGenerator` iniettato | Manual |
+| FR-SP-04  | Highlight mosse legali al click sulla pedina (UI)                        | `SinglePlayerControllerTest` + `SinglePlayerE2ETest` | `selectedSquare`+`highlightLegalTargets` capture, A3.7 in-UI verifica           | Unit + E2E |
+| FR-SP-05  | Highlight cattura obbligatoria (style `pulse-mandatory`)                 | `SinglePlayerControllerTest` + `BoardRendererTest` | `mandatoryHighlightsRecomputeAfterEachMove` + cell rendering        | Unit |
+| FR-SP-06  | Undo/redo illimitato (coppia umana+IA come unità)                        | `SinglePlayerControllerTest` + `SinglePlayerE2ETest` + `BoardViewControllerTest` | `undoPair*`/`redoPair*` (9 test su Task 3.24), `undoRedoCycleRestoresAndReappliesHumanMove` (E2E), `onUndo/onRedoDelegatesToControllerUndoPair/RedoPair` (UI binding) | Unit + E2E |
+| FR-SP-07  | Multi-slot save (lista, carica, riprendi)                                | `SaveServiceTest` + `LoadScreenControllerTest` + `SaveLoadE2ETest` | save/load/list/delete + UI filter+sort, round-trip byte-equal      | Unit + E2E |
+| FR-SP-08  | Autosave write-through dopo ogni mossa + recovery prompt al riavvio      | `AutosaveServiceTest` + `SinglePlayerAutosaveTriggerTest` + `AutosaveE2ETest` | Round-trip recovery, schema mismatch toast, IO error tolerated     | Unit + E2E |
+| FR-SP-09  | Cronologia mosse in notazione FID                                        | `MoveHistoryViewModelTest` + `FidNotationTest`   | `appendingWhiteMoveCreatesNewRow`, `appendingBlackMoveCompletesRow`, `formatsCaptureSequenceWithCrossNotation`, `replaceWithHistory*` | Unit |
+| FR-RUL-02 | Navigazione 7 sezioni regole                                             | `RulesControllerTest` + `RulesScreenE2ETest`     | `allSevenSectionsAreExposedInDisplayOrder`, `openRulesAndNavigateSections` | Unit + E2E |
+| FR-RUL-03 | ≥ 5 diagrammi statici su ≥ 4 sezioni                                     | `RuleDiagramLoaderTest`                          | `coverageHasAtLeastFiveDiagramsAcrossAtLeastFourSections`           | Unit |
+| FR-RUL-04 | Mini-animazioni regole (opzionale §7.6)                                  | `RulesAnimationsTest`                            | 8 test su 3 Kind (SIMPLE_CAPTURE/MULTI_CAPTURE/PROMOTION) + animation builder | Unit |
+| FR-RUL-05 | Tutti i testi regole localizzati                                         | `RulesControllerTest#allSevenSectionsHaveLocalizedTitleAndBody` + `LocalizationE2ETest` | Bundle parity + 87 chiavi referenziate dai controller risolvono IT/EN | Unit + E2E |
 
 ---
 
@@ -23,8 +36,11 @@
 | NFR ID    | Descrizione SPEC                                                         | Test class / gate                                | Note                                                                  |
 |-----------|--------------------------------------------------------------------------|--------------------------------------------------|-----------------------------------------------------------------------|
 | NFR-M-01  | Coverage ≥ 80% sul motore di gioco (`shared`)                            | JaCoCo `check` su `shared/pom.xml`               | Soglia Fase 1 alzata a ≥ 90% modulo + ≥ 90% `rules`. Fase 2 aggiunge ≥ 85% sul package `ai` (PLAN-fase-2 §7.8). Gate `haltOnFailure=true` |
+| NFR-M-02  | Coverage ≥ 60% modulo `client` (line + branch)                           | JaCoCo `check` su `client/pom.xml`               | `haltOnFailure=true`, esclusi 9 file: bootstrap JavaFX/Spring (`JavaFxApp`, `JavaFxAppContextHolder`, `ClientApplication`), Alert wrapper (`JavaFxUserPromptService`), anonymous cell-factory (`MoveHistoryView$MoveHistoryCell`, `LoadScreenController$MiniatureCell`, `RulesController$1`, `SettingsController$1`, `SplashController$1`). Bundle dopo esclusioni: line 73.94%, branch 60.55%. |
 | NFR-M-04  | Stile codice Google Java Style                                           | Spotless `googleJavaFormat` (parent POM)         | Verifica obbligatoria in `mvn verify`                                |
 | NFR-P-02  | IA Campione ≤ 5s in posizioni di metà partita                            | `AiPerformanceTest#campioneRespondsWithinBudget` (`@Tag("performance")`) | Tolleranza 1.5x (PLAN-fase-2 §7.7) per CI; SPEC effettiva validata in dev locale |
+| NFR-U-01  | Localizzazione IT/EN runtime                                             | `MessageSourceConfigTest` + `LocalizationE2ETest` | Bundle parity, 87 chiavi controller risolvono IT/EN, `MessageFormat` placeholder substitution | Unit + E2E |
+| NFR-U-04  | Contrasto WCAG AA (light mode in F3)                                     | Verifica visiva del design system `theme-light.css` | Token contrast definiti SPEC §13.2; misura tool deferred F11 con dark mode toggle | Manual |
 
 ---
 
@@ -38,6 +54,36 @@
 | 17.1.8   | Pedina **non può** catturare la dama                                                                | `ItalianRuleEngineCapturesTest` + corpus          | `manCannotCaptureKing`, `manCannotCaptureKingButOtherManCanCaptureManIsLegal`, corpus `pedina-non-cattura-dama-*` | Unit |
 | 17.2.4   | Coverage ≥ 80% modulo `shared`                                                                      | JaCoCo gate                                       | `shared/pom.xml` — modulo ≥ 0.90, package `rules` ≥ 0.90, package `ai` ≥ 0.85 | Gate |
 | 17.2.5   | SAST SpotBugs senza warning High                                                                    | SpotBugs gate (parent POM)                        | threshold `High`, `failOnError=true`                                  | Gate |
+| 17.1.9   | Salvataggio multi-slot single-player (lista, carica, riprendi)                                      | `SaveLoadE2ETest`                                 | `saveThenLoadResumesAtSameState` + `deleteRemovesSlotFromListing`     | E2E |
+| 17.1.12  | Sezione regole in-app accessibile e completa                                                        | `RulesScreenE2ETest` + `RulesFxmlSmokeTest`      | `openRulesAndNavigateSections` + sezione default + diagrammi rendered | E2E |
+
+---
+
+## Acceptance criteria di Fase 3 (PLAN-fase-3.md §2.2)
+
+| ID    | Criterio                                                                                            | Verifica                                                                            |
+|-------|-----------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------|
+| A3.1  | `mvn -pl client verify` BUILD SUCCESS                                                               | Output Maven (264 test, JaCoCo + SpotBugs + Spotless verdi)                          |
+| A3.2  | `mvn -pl client javafx:run` lancia il client; splash → main menu senza eccezioni                    | Manuale (script test plan + screencast in REVIEW)                                   |
+| A3.3  | Partita end-to-end vs IA chiusa fino a stato terminale senza crash UI                                | `SinglePlayerE2ETest#humanFirstMoveAdvancesGameStateAndHistory` (light), full game manuale |
+| A3.4  | Salva con nome → ricarica → riprendi                                                                 | `SaveLoadE2ETest#saveThenLoadResumesAtSameState`                                    |
+| A3.5  | Autosave recovery (chiudi finestra → riapri → prompt riprendi)                                      | `AutosaveE2ETest#promptOnRestartWhenAutosavePresent`                                 |
+| A3.6  | Highlight cattura obbligatoria (`pulse-mandatory`)                                                  | `SinglePlayerControllerTest#mandatoryHighlightsRecomputeAfterEachMove` + `BoardRendererTest` |
+| A3.7  | Highlight mosse legali al click pedina propria                                                      | `SinglePlayerE2ETest#manCannotCaptureKingInUi` (verifica `highlightLegalTargets`) + `SinglePlayerControllerTest#clickOnOwnPieceHighlightsLegalTargets` |
+| A3.8  | Cronologia mosse in notazione FID (alternanza Bianco/Nero)                                           | `MoveHistoryViewModelTest#appendingWhiteMoveCreatesNewRow`, `appendingBlackMoveCompletesRow`, `multipleTurnsProduceMultipleRows` |
+| A3.9  | Localizzazione IT/EN funzionante, no stringhe hardcoded                                              | `LocalizationE2ETest` (87 chiavi IT+EN) + `MessageSourceConfigTest#bothBundlesHaveSameKeySet` |
+| A3.10 | Sezione regole accessibile + navigazione 7 sezioni                                                   | `RulesScreenE2ETest#openRulesAndNavigateSections`                                    |
+| A3.11 | Pedina non cattura dama (end-to-end UI)                                                              | `SinglePlayerE2ETest#manCannotCaptureKingInUi`                                       |
+| A3.12 | Promozione termina turno (end-to-end UI)                                                             | `SinglePlayerE2ETest#promotionStopsSequenceInUi`                                     |
+| A3.13 | Coverage ≥ 60% line+branch sui package non-view del client                                          | JaCoCo `haltOnFailure=true` (`client/pom.xml`); 9 esclusioni esplicite              |
+| A3.14 | Spotless OK, SpotBugs 0 High su `client`                                                            | Output Maven verify                                                                 |
+| A3.15 | `package-info.java` per ogni nuovo sotto-package                                                    | `client/.../package-info.java` per app/ui[+menu/setup/board+animation/save/settings/rules/splash]/controller/persistence/i18n |
+| A3.16 | TRACEABILITY aggiornato (FR-SP-01..09, FR-RUL-01..05, NFR-U-01, NFR-U-04, NFR-M-02 client, AC §17.1.{1,7,8,9,12}) | Questo file                                                                         |
+| A3.17 | Nessun TODO/FIXME pending in `client/src/main/java/`                                                | grep                                                                                |
+| A3.18 | Test corpus regole F1 + gating IA F2 continuano a passare (regression)                              | `RuleEngineCorpusTest` + `AiTournamentSimulationTest` verdi                          |
+| A3.19 | `mvn clean verify` (root) BUILD SUCCESS                                                             | Output Maven                                                                        |
+| A3.20 | Schema versionato saves: `"schemaVersion": 1` + rifiuto versioni ignote                             | `SaveServiceTest#loadFailsOnUnknownSchemaVersion`                                    |
+| A3.21 | Atomicità autosave (write-temp + ATOMIC_MOVE)                                                       | `SaveServiceTest#saveOverwritesExistingSlotAtomically` + `saveDoesNotLeaveTempFileBehind` + `AutosaveE2ETest#writeFailureToleratedWhenSavesDirIsAFile` |
 
 ---
 

@@ -1,0 +1,79 @@
+/*
+ * Component styles specific to the board renderer, move history pane and game-flow widgets.
+ * Loaded after the active theme stylesheet so it can reference the looked-up color tokens.
+ */
+
+/* ====== BOARD ====== */
+
+.board-cell-light {
+    -fx-background-color: -color-board-light;
+}
+.board-cell-dark {
+    -fx-background-color: -color-board-dark;
+}
+.board-cell-selected {
+    -fx-effect: innershadow(gaussian, -color-accent, 12, 0.6, 0, 0);
+}
+
+/* Pieces */
+.piece {
+    -fx-fill: -color-piece-white;
+    -fx-stroke: -color-text-primary;
+    -fx-stroke-width: 2;
+}
+.piece-black {
+    -fx-fill: -color-piece-black;
+    -fx-stroke: -color-bg-surface;
+}
+.piece-king {
+    -fx-stroke: -color-warning;
+    -fx-stroke-width: 3;
+}
+
+/* Move highlights — FR-SP-04 (legal targets) and FR-SP-05 (mandatory captures) */
+.legal-target {
+    -fx-background-color: -color-highlight-legal;
+    -fx-background-radius: 4;
+    -fx-opacity: 0.65;
+}
+.pulse-mandatory {
+    -fx-background-color: -color-highlight-mandatory;
+    -fx-background-radius: 4;
+    -fx-opacity: 0.7;
+}
+.cell-focused-keyboard {
+    -fx-border-color: -color-accent;
+    -fx-border-width: 2;
+    -fx-border-radius: 2;
+    -fx-border-insets: 1;
+}
+
+/* ====== STATUS PANE ====== */
+
+.status-pane {
+    -fx-padding: 4 0 12 0;
+}
+
+.side-chip {
+    -fx-background-radius: 999;
+    -fx-border-radius: 999;
+    -fx-border-width: 1;
+    -fx-border-color: -color-text-secondary;
+}
+.side-chip-white {
+    -fx-background-color: -color-piece-white;
+}
+.side-chip-black {
+    -fx-background-color: -color-piece-black;
+}
+
+/* ====== MOVE HISTORY ====== */
+
+.move-history-row {
+    -fx-padding: 4 8 4 8;
+    -fx-font-family: "Inter", "Segoe UI", monospace;
+}
+.move-history-row-current {
+    -fx-background-color: derive(-color-bg-surface, -5%);
+    -fx-font-weight: bold;
+}

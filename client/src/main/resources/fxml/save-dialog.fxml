@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.VBox?>
+
+<VBox xmlns:fx="http://javafx.com/fxml/1"
+      styleClass="card-elevated" alignment="TOP_LEFT" spacing="16"
+      prefWidth="420">
+    <padding>
+        <Insets top="20" right="20" bottom="20" left="20"/>
+    </padding>
+
+    <Label fx:id="titleLabel" styleClass="label-title"/>
+
+    <VBox spacing="6">
+        <Label fx:id="nameLabel" styleClass="label-secondary"/>
+        <TextField fx:id="nameField"/>
+        <Label fx:id="errorLabel" styleClass="label-secondary" managed="false" visible="false"/>
+    </VBox>
+
+    <HBox spacing="12" alignment="CENTER_RIGHT">
+        <Button fx:id="cancelButton" onAction="#onCancel" styleClass="button-secondary"/>
+        <Region HBox.hgrow="ALWAYS" maxWidth="Infinity"/>
+        <Button fx:id="confirmButton" onAction="#onConfirm" defaultButton="true"/>
+    </HBox>
+</VBox>

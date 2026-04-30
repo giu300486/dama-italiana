@@ -1,0 +1,33 @@
+/*
+ * Dark theme stub (SPEC §13.2). Not loaded by ThemeService in Fase 3 (PLAN-fase-3 §7.3):
+ * the toggle in Settings is disabled; runtime switch arrives in Fase 11 along with WCAG AA
+ * verification in dark mode. This file exists so the design tokens are tracked alongside
+ * the light theme and the eventual switch is a one-line ThemeService change.
+ */
+
+.root {
+    -color-bg-primary: #0F172A;
+    -color-bg-surface: #1E293B;
+    -color-bg-elevated: #1E293B;
+    -color-border-subtle: #334155;
+    -color-border-default: #475569;
+    -color-text-primary: #F1F5F9;
+    -color-text-secondary: #94A3B8;
+    -color-accent: #3B82F6;
+    -color-accent-hover: #60A5FA;
+    -color-success: #4ADE80;
+    -color-warning: #FACC15;
+    -color-danger: #F87171;
+
+    -color-board-light: #475569;
+    -color-board-dark: #1E293B;
+    -color-piece-white: #F1F5F9;
+    -color-piece-black: #0F172A;
+    -color-highlight-legal: #FBBF24;
+    -color-highlight-mandatory: #F87171;
+
+    -fx-font-family: "Inter", "Segoe UI", "Helvetica Neue", sans-serif;
+    -fx-font-size: 16px;
+    -fx-background-color: -color-bg-primary;
+    -fx-text-fill: -color-text-primary;
+}
