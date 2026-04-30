@@ -8,6 +8,15 @@ Il formato è basato su [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1
 
 ### Changed
 
+- **SPEC.md v2.2** (2026-04-30) — pull-forward per esigenza **demo cliente Win 10/11**, applicato post-approvazione PLAN-fase-3.5 §10. CR-F3.5-001..005:
+  - **§13.2 Design system**: riscritta intera sezione con direzione estetica "videogame premium wood". Token color rifatti (palette warm wood: dark-roast / cream / gold antique / deep red); aggiunti `-font-family-display` (Playfair Display serif) + token motion `-easing-out-back`; aggiunta sotto-sezione 13.2.1 (asset visuali tavola: texture legno + cornice frame) + 13.2.3 (asset licensing CC0/CC-BY con CREDITS.md inventory). Inter resta UI font.
+  - **§13.3 Animazioni**: separata in due blocchi. "Animazioni base (Fase 3)" preservato (250/200/500/800ms OUT_QUAD). "Animazioni avanzate (Fase 3.5)" aggiunge: mossa con OUT_BACK (overshoot juicy), particle puff su cattura (8-12 nodi, 350ms), raggi dorati radiali su promozione (8-12, 600ms), glow halo DropShadow esterno cycle 1200ms su cattura obbligatoria. Niente camera shake (escluso per non distrarre).
+  - **§13.4 Audio**: separato SFX (preservato) + music ambient (Fase 3.5). Music: 3-5 tracce orchestrali soft, playlist random shuffle, default 30%, mutabile, persistence in `config.json` (`musicVolumePercent`/`sfxVolumePercent`/`musicMuted`/`sfxMuted`). Stile dichiarato "tranquillo da concentrazione, no battle/heroic".
+  - **§16 Fase 3.5** (nuova): mini-fase intermedia tra F3 e F4, pull-forward parziale di F11, con acceptance "cliente apre installer Win, gioca demo SP completa, percepisce stile videogame premium + audio coerente".
+  - **§16 Fase 11**: rimosse "Audio + animazioni avanzate" (anticipate F3.5) e jpackage Windows (anticipato F3.5). Restano in F11 jpackage Mac+Linux + dark toggle + replay + profilo + report + monitoring + docker.
+  - **Frontmatter**: bump 2.1 → 2.2 con storico versioni inline.
+  - **Decisione utente** (2026-04-30, in-thread): "PLAN ok, SPEC ok, branch+tag ok, parti".
+
 - **SPEC.md v2.1** (2026-04-30) — clarifiche post-REVIEW Fase 3, applicate a chiusura del flusso CR (CLAUDE.md §1):
   - **§4.1 FR-SP-06**: aggiunta nota di granularità undo/redo: una coppia (mossa umana + risposta IA) annullata come unità singola, depth limitata solo dalla memoria. Allinea SPEC alla semantica fissata in PLAN-fase-3 §7.13 (stop point opzione A) e implementata in Task 3.24 (commit `74de2af`).
   - **§13.5 Accessibilità**: aggiunta annotazione "*Implementazione per fase*" che documenta esplicitamente quanto è in F3 (`accessibleText` inglese univoco, scaling 100/125/150, keyboard nav board) e cosa è **deferred F11** (localizzazione IT/EN dei testi `accessibleText`, pattern daltonismo). Risolve il REQUIREMENT_GAP latente che la REVIEW Fase 3 ha evidenziato come finding F-005 (DOC_GAP).
