@@ -19,7 +19,7 @@ class SfxTest {
       assertThat(sfx.resourcePath())
           .as("resource path of %s", sfx)
           .startsWith("/assets/audio/sfx/")
-          .endsWith(".ogg");
+          .endsWith(".wav");
     }
   }
 

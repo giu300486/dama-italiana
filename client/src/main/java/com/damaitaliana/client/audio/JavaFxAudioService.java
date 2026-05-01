@@ -46,15 +46,17 @@ public class JavaFxAudioService implements AudioService {
 
   /**
    * Music tracks bundled in {@code /assets/audio/music/} per CREDITS.md (4 CC0 ambient tracks).
-   * Files missing at runtime are skipped with a WARN log line; if none are present, the music bus
-   * stays silent and {@link #playMusicShuffle()} becomes a no-op.
+   * Mixed format: {@code calm_piano_1} ships natively as MP3; the other three were uploaded as WAV
+   * PCM on OpenGameArt and are committed as-is — JavaFX Media reads both formats. Files missing at
+   * runtime are skipped with a WARN log line; if none are present, the music bus stays silent and
+   * {@link #playMusicShuffle()} becomes a no-op.
    */
   static final List<String> MUSIC_TRACKS =
       List.of(
-          "/assets/audio/music/calm_piano_1.ogg",
-          "/assets/audio/music/first_light_particles.ogg",
-          "/assets/audio/music/at_home_orchestral.ogg",
-          "/assets/audio/music/peaceful_forest.ogg");
+          "/assets/audio/music/calm_piano_1.mp3",
+          "/assets/audio/music/first_light_particles.wav",
+          "/assets/audio/music/at_home_orchestral.wav",
+          "/assets/audio/music/peaceful_forest.wav");
 
   private final PreferencesService preferencesService;
   private final Map<Sfx, MediaPlayer> sfxPlayers = new EnumMap<>(Sfx.class);

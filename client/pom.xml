@@ -114,6 +114,45 @@
       <groupId>org.testfx</groupId>
       <artifactId>testfx-core</artifactId>
     </dependency>
+
+    <!--
+      Asset pipeline tooling — OGG Vorbis decoder used ONLY by
+      `client/src/test/java/.../buildtools/OggToWavConverter.java` (one-shot main).
+      JavaFX Media on Windows does not decode OGG (verified empirically), so any new
+      `*.ogg` asset in `assets/audio/sfx/` is converted to `*.wav` PCM at acquisition
+      time and the WAV is committed. These two libs auto-register an `AudioFileReader`
+      SPI into `javax.sound.sampled` so plain `AudioSystem.getAudioInputStream(oggFile)`
+      returns decodable Vorbis frames; `OggToWavConverter` then re-encodes to PCM and
+      writes WAV via `AudioSystem.write(..., AudioFileFormat.Type.WAVE, ...)`.
+
+      `<scope>test</scope>` keeps both jars OUT of the runtime classpath and OUT of
+      the jpackage MSI installer (Task 3.5.14): nothing in production code references
+      jorbis/vorbisspi. They are LGPL — by not redistributing them no LGPL obligation
+      is triggered.
+
+      Run the converter once per asset acquisition with:
+        mvn -pl client exec:java
+            -Dexec.classpathScope=test
+            -Dexec.mainClass="com.damaitaliana.client.buildtools.OggToWavConverter"
+            -Dexec.args="<inputDir> <outputDir>"
+
+      SPEC §6 dependency note: jorbis + vorbisspi are NOT listed in §6 because §6
+      enumerates the runtime stack (Spring Boot, JavaFX, JmDNS, Jackson, etc.); these
+      are tooling-scope only. Documented as a deliberate informal exception in
+      AI_CONTEXT.md (CLAUDE.md §8 anti-pattern #13 grey area: build-time tooling).
+    -->
+    <dependency>
+      <groupId>com.googlecode.soundlibs</groupId>
+      <artifactId>jorbis</artifactId>
+      <version>0.0.17.4</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.googlecode.soundlibs</groupId>
+      <artifactId>vorbisspi</artifactId>
+      <version>1.0.3.3</version>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <build>

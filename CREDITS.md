@@ -61,44 +61,69 @@ embedding.
 ## Audio — Music
 
 Sorgenti da [OpenGameArt.org](https://opengameart.org), filtrate per CC0.
-Ogni pagina mostra la stringa "CC0" verbatim. 3 tracce su 4 sono WAV
-all'origine; il re-encoding a OGG Vorbis q5 (`ffmpeg -i in.wav -c:a libvorbis
--q:a 5 out.ogg`) è permesso da CC0.
+Ogni pagina mostra la stringa "CC0" verbatim.
 
-> **Stato binari**: il download dei 4 file e il re-encoding sono **deferred
-> a Task 3.5.4** (AudioService implementation). Motivazione: il setup di
-> ffmpeg portable in Task 3.5.1 ha richiesto un download non completato; il
-> re-encoding sarà eseguito in 3.5.4 come parte naturale dell'integrazione
-> AudioService. Selezioni e URL sotto sono **definitivi e approvati**.
+JavaFX Media legge nativamente MP3 e WAV PCM su Windows (Microsoft Media
+Foundation backend). Le 4 tracce sono committate **as-downloaded**, niente
+re-encoding: 1 brano è MP3 all'origine, 3 sono WAV PCM. Costo disco totale
+~67 MB; CC0 permette esplicitamente la redistribuzione senza modifiche.
 
-| Local file | Source page | Direct file URL | License | Author | Origine size |
+| Local file | Source page | Direct file URL | License | Author | Size on disk |
 |---|---|---|---|---|---:|
-| `audio/music/calm_piano_1.ogg` | https://opengameart.org/content/calm-piano-1-vaporware | https://opengameart.org/sites/default/files/003_Vaporware_2.mp3 | CC0 1.0 | The Cynic Project (cynicmusic) | MP3 6.6 MB (no re-encode) |
-| `audio/music/first_light_particles.ogg` | https://opengameart.org/content/first-light-particles-%E2%80%93-cc0-atmospheric-pianoambient-track | https://opengameart.org/sites/default/files/first_light_particles_0.wav | CC0 1.0 | Yoiyami | WAV 25.3 MB (re-encode WAV→OGG) |
-| `audio/music/at_home_orchestral.ogg` | https://opengameart.org/content/at-home-orchestral | https://opengameart.org/sites/default/files/cinematic-calm.wav | CC0 1.0 | Wolfgang_ | WAV 13.1 MB (re-encode) |
-| `audio/music/peaceful_forest.ogg` | https://opengameart.org/content/peaceful-forest | https://opengameart.org/sites/default/files/Peaceful%20Forest.wav | CC0 1.0 | Samza | WAV 22.3 MB (re-encode) |
+| `audio/music/calm_piano_1.mp3` | https://opengameart.org/content/calm-piano-1-vaporware | https://opengameart.org/sites/default/files/003_Vaporware_2.mp3 | CC0 1.0 | The Cynic Project (cynicmusic) | 6.30 MB |
+| `audio/music/first_light_particles.wav` | https://opengameart.org/content/first-light-particles-%E2%80%93-cc0-atmospheric-pianoambient-track | https://opengameart.org/sites/default/files/first_light_particles_0.wav | CC0 1.0 | Yoiyami | 24.12 MB |
+| `audio/music/at_home_orchestral.wav` | https://opengameart.org/content/at-home-orchestral | https://opengameart.org/sites/default/files/cinematic-calm.wav | CC0 1.0 | Wolfgang_ | 12.50 MB |
+| `audio/music/peaceful_forest.wav` | https://opengameart.org/content/peaceful-forest | https://opengameart.org/sites/default/files/Peaceful%20Forest.wav | CC0 1.0 | Samza | 21.23 MB |
 
 ## Audio — SFX
 
 Tutti i pack [Kenney.nl](https://kenney.nl) sono CC0 1.0 a livello di sito
 (banner globale + stringa "License: Creative Commons CC0" su ogni pack page).
-File specifici estratti dai pack ZIP, rinominati nel canonical naming e
-copiati nel repo. Durate **verificate via mutagen** (Python OGG metadata
-reader) il 2026-05-01.
+File specifici estratti dai pack ZIP nel canonical naming. Durate
+**verificate via mutagen** (Python OGG metadata reader) il 2026-05-01 sul
+master OGG; le tabelle sotto mostrano sia il master OGG sia il WAV PCM
+distribuito al runtime.
 
-| Local file | Source pack | Source filename in pack | License | Duration | Size on disk |
+### Pipeline format (Task 3.5.4 follow-up, 2026-05-01)
+
+JavaFX Media su Windows **non decodifica OGG Vorbis** — verifica empirica
+del 2026-05-01 con un mini-`MediaPlayer` che ha restituito `MediaException —
+Unrecognized file signature!` su tutti i file. I pack Kenney distribuiscono
+**solo OGG**, niente WAV. Per preservare la selezione curata sopra senza
+rifare l'asset acquisition, è stato introdotto:
+
+- **Master OGG** in `client/src/main/resources/assets/audio/sfx-master/`
+  (committati per audit trail, ~70 KB totali). Sorgente di verità.
+- **WAV PCM** in `client/src/main/resources/assets/audio/sfx/` (committati,
+  caricati a runtime da `Sfx.resourcePath()`).
+- **Tool di conversione**: `com.damaitaliana.client.buildtools.OggToWavConverter`
+  (`client/src/test/java/`), main Java pure-JOrbis (low-level
+  Stream/Packet API, modellata su `com.jcraft.jorbis.DecodeExample`),
+  decodifica deterministica anche per clip brevissimi (<400 ms — la rotta
+  via `javax.sound.sampled` SPI ha mostrato un bug con clip <400 ms).
+  Dipendenze `<scope>test</scope>`: `com.googlecode.soundlibs:jorbis:0.0.17.4`
+  + `com.googlecode.soundlibs:vorbisspi:1.0.3.3` (LGPL — non ridistribuite,
+  nessun obbligo). Esecuzione manuale al refresh asset:
+  ```
+  mvn -pl client exec:java \
+      -Dexec.classpathScope=test \
+      -Dexec.mainClass="com.damaitaliana.client.buildtools.OggToWavConverter" \
+      -Dexec.args="client/src/main/resources/assets/audio/sfx-master \
+                   client/src/main/resources/assets/audio/sfx"
+  ```
+
+| Local file | Source pack | Source filename in pack | License | Master OGG | WAV PCM |
 |---|---|---|---|---:|---:|
-| `audio/sfx/move.ogg` | https://kenney.nl/assets/impact-sounds | `Audio/impactWood_light_000.ogg` | CC0 1.0 | 266 ms | 6.2 KB |
-| `audio/sfx/capture.ogg` | https://kenney.nl/assets/impact-sounds | `Audio/impactWood_heavy_000.ogg` | CC0 1.0 | 313 ms | 6.1 KB |
-| `audio/sfx/promotion.ogg` | https://kenney.nl/assets/interface-sounds | `Audio/confirmation_002.ogg` | CC0 1.0 | 539 ms | 13.8 KB |
-| `audio/sfx/illegal.ogg` | https://kenney.nl/assets/interface-sounds | `Audio/error_001.ogg` | CC0 1.0 | 165 ms | 7.2 KB |
-| `audio/sfx/win.ogg` | https://kenney.nl/assets/music-jingles | `Audio/Pizzicato jingles/jingles_PIZZI07.ogg` | CC0 1.0 | 1.32 s | 18.7 KB |
-| `audio/sfx/lose.ogg` | https://kenney.nl/assets/music-jingles | `Audio/Pizzicato jingles/jingles_PIZZI03.ogg` | CC0 1.0 | 1.15 s | 16.6 KB |
+| `audio/sfx/move.wav` | https://kenney.nl/assets/impact-sounds | `Audio/impactWood_light_000.ogg` | CC0 1.0 | 6.2 KB / 266 ms | 47.3 KB |
+| `audio/sfx/capture.wav` | https://kenney.nl/assets/impact-sounds | `Audio/impactWood_heavy_000.ogg` | CC0 1.0 | 6.1 KB / 313 ms | 54.8 KB |
+| `audio/sfx/promotion.wav` | https://kenney.nl/assets/interface-sounds | `Audio/confirmation_002.ogg` | CC0 1.0 | 13.8 KB / 539 ms | 46.5 KB |
+| `audio/sfx/illegal.wav` | https://kenney.nl/assets/interface-sounds | `Audio/error_001.ogg` | CC0 1.0 | 7.2 KB / 165 ms | 29.8 KB |
+| `audio/sfx/win.wav` | https://kenney.nl/assets/music-jingles | `Audio/Pizzicato jingles/jingles_PIZZI07.ogg` | CC0 1.0 | 18.7 KB / 1.32 s | 228.1 KB |
+| `audio/sfx/lose.wav` | https://kenney.nl/assets/music-jingles | `Audio/Pizzicato jingles/jingles_PIZZI03.ogg` | CC0 1.0 | 16.6 KB / 1.15 s | 197.6 KB |
 
-Tutti i file sono OGG Vorbis 44100 Hz; SFX brevi sono stereo o mono a
-seconda del pack (Impact Sounds: stereo 160 kbps; Interface Sounds: mono
-96-239 kbps; Music Jingles: stereo 160 kbps). JavaFX Media supporta
-nativamente entrambi i formati.
+Master OGG: 44100 Hz, stereo (Impact + Music Jingles) o mono (Interface
+brevi); WAV: 44100 Hz, 16-bit signed little-endian, stessi canali. Totale
+WAV ~600 KB.
 
 ---
 

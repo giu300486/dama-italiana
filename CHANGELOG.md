@@ -6,6 +6,19 @@ Il formato è basato su [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1
 
 ## [Unreleased]
 
+### Changed
+
+- **Task 3.5.4 follow-up — audio formato pipeline (2026-05-01)**: dopo verifica empirica del 2026-05-01, **JavaFX Media su Windows non decodifica OGG Vorbis** — `MediaException — Unrecognized file signature!`. Tutti i 3 pack Kenney usati in Task 3.5.1 distribuiscono solo `.ogg`, niente `.wav`. **Soluzione (Opzione 2 approvata dall'utente)**: pipeline pure-Java OGG→WAV in fase di asset acquisition.
+  - **Master OGG preservati** in `client/src/main/resources/assets/audio/sfx-master/` (audit trail Task 3.5.1, ~70 KB totali, sorgente di verità).
+  - **WAV PCM 16-bit signed LE** committati in `client/src/main/resources/assets/audio/sfx/` (~600 KB, caricati a runtime da `Sfx.resourcePath()`).
+  - **Tool**: `com.damaitaliana.client.buildtools.OggToWavConverter` (`client/src/test/java/`), main Java basato sull'API low-level JOrbis (Page/Packet/StreamState/SyncState/DspState/Block, modellato su `com.jcraft.jorbis.DecodeExample`). La rotta via `javax.sound.sampled` SPI è stata tentata ma ha mostrato un bug con clip <400 ms (`pcm.read()` ritorna 0 prematuramente per buffer interno underrun); switch al low-level JOrbis dà output deterministico per tutte le 6 SFX.
+  - **Dipendenze build-only** aggiunte a `client/pom.xml` con `<scope>test</scope>` (NON shippate nell'installer demo MSI di Task 3.5.14): `com.googlecode.soundlibs:jorbis:0.0.17.4` (~85 KB, decoder OGG Vorbis pure-Java) + `com.googlecode.soundlibs:vorbisspi:1.0.3.3` (~15 KB, registra `AudioFileReader` SPI in `javax.sound.sampled`). Entrambe LGPL — non ridistribuendole non si attiva nessun obbligo. **Eccezione SPEC §6** documentata in `AI_CONTEXT.md` come "tooling di asset pipeline" (CLAUDE.md §8 anti-pattern #13 grey area: build-time only).
+  - **Sfx.java** aggiornato: ogni `resourcePath()` da `.ogg` → `.wav` (i 6 file MOVE/CAPTURE/PROMOTION/ILLEGAL/VICTORY/DEFEAT). `SfxTest` assertion `.endsWith(".ogg")` → `.wav`.
+  - **Music binari finalmente committati** in `client/src/main/resources/assets/audio/music/`: 1 MP3 (`calm_piano_1.mp3`, 6.30 MB) + 3 WAV PCM (`first_light_particles.wav` 24.12 MB, `at_home_orchestral.wav` 12.50 MB, `peaceful_forest.wav` 21.23 MB). Totale ~64 MB. Niente re-encoding necessario: JavaFX Media legge MP3 e WAV PCM nativamente. `JavaFxAudioService.MUSIC_TRACKS` aggiornato con le estensioni reali.
+  - **Test**: `SfxPlaybackSmokeTest` (1 test) sostituisce il temporaneo `OggCodecSmokeTest`; verifica che ogni `Sfx.resourcePath()` carichi cleanly via `javax.sound.sampled.AudioSystem.getAudioInputStream` (encoding=PCM_SIGNED, channels∈[1,2], frameLength>0). Headless-friendly, niente JavaFX boot.
+  - **CREDITS.md** riscritto sezione Audio: nuova sotto-sezione "Pipeline format" che documenta il workflow OGG-master/WAV-runtime + comando `mvn exec:java` per ri-converte; tabella SFX ora ha colonne separate "Master OGG" e "WAV PCM"; sezione Music documenta as-downloaded format (MP3+WAV).
+  - `mvn -pl client verify -DexcludedGroups=slow,performance` BUILD SUCCESS, **301 test totali** (+1 `SfxPlaybackSmokeTest`, -1 `OggCodecSmokeTest`), JaCoCo client gate ✅, SpotBugs 0, Spotless OK.
+
 ### Added
 
 - **Task 3.5.4** — AudioService implementazione + Settings integration (Fase 3.5, branch `feature/3.5-visual-polish-and-audio`):
