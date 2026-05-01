@@ -343,3 +343,53 @@
 .list-cell:disabled {
     -fx-opacity: 0.5;
 }
+
+/* ====== SPLASH SCREEN (Task 3.5.9) ====== */
+
+/* Polished wood backdrop using the frame texture (Task 3.5.1 CC0). */
+.splash-root {
+    -fx-background-image: url("/assets/textures/frame.jpg");
+    -fx-background-size: cover;
+    -fx-background-position: center;
+}
+
+/* Hero title sits a bit higher and gets a subtle drop-shadow so the gold reads
+ * cleanly against the wood texture. Inherits font-family/size from .label-display + lg. */
+.splash-title {
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.55), 6, 0.4, 0, 2);
+}
+
+/* Italic Playfair subtitle in muted gold, smaller than the title. */
+.splash-subtitle {
+    -fx-font-family: "Playfair Display", "Cormorant Garamond", "Georgia", serif;
+    -fx-font-style: italic;
+    -fx-font-size: 18px;
+    -fx-text-fill: -color-accent-gold-hover;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.45), 4, 0.35, 0, 1);
+}
+
+/* Wood-themed indeterminate progress bar: dark walnut track, gold sweep. */
+.splash-progress {
+    -fx-pref-height: 10;
+    -fx-accent: -color-accent-gold;
+}
+.splash-progress > .track {
+    -fx-background-color: -color-bg-surface;
+    -fx-background-radius: 6;
+    -fx-border-color: -color-border-frame;
+    -fx-border-radius: 6;
+    -fx-border-width: 1;
+}
+.splash-progress > .bar {
+    -fx-background-color: linear-gradient(to right, -color-accent-gold-hover, -color-accent-gold);
+    -fx-background-radius: 5;
+    -fx-background-insets: 1;
+    -fx-effect: dropshadow(gaussian, -color-accent-gold, 6, 0.55, 0, 0);
+}
+
+/* Loading text under the progress bar — cream on wood, smaller than the body label. */
+.splash-loading {
+    -fx-text-fill: -color-text-on-dark;
+    -fx-font-style: italic;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.45), 3, 0.35, 0, 1);
+}
