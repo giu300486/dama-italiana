@@ -195,4 +195,4 @@ Findings emersi durante review manuale:
 - [x] Findings REVIEW (F-001, F-002) entrambi RESOLVED.
 
 **Test plan chiuso il**: 2026-05-02
-**Commit di chiusura**: _(set after commit)_
+**Commit di chiusura**: `108d158`
