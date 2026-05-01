@@ -22,7 +22,7 @@ import javafx.util.Duration;
  */
 public final class MoveAnimator {
 
-  /** SPEC §13.3 — TranslateTransition 250 ms easing OUT_QUAD for piece moves. */
+  /** SPEC §13.3 — TranslateTransition 250 ms with out-back overshoot for piece moves. */
   public static final Duration MOVE_DURATION = Duration.millis(250);
 
   /** SPEC §13.3 — ScaleTransition 200 ms scale-out + FadeTransition parallela for captures. */
@@ -34,8 +34,29 @@ public final class MoveAnimator {
   /** SPEC §13.3 — pulsazione 800 ms cyclic for mandatory-capture highlight. */
   public static final Duration PULSE_DURATION = Duration.millis(800);
 
-  /** Approximation of CSS {@code ease-out (quad)} (SPEC §13.3). */
-  public static final Interpolator MOVE_INTERPOLATOR = Interpolator.EASE_OUT;
+  /**
+   * Out-back overshoot easing (SPEC §13.3, Task 3.5.8). The standard easings.net {@code
+   * easeOutBack} curve: the piece accelerates, slightly overshoots its landing square (peak at
+   * ~110%), then settles back — a juicy "weight" feedback compared to plain ease-out.
+   *
+   * <p>Implemented as a custom {@link Interpolator} subclass because JavaFX's {@link
+   * Interpolator#SPLINE(double, double, double, double)} validates all four control-point
+   * coordinates lie in [0,1], which forbids the overshoot {@code y1 > 1} a cubic-bezier
+   * representation of out-back would need. PLAN-fase-3.5 §3.5.8 originally suggested {@code
+   * Interpolator.SPLINE(0.34, 1.56, 0.64, 1)}; this anonymous subclass is the equivalent visible
+   * behavior given that limitation. See REVIEW-fase-3.5 finding F-002.
+   */
+  public static final Interpolator MOVE_INTERPOLATOR =
+      new Interpolator() {
+        @Override
+        protected double curve(double t) {
+          // easings.net easeOutBack: 1 + c3*(t-1)^3 + c1*(t-1)^2  with c1=1.70158, c3=c1+1.
+          final double c1 = 1.70158;
+          final double c3 = c1 + 1.0;
+          double tm1 = t - 1.0;
+          return 1.0 + c3 * tm1 * tm1 * tm1 + c1 * tm1 * tm1;
+        }
+      };
 
   /** Cell-relative opacity at the trough of the mandatory pulse. */
   public static final double PULSE_MIN_OPACITY = 0.4;

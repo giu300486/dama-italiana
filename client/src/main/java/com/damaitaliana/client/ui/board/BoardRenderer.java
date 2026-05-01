@@ -10,6 +10,7 @@ import javafx.scene.SnapshotParameters;
 import javafx.scene.image.WritableImage;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
+import javafx.scene.layout.Pane;
 import javafx.scene.layout.Region;
 
 /**
@@ -30,6 +31,7 @@ public class BoardRenderer extends Region {
 
   private final BoardCellNode[][] cells = new BoardCellNode[BOARD_SIZE][BOARD_SIZE];
   private final HighlightState highlightState = new HighlightState();
+  private final Pane particleLayer = new Pane();
   private Consumer<Square> cellClickHandler;
   private Runnable escapeHandler;
   private Square keyboardFocus;
@@ -42,6 +44,12 @@ public class BoardRenderer extends Region {
         getChildren().add(cell);
       }
     }
+    // Particle overlay sits on top of all cells (Task 3.5.8) so capture splashes / promotion glows
+    // composed by AnimationOrchestrator paint above piece nodes. Mouse-transparent so click
+    // dispatch keeps targeting the cells underneath.
+    particleLayer.setMouseTransparent(true);
+    particleLayer.getStyleClass().add("board-particle-layer");
+    getChildren().add(particleLayer);
     getStyleClass().add("board-renderer");
     // English-only in Fase 3 (matches CellAccessibleText / PieceAccessibleText); a11y i18n is a
     // Fase 11 concern.
@@ -209,6 +217,15 @@ public class BoardRenderer extends Region {
     return BoardLayoutMath.cellSize(getWidth(), getHeight());
   }
 
+  /**
+   * Pane that sits above the cell grid; the {@link
+   * com.damaitaliana.client.ui.board.animation.AnimationOrchestrator} drops particle nodes here for
+   * capture splashes and promotion glows (Task 3.5.8). Mouse-transparent.
+   */
+  public Pane particleHost() {
+    return particleLayer;
+  }
+
   /** Snapshot for save miniatures and rules-screen diagrams. */
   public WritableImage snapshot(int sizePx) {
     SnapshotParameters params = new SnapshotParameters();
@@ -227,6 +244,8 @@ public class BoardRenderer extends Region {
             cellSize);
       }
     }
+    double total = BOARD_SIZE * cellSize;
+    particleLayer.resizeRelocate(0, 0, total, total);
   }
 
   private void dispatchClick(Square square) {

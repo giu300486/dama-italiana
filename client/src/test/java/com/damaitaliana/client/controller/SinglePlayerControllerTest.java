@@ -6,6 +6,8 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import com.damaitaliana.client.audio.AudioService;
+import com.damaitaliana.client.audio.Sfx;
 import com.damaitaliana.client.ui.board.BoardRenderer;
 import com.damaitaliana.shared.ai.AiLevel;
 import com.damaitaliana.shared.domain.Color;
@@ -26,6 +28,7 @@ class SinglePlayerControllerTest {
   private final RuleEngine engine = new ItalianRuleEngine();
   private BoardRenderer renderer;
   private AutosaveTrigger autosave;
+  private AudioService audio;
   private SinglePlayerController controller;
   private SinglePlayerGame game;
 
@@ -33,7 +36,8 @@ class SinglePlayerControllerTest {
   void setUp() {
     renderer = Mockito.mock(BoardRenderer.class);
     autosave = Mockito.mock(AutosaveTrigger.class);
-    controller = new SinglePlayerController(engine, Optional.of(autosave), Optional.empty());
+    audio = Mockito.mock(AudioService.class);
+    controller = new SinglePlayerController(engine, Optional.of(autosave), Optional.empty(), audio);
     game =
         new SinglePlayerGame(
             AiLevel.ESPERTO, Color.WHITE, "Test", GameState.initial(), new SplittableRandom(42L));
@@ -130,7 +134,7 @@ class SinglePlayerControllerTest {
   @Test
   void autosaveTriggerIsOptional() {
     SinglePlayerController noAutosave =
-        new SinglePlayerController(engine, Optional.empty(), Optional.empty());
+        new SinglePlayerController(engine, Optional.empty(), Optional.empty(), audio);
     BoardRenderer freshRenderer = Mockito.mock(BoardRenderer.class);
     noAutosave.start(game, freshRenderer);
 
@@ -186,7 +190,7 @@ class SinglePlayerControllerTest {
         .thenReturn(java.util.concurrent.CompletableFuture.completedFuture(aiMove));
 
     SinglePlayerController withAi =
-        new SinglePlayerController(engine, Optional.empty(), Optional.of(aiService));
+        new SinglePlayerController(engine, Optional.empty(), Optional.of(aiService), audio);
     withAi.setFxExecutor(Runnable::run);
     BoardRenderer freshRenderer = Mockito.mock(BoardRenderer.class);
     withAi.start(game, freshRenderer);
@@ -207,7 +211,7 @@ class SinglePlayerControllerTest {
     Mockito.when(aiService.requestMove(any(), any(), any())).thenReturn(pending);
 
     SinglePlayerController withAi =
-        new SinglePlayerController(engine, Optional.empty(), Optional.of(aiService));
+        new SinglePlayerController(engine, Optional.empty(), Optional.of(aiService), audio);
     withAi.setFxExecutor(Runnable::run);
     BoardRenderer freshRenderer = Mockito.mock(BoardRenderer.class);
     withAi.start(game, freshRenderer);
@@ -239,7 +243,7 @@ class SinglePlayerControllerTest {
     Mockito.when(aiService.requestMove(any(), any(), any())).thenReturn(pending);
 
     SinglePlayerController withAi =
-        new SinglePlayerController(engine, Optional.empty(), Optional.of(aiService));
+        new SinglePlayerController(engine, Optional.empty(), Optional.of(aiService), audio);
     withAi.setFxExecutor(Runnable::run);
     BoardRenderer freshRenderer = Mockito.mock(BoardRenderer.class);
     withAi.start(game, freshRenderer);
@@ -359,7 +363,7 @@ class SinglePlayerControllerTest {
     Mockito.when(aiService.requestMove(any(), any(), any())).thenReturn(pending);
 
     SinglePlayerController withAi =
-        new SinglePlayerController(engine, Optional.empty(), Optional.of(aiService));
+        new SinglePlayerController(engine, Optional.empty(), Optional.of(aiService), audio);
     withAi.setFxExecutor(Runnable::run);
     BoardRenderer freshRenderer = Mockito.mock(BoardRenderer.class);
     withAi.start(game, freshRenderer);
@@ -400,6 +404,76 @@ class SinglePlayerControllerTest {
     controller.undoPair();
     assertThat(latestUndo.get()).isFalse();
     assertThat(latestRedo.get()).isTrue();
+  }
+
+  // ---------------------------------------------------------------------------------------------
+  // SFX dispatch (Task 3.5.5)
+  // ---------------------------------------------------------------------------------------------
+
+  @Test
+  void simpleHumanMoveFiresMoveSfx() {
+    Move firstLegal = engine.legalMoves(GameState.initial()).get(0);
+    controller.onCellClicked(firstLegal.from());
+    Mockito.clearInvocations(audio);
+
+    controller.onCellClicked(firstLegal.to());
+
+    verify(audio).playSfx(Sfx.MOVE);
+    verify(audio, never()).playSfx(Sfx.CAPTURE);
+    verify(audio, never()).playSfx(Sfx.PROMOTION);
+    verify(audio, never()).playSfx(Sfx.VICTORY);
+    verify(audio, never()).playSfx(Sfx.DEFEAT);
+  }
+
+  @Test
+  void illegalClickWhileSelectionActiveFiresIllegalSfx() {
+    Square ownPiece = aWhiteSourceWithLegalMoves();
+    controller.onCellClicked(ownPiece);
+    Mockito.clearInvocations(audio);
+
+    // Click an empty square that is NOT a legal target and is NOT the same selection
+    // and is NOT a friendly piece. With the controller's fresh state, FID coordinates of
+    // an empty light square serve.
+    Square emptyNonTarget = new Square(0, 3); // empty light square, never a legal target
+    controller.onCellClicked(emptyNonTarget);
+
+    verify(audio).playSfx(Sfx.ILLEGAL);
+  }
+
+  @Test
+  void clickOnEmptySquareWithoutSelectionDoesNotFireIllegalSfx() {
+    Mockito.clearInvocations(audio);
+
+    controller.onCellClicked(new Square(0, 3));
+
+    verify(audio, never()).playSfx(Sfx.ILLEGAL);
+  }
+
+  @Test
+  void reselectingFriendlyPieceDoesNotFireIllegalSfx() {
+    Move firstLegal = engine.legalMoves(GameState.initial()).get(0);
+    Move otherLegal =
+        engine.legalMoves(GameState.initial()).stream()
+            .filter(m -> !m.from().equals(firstLegal.from()))
+            .findFirst()
+            .orElseThrow();
+    controller.onCellClicked(firstLegal.from());
+    Mockito.clearInvocations(audio);
+
+    controller.onCellClicked(otherLegal.from());
+
+    verify(audio, never()).playSfx(Sfx.ILLEGAL);
+  }
+
+  @Test
+  void deselectingSameSquareDoesNotFireIllegalSfx() {
+    Square ownPiece = aWhiteSourceWithLegalMoves();
+    controller.onCellClicked(ownPiece);
+    Mockito.clearInvocations(audio);
+
+    controller.onCellClicked(ownPiece);
+
+    verify(audio, never()).playSfx(Sfx.ILLEGAL);
   }
 
   /** Picks any white square that has at least one legal move at the start. */

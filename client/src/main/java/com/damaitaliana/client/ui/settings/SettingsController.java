@@ -4,6 +4,8 @@ import com.damaitaliana.client.app.SceneId;
 import com.damaitaliana.client.app.SceneRouter;
 import com.damaitaliana.client.app.UiScalingService;
 import com.damaitaliana.client.app.UserPromptService;
+import com.damaitaliana.client.audio.AudioBus;
+import com.damaitaliana.client.audio.AudioService;
 import com.damaitaliana.client.i18n.I18n;
 import com.damaitaliana.client.persistence.PreferencesService;
 import com.damaitaliana.client.persistence.UserPreferences;
@@ -14,9 +16,11 @@ import javafx.fxml.FXML;
 import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
+import javafx.scene.control.CheckBox;
 import javafx.scene.control.ChoiceBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.RadioButton;
+import javafx.scene.control.Slider;
 import javafx.scene.control.ToggleGroup;
 import javafx.util.StringConverter;
 import org.springframework.context.annotation.Scope;
@@ -59,6 +63,7 @@ public class SettingsController {
   private final PreferencesService preferencesService;
   private final UserPromptService prompt;
   private final UiScalingService uiScalingService;
+  private final AudioService audioService;
 
   @FXML private Label titleLabel;
 
@@ -75,6 +80,14 @@ public class SettingsController {
   @FXML private ChoiceBox<String> themeChoice;
   @FXML private Label themeNoteLabel;
 
+  @FXML private Label audioLabel;
+  @FXML private Label musicVolumeLabel;
+  @FXML private Slider musicVolumeSlider;
+  @FXML private CheckBox musicMutedCheck;
+  @FXML private Label sfxVolumeLabel;
+  @FXML private Slider sfxVolumeSlider;
+  @FXML private CheckBox sfxMutedCheck;
+
   @FXML private Button backButton;
   @FXML private Button saveButton;
 
@@ -83,12 +96,14 @@ public class SettingsController {
       I18n i18n,
       PreferencesService preferencesService,
       UserPromptService prompt,
-      UiScalingService uiScalingService) {
+      UiScalingService uiScalingService,
+      AudioService audioService) {
     this.sceneRouter = Objects.requireNonNull(sceneRouter, "sceneRouter");
     this.i18n = Objects.requireNonNull(i18n, "i18n");
     this.preferencesService = Objects.requireNonNull(preferencesService, "preferencesService");
     this.prompt = Objects.requireNonNull(prompt, "prompt");
     this.uiScalingService = Objects.requireNonNull(uiScalingService, "uiScalingService");
+    this.audioService = Objects.requireNonNull(audioService, "audioService");
   }
 
   @FXML
@@ -98,6 +113,7 @@ public class SettingsController {
     populateLanguageChoice(prefs.locale());
     populateThemeChoice();
     selectScaling(prefs.uiScalePercent());
+    populateAudio();
   }
 
   private void bindLabels() {
@@ -106,11 +122,26 @@ public class SettingsController {
     scalingLabel.setText(i18n.t("settings.section.scaling"));
     themeLabel.setText(i18n.t("settings.section.theme"));
     themeNoteLabel.setText(i18n.t("settings.theme.disabled.note"));
+    audioLabel.setText(i18n.t("settings.section.audio"));
+    musicVolumeLabel.setText(i18n.t("settings.audio.music"));
+    sfxVolumeLabel.setText(i18n.t("settings.audio.sfx"));
+    musicMutedCheck.setText(i18n.t("settings.audio.muted"));
+    sfxMutedCheck.setText(i18n.t("settings.audio.muted"));
     scaling100.setText(i18n.t("settings.scaling.100"));
     scaling125.setText(i18n.t("settings.scaling.125"));
     scaling150.setText(i18n.t("settings.scaling.150"));
     backButton.setText(i18n.t("common.button.back"));
     saveButton.setText(i18n.t("settings.button.save"));
+  }
+
+  private void populateAudio() {
+    musicVolumeSlider.setValue(audioService.volume(AudioBus.MUSIC));
+    sfxVolumeSlider.setValue(audioService.volume(AudioBus.SFX));
+    musicMutedCheck.setSelected(audioService.isMuted(AudioBus.MUSIC));
+    sfxMutedCheck.setSelected(audioService.isMuted(AudioBus.SFX));
+    // Initial enabled state mirrors mute toggles.
+    musicVolumeSlider.setDisable(musicMutedCheck.isSelected());
+    sfxVolumeSlider.setDisable(sfxMutedCheck.isSelected());
   }
 
   private void populateLanguageChoice(Locale current) {
@@ -168,6 +199,30 @@ public class SettingsController {
     int percent = selectedScalingPercent();
     Scene scene = currentScene();
     uiScalingService.applyTo(scene, percent);
+  }
+
+  @FXML
+  void onMusicVolumeChanged() {
+    audioService.setVolume(AudioBus.MUSIC, (int) Math.round(musicVolumeSlider.getValue()));
+  }
+
+  @FXML
+  void onSfxVolumeChanged() {
+    audioService.setVolume(AudioBus.SFX, (int) Math.round(sfxVolumeSlider.getValue()));
+  }
+
+  @FXML
+  void onMusicMutedChanged() {
+    boolean muted = musicMutedCheck.isSelected();
+    audioService.setMuted(AudioBus.MUSIC, muted);
+    musicVolumeSlider.setDisable(muted);
+  }
+
+  @FXML
+  void onSfxMutedChanged() {
+    boolean muted = sfxMutedCheck.isSelected();
+    audioService.setMuted(AudioBus.SFX, muted);
+    sfxVolumeSlider.setDisable(muted);
   }
 
   @FXML

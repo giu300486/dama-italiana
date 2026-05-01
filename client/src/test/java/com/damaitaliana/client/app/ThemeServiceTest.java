@@ -27,30 +27,38 @@ class ThemeServiceTest {
   }
 
   @Test
-  void themeLightDefinesAllSpecColorTokens() throws IOException {
+  void themeLightDefinesWoodPremiumColorTokens() throws IOException {
+    // SPEC §13.2 wood premium palette (Fase 3.5).
     String css = readResource(ThemeService.THEME_LIGHT_PATH);
     assertThat(css)
-        .contains("-color-bg-primary: #FAFAFA;")
-        .contains("-color-bg-surface: #FFFFFF;")
-        .contains("-color-text-primary: #18181B;")
-        .contains("-color-text-secondary: #71717A;")
-        .contains("-color-accent: #2563EB;")
-        .contains("-color-accent-hover: #1D4ED8;")
-        .contains("-color-success: #16A34A;")
-        .contains("-color-warning: #EAB308;")
-        .contains("-color-danger: #DC2626;")
-        .contains("-color-board-light: #F0D9B5;")
-        .contains("-color-board-dark: #B58863;")
-        .contains("-color-piece-white: #FAFAFA;")
-        .contains("-color-piece-black: #1F2937;")
-        .contains("-color-highlight-legal: #FBBF24;")
-        .contains("-color-highlight-mandatory: #DC2626;");
+        .contains("-color-bg-primary: #2A1F15;")
+        .contains("-color-bg-surface: #3D2E20;")
+        .contains("-color-bg-elevated: #F5E6C8;")
+        .contains("-color-border-subtle: #6B4423;")
+        .contains("-color-border-frame: #4A2E18;")
+        .contains("-color-text-on-dark: #F0E0C4;")
+        .contains("-color-text-on-light: #2A1F15;")
+        .contains("-color-text-secondary: #8B6F4E;")
+        .contains("-color-accent-gold: #C9A45C;")
+        .contains("-color-accent-gold-hover: #DDB874;")
+        .contains("-color-accent-deep-red: #8B3A3A;")
+        .contains("-color-success: #6B8E4E;")
+        .contains("-color-board-light: #E8C99A;")
+        .contains("-color-board-dark: #6B4423;")
+        .contains("-color-piece-white: #F0E0C4;")
+        .contains("-color-piece-black: #2A1F15;")
+        .contains("-color-piece-king-marker-white: #C9A45C;")
+        .contains("-color-piece-king-marker-black: #8B3A3A;")
+        .contains("-color-highlight-legal: #C9A45C;")
+        .contains("-color-highlight-mandatory: #C9A45C;");
   }
 
   @Test
-  void themeLightDefinesFontFamilyChain() throws IOException {
+  void themeLightDefinesFontFamilyChainsForUiAndDisplay() throws IOException {
     String css = readResource(ThemeService.THEME_LIGHT_PATH);
-    assertThat(css).contains("\"Inter\", \"Segoe UI\", \"Helvetica Neue\", sans-serif");
+    assertThat(css)
+        .contains("\"Inter\", \"Segoe UI\", \"Helvetica Neue\", sans-serif")
+        .contains("\"Playfair Display\", \"Cormorant Garamond\", \"Georgia\", serif");
   }
 
   @Test
@@ -65,18 +73,35 @@ class ThemeServiceTest {
   }
 
   @Test
+  void themeLightDefinesPrimaryAndSecondaryButtonAndDisplayLabel() throws IOException {
+    // New helpers introduced in Fase 3.5 (PLAN-fase-3.5 §3 Task 3.5.2).
+    String css = readResource(ThemeService.THEME_LIGHT_PATH);
+    assertThat(css)
+        .contains(".button-primary")
+        .contains(".button-primary:hover")
+        .contains(".button-primary:pressed")
+        .contains(".button-primary:focused")
+        .contains(".button-primary:disabled")
+        .contains(".button-secondary")
+        .contains(".label-display");
+  }
+
+  @Test
   void themeLightDefinesElevatedCardShadow() throws IOException {
     String css = readResource(ThemeService.THEME_LIGHT_PATH);
     assertThat(css).contains(".card-elevated").contains("dropshadow(gaussian");
   }
 
   @Test
-  void themeDarkStubDefinesDarkPalette() throws IOException {
+  void themeDarkStubDefinesDarkWoodPalette() throws IOException {
+    // F3.5 stub: dark theme tokens follow the same vocabulary as light, with darker values.
+    // F11 will tune them properly with contrast-checker tooling.
     String css = readResource(ThemeService.THEME_DARK_PATH);
     assertThat(css)
-        .contains("-color-bg-primary: #0F172A;")
-        .contains("-color-text-primary: #F1F5F9;")
-        .contains("-color-accent: #3B82F6;");
+        .contains("-color-bg-primary: #1A120A;")
+        .contains("-color-bg-surface: #2A1F15;")
+        .contains("-color-text-on-dark: #F0E0C4;")
+        .contains("-color-accent-gold: #DDB874;");
   }
 
   @Test
@@ -93,11 +118,15 @@ class ThemeServiceTest {
   }
 
   @Test
-  void interFontResourcesAreOptionalAndAbsenceIsAcceptable() {
-    // Inter binaries are not committed (see resources/fonts/README.md). The service must not
-    // fail when they are absent: callers rely on the font-family fallback chain.
-    URL inter = getClass().getResource(ThemeService.INTER_REGULAR_PATH);
-    assertThat(inter == null || inter.toExternalForm().endsWith(".ttf")).isTrue();
+  void fontBinariesArePresentAndLoadOnFirstApply() {
+    // Fase 3.5 commits Inter Variable + Playfair Display Variable as bundled fonts.
+    // Both are SIL OFL 1.1; binaries live in resources/fonts/.
+    URL inter = getClass().getResource(ThemeService.INTER_VARIABLE_PATH);
+    URL playfair = getClass().getResource(ThemeService.PLAYFAIR_DISPLAY_VARIABLE_PATH);
+    assertThat(inter).as("Inter Variable bundled").isNotNull();
+    assertThat(playfair).as("Playfair Display Variable bundled").isNotNull();
+    assertThat(inter.toExternalForm()).endsWith(".ttf");
+    assertThat(playfair.toExternalForm()).endsWith(".ttf");
   }
 
   private String readResource(String path) throws IOException {

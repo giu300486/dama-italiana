@@ -1,10 +1,10 @@
 # SPEC — Dama Italiana Multiplayer (Desktop)
 
 > **Documento di specifica per Spec-Driven Development con Claude Code**
-> Versione: 2.1 · Data: 2026-04-30 · Linguaggio: Italiano
+> Versione: 2.2 · Data: 2026-04-30 · Linguaggio: Italiano
 > Tipo progetto: Applicazione desktop Java + Server centrale Spring Boot
 >
-> Storico versioni: 2.0 (2026-04-26 — baseline post-Fase 0); 2.0 + CR-001 (2026-04-28 — repetition/40-mosse via reference incrementale, deferred F4); **2.1 (2026-04-30 — clarifiche post-REVIEW Fase 3: granularità undo/redo §4.1, deferral a11y i18n + daltonismo §13.5, deferral consci enumerati in Fase 11)**.
+> Storico versioni: 2.0 (2026-04-26 — baseline post-Fase 0); 2.0 + CR-001 (2026-04-28 — repetition/40-mosse via reference incrementale, deferred F4); 2.1 (2026-04-30 — clarifiche post-REVIEW Fase 3: granularità undo/redo §4.1, deferral a11y i18n + daltonismo §13.5, deferral consci enumerati in Fase 11); **2.2 (2026-04-30 — pull-forward per demo cliente: §13.2 design system riscritto "videogame premium wood", §13.3 animazioni avanzate, §13.4 ambient music, nuova §16 Fase 3.5, modifica §16 Fase 11)**.
 
 ---
 
@@ -1223,39 +1223,48 @@ L'IA gira su un **virtual thread** (Java 21), cancellabile, con timeout. Non blo
 
 JavaFX puro, senza temi esterni. Si scrive un `theme.css` in `src/main/resources/css/` parametrico tramite CSS variables JavaFX (`-fx-*`).
 
+**Direzione estetica (da Fase 3.5)**: **"videogame premium wood"**. La UI deve evocare un gioco da tavolo classico premium con materiali "fisici" simulati (legno, ottone/oro, feltro) — non un software gestionale moderno e neutro. Token color, tipografia, ombre e motion sono allineati a questa direzione.
+
 **Design token** definiti come CSS variables:
 
 ```css
 .root {
-    /* Palette light */
-    -color-bg-primary: #FAFAFA;
-    -color-bg-surface: #FFFFFF;
-    -color-bg-elevated: #FFFFFF;
-    -color-border-subtle: #E5E5E5;
-    -color-border-default: #D4D4D4;
-    -color-text-primary: #18181B;
-    -color-text-secondary: #71717A;
-    -color-accent: #2563EB;
-    -color-accent-hover: #1D4ED8;
-    -color-success: #16A34A;
-    -color-warning: #EAB308;
-    -color-danger: #DC2626;
+    /* Palette light "wood premium" (da Fase 3.5) */
+    -color-bg-primary: #2A1F15;        /* dark roast — sfondo principale */
+    -color-bg-surface: #3D2E20;        /* deep walnut — superfici secondarie */
+    -color-bg-elevated: #F5E6C8;       /* cream parchment — card, popover */
+    -color-border-subtle: #6B4423;     /* warm brown — bordi sottili */
+    -color-border-frame: #4A2E18;      /* dark frame — cornici e separatori */
+    -color-text-on-dark: #F0E0C4;      /* cream — testo su sfondo scuro */
+    -color-text-on-light: #2A1F15;     /* dark roast — testo su sfondo chiaro */
+    -color-text-secondary: #8B6F4E;    /* muted brown — testo secondario */
+    -color-accent-gold: #C9A45C;       /* antique gold — accent primario */
+    -color-accent-gold-hover: #DDB874; /* gold hover */
+    -color-accent-deep-red: #8B3A3A;   /* deep red — accent secondario, dame */
+    -color-success: #6B8E4E;           /* moss green — toni naturali */
+    -color-warning: #C9A45C;           /* gold — coerente con palette */
+    -color-danger: #8B3A3A;            /* deep red — coerente */
 
-    /* Damiera */
-    -color-board-light: #F0D9B5;
-    -color-board-dark: #B58863;
-    -color-piece-white: #FAFAFA;
-    -color-piece-black: #1F2937;
-    -color-highlight-legal: #FBBF24;
-    -color-highlight-mandatory: #DC2626;
+    /* Damiera (texture-driven, vedi 13.2.1) */
+    -color-board-light: #E8C99A;       /* fallback prima del caricamento texture */
+    -color-board-dark: #6B4423;        /* fallback */
+    -color-piece-white: #F0E0C4;       /* cream */
+    -color-piece-black: #2A1F15;       /* dark roast */
+    -color-piece-king-marker-white: #C9A45C;  /* gold marker su pezzo bianco */
+    -color-piece-king-marker-black: #8B3A3A;  /* deep red marker su pezzo nero */
+    -color-highlight-legal: #C9A45C;          /* gold glow */
+    -color-highlight-mandatory: #C9A45C;      /* gold halo (vedi 13.3) */
 
-    /* Tipografia */
+    /* Tipografia: display serif + UI sans */
+    -font-family-display: "Playfair Display", "Cormorant Garamond", "Georgia", serif;
     -font-family-base: "Inter", "Segoe UI", "Helvetica Neue", sans-serif;
     -font-size-xs: 12px;
     -font-size-sm: 14px;
     -font-size-md: 16px;
     -font-size-lg: 20px;
     -font-size-xl: 24px;
+    -font-size-display-md: 32px;       /* titoli card */
+    -font-size-display-lg: 48px;       /* titoli schermata */
 
     /* Spacing (multiples of 4) */
     -spacing-1: 4px; -spacing-2: 8px; -spacing-3: 12px;
@@ -1263,31 +1272,53 @@ JavaFX puro, senza temi esterni. Si scrive un `theme.css` in `src/main/resources
 
     /* Radius */
     -radius-sm: 4px; -radius-md: 8px; -radius-lg: 12px;
+
+    /* Motion (da Fase 3.5) */
+    -easing-out-quad: cubic-bezier(0.25, 0.46, 0.45, 0.94);     /* default ease-out */
+    -easing-out-back: cubic-bezier(0.34, 1.56, 0.64, 1);        /* juicy overshoot per atterraggio mossa */
 }
 
 .root.dark {
-    -color-bg-primary: #0F172A;
-    -color-bg-surface: #1E293B;
-    /* ... */
+    /* Variant dark — riservato a Fase 11 (toggle runtime); placeholder. */
+    -color-bg-primary: #1A120A;
+    -color-bg-surface: #2A1F15;
 }
 ```
 
-**Stati interattivi obbligatori per ogni componente**: default, `:hover`, `:pressed`, `:focused`, `:disabled`. Transizioni 200-250 ms ease-out.
+**13.2.1 Asset visuali della tavola**: la tavola usa **texture legno** (warm brown chiaro/scuro alternati con venature visibili) caricate da `client/src/main/resources/assets/textures/` come `BackgroundImage`, **non** colori piatti. Cornice (`-color-border-frame`) attorno alla griglia 8×8 per evocare un tavoliere fisico. Asset solo CC0 o CC-BY (vedi 13.2.3).
 
-**Font Inter** caricato via `Font.loadFont()` da resources.
+**13.2.2 Stati interattivi**: default, `:hover` (glow gold + lift -2px), `:pressed`, `:focused`, `:disabled`. Transizioni 200-250 ms ease-out di default; mossa pezzo usa `out-back` (vedi §13.3).
 
-**Ombre soft multilivello** per card e popover (es. `-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 8, 0, 0, 2)`).
+**13.2.3 Asset licensing**: tutti gli asset visuali e audio sono **CC0** preferibilmente, o CC-BY con attribution rigorosa. Inventario in `client/src/main/resources/assets/CREDITS.md`. Vietati asset senza licenza esplicita o CC-BY-NC (non utilizzabili commercialmente).
+
+**Font**: `Inter` (UI) caricato via `Font.loadFont()` da `client/src/main/resources/fonts/`; `Playfair Display` (display) aggiunto in Fase 3.5, stessa modalità di caricamento.
+
+**Ombre**: bevel multilivello per bottoni (`inset 0 1px 0 rgba(255,255,255,0.2), 0 2px 4px rgba(0,0,0,0.3)`) + dropshadow soft per card.
 
 ### 13.3 Animazioni
 
+**Animazioni base (Fase 3)**:
 - Mossa pezzo: `TranslateTransition` 250 ms easing OUT_QUAD.
 - Cattura: `ScaleTransition` 200 ms scale-out + `FadeTransition` parallela.
 - Promozione: flash dorato + `RotateTransition` 500 ms.
 - Highlight cattura obbligatoria: pulsazione `FillTransition` ciclica 800 ms.
 
+**Animazioni avanzate (da Fase 3.5)**:
+- **Mossa pezzo "juicy"**: l'easing OUT_QUAD è sostituito da **OUT_BACK** (`cubic-bezier(0.34, 1.56, 0.64, 1)`) per atterraggio con leggero overshoot, che dà sensazione di peso e impatto fisico. Durata invariata 250 ms.
+- **Particle puff su cattura**: 8-12 piccole particle (`Circle` color marrone/grigio polvere, raggio 2-4px) emesse dal centro del pezzo catturato, con `ParallelTransition(TranslateTransition radiale + FadeTransition out + ScaleTransition shrink)` durata ~350 ms. Sovrapposto allo `ScaleTransition`+`FadeTransition` esistenti. Pulizia automatica a fine animazione.
+- **Raggi dorati su promozione**: 8-12 `Line` o `Polygon` triangolari (color `#C9A45C` accent gold + `#DDB874`) irradianti dal centro del pezzo promosso, con `ParallelTransition(ScaleTransition expand + FadeTransition out)` 600 ms. Sovrapposto al flash dorato esistente + `RotateTransition`.
+- **Glow halo cattura obbligatoria**: il `FillTransition` 800 ms è **affiancato/sostituito** da un `DropShadow` esterno animato (`Timeline` cycle infinito 1200 ms, radius 12→24→12, color accent gold) che evoca un alone di luce attorno al pezzo. Più appariscente del solo pulsare interno.
+- **No camera shake**: deliberatamente escluso per non distrarre dal piano di gioco classico.
+
+I parametri esatti (count particle, durata ms, curve di easing) sono finalizzati nel `PLAN-fase-3.5.md` e nelle ADR-034/035.
+
 ### 13.4 Audio
 
-JavaFX Media. Suoni discreti: click mossa, tonfo cattura, chime promozione, fanfara vittoria.
+**SFX di gameplay (Fase 3 + 3.5)**: JavaFX Media. Suoni discreti: click mossa, tonfo legno cattura, chime promozione, fanfara breve vittoria. Mutabili separatamente. Default volume SFX 70%.
+
+**Music ambient (da Fase 3.5)**: 3-5 tracce **orchestrali soft / chamber** in playlist random shuffle, loop continuo a fine playlist. Una sola traccia in playback alla volta (no overlap). Default volume musica **30%**, mutabile via Settings. Persistence dei volumi e dello stato muted in `~/.dama-italiana/config.json` (campi `musicVolumePercent`, `sfxVolumePercent`, `musicMuted`, `sfxMuted`). Asset CC0/CC-BY (vedi §13.2.3).
+
+Stile musicale: tranquillo, da concentrazione (no battle/heroic). Implementazione tramite `client/audio/AudioService` (vedi ADR-035).
 
 ### 13.5 Accessibilità
 
@@ -1408,6 +1439,21 @@ Fasi sequenziali. Ogni fase è autonomamente verificabile. Claude Code DEVE comp
 
 **Acceptance**: utente gioca partita completa contro IA, salva, ricarica, riapre dopo crash con autosave.
 
+### Fase 3.5 — Visual polish + Audio + Demo release Windows
+
+> Mini-fase intermedia tra Fase 3 e Fase 4, **pull-forward** parziale di Fase 11 introdotta per esigenza di **demo cliente** Win 10/11. Non era prevista nella roadmap originale (v2.0/v2.1).
+
+- Visual rework completo delle 8 schermate F3 con design system v2 (palette wood premium, vedi §13.2): splash, main menu, sp setup, board, save dialog, load screen, settings, rules.
+- Tavola con texture legno e cornice frame; pezzi 3D-look (gradient + scanalatura simulata + dame con marker oro/rosso).
+- Animazioni "juicy" (vedi §13.3): mossa con `OUT_BACK`, particle puff su cattura, raggi dorati su promozione, glow halo esterno cattura obbligatoria.
+- Audio: ambient music orchestrale soft (playlist random 3-5 tracce, default 30%, mutabile) + SFX su mossa/cattura/promozione/vittoria (vedi §13.4).
+- Settings: nuovi controlli volume musica/SFX, persistenza in `config.json`.
+- Asset solo CC0 / CC-BY con `CREDITS.md` di inventario (vedi §13.2.3).
+- Packaging Windows: `jpackage` `.msi` con JRE bundled, shortcut Start menu, icon dedicata. Mac/Linux installer restano a Fase 11.
+- Estinzione contestuale del debito TEST sotto-fase Fase 3 (deferred al tag `v0.3.0`).
+
+**Acceptance**: cliente apre l'installer Windows `.msi` su Win 10 o Win 11, completa l'installazione senza prerequisiti manuali, lancia il gioco, naviga splash → main menu → setup → board, gioca una partita completa vs IA al livello scelto fino a stato terminale, salva, ricarica, sente musica orchestrale soft di sottofondo + SFX coerenti su ogni evento di gameplay, e percepisce uno stile "videogame premium wood" coerente in tutte e 8 le schermate.
+
 ### Fase 4 — `core-server` skeleton
 
 - Tournament Engine (vuoto ma con interfacce).
@@ -1481,12 +1527,12 @@ Fasi sequenziali. Ogni fase è autonomamente verificabile. Claude Code DEVE comp
 
 ### Fase 11 — Polish & rilascio
 
-- Audio + animazioni avanzate.
+- ~~Audio + animazioni avanzate~~ → *anticipato a Fase 3.5* per esigenza demo cliente.
 - Dark mode con toggle runtime.
 - Profilo + statistiche complete.
 - Replay viewer.
 - Sistema report.
-- Packaging jpackage (Win/Mac/Linux).
+- Packaging jpackage Mac (`.dmg`) + Linux (`.deb`/`.rpm`). *Windows `.msi` anticipato a Fase 3.5.*
 - Docker image server.
 - Monitoring stack (Prometheus + Grafana dashboard).
 - Documentazione utente.

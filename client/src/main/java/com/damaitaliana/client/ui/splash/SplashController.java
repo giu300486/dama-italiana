@@ -41,6 +41,7 @@ public class SplashController {
   private final I18n i18n;
 
   @FXML private Label loadingLabel;
+  @FXML private Label subtitleLabel;
 
   public SplashController(SceneRouter sceneRouter, AutosaveService autosaveService, I18n i18n) {
     this.sceneRouter = Objects.requireNonNull(sceneRouter, "sceneRouter");
@@ -51,6 +52,7 @@ public class SplashController {
   @FXML
   void initialize() {
     loadingLabel.setText(i18n.t("splash.loading"));
+    subtitleLabel.setText(i18n.t("splash.subtitle"));
     Task<BootstrapResult> task =
         new Task<>() {
           @Override

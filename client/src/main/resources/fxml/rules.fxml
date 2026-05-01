@@ -13,6 +13,7 @@
 
 <BorderPane xmlns:fx="http://javafx.com/fxml/1"
             fx:controller="com.damaitaliana.client.ui.rules.RulesController"
+            styleClass="screen-root"
             prefWidth="1024" prefHeight="768">
     <padding>
         <Insets top="24" right="24" bottom="24" left="24"/>
@@ -23,7 +24,7 @@
             <padding>
                 <Insets top="0" right="0" bottom="16" left="0"/>
             </padding>
-            <Label fx:id="titleLabel" styleClass="label-title"/>
+            <Label fx:id="titleLabel" styleClass="label-display, label-display-md"/>
             <Region HBox.hgrow="ALWAYS" maxWidth="Infinity"/>
             <Button fx:id="backButton" onAction="#onBack" styleClass="button-secondary"/>
         </HBox>

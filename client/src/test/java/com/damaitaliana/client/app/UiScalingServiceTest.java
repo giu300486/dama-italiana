@@ -88,7 +88,15 @@ class UiScalingServiceTest {
     when(preferencesService.load())
         .thenReturn(
             new UserPreferences(
-                UserPreferences.CURRENT_SCHEMA_VERSION, Locale.ITALIAN, "light", 150, false));
+                UserPreferences.CURRENT_SCHEMA_VERSION,
+                Locale.ITALIAN,
+                "light",
+                150,
+                false,
+                UserPreferences.DEFAULT_MUSIC_VOLUME_PERCENT,
+                UserPreferences.DEFAULT_SFX_VOLUME_PERCENT,
+                false,
+                false));
 
     Region root = runOnFxThread(StackPane::new);
     Scene scene = runOnFxThread(() -> new Scene(root));

@@ -2,6 +2,7 @@ package com.damaitaliana.client.ui.save;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.damaitaliana.client.app.ThemeService;
 import com.damaitaliana.client.app.UserPromptService;
 import com.damaitaliana.client.controller.ColorChoice;
 import com.damaitaliana.client.controller.SinglePlayerGame;
@@ -51,7 +52,9 @@ class FxmlLoadingSmokeTest {
     Mockito.when(i18n.t(Mockito.anyString())).thenAnswer(inv -> inv.getArgument(0));
     Mockito.when(i18n.t(Mockito.anyString(), Mockito.any(Object[].class)))
         .thenAnswer(inv -> inv.getArgument(0));
-    SaveDialogController controller = new SaveDialogController(saveService, prompt, i18n);
+    ThemeService themeService = Mockito.mock(ThemeService.class);
+    SaveDialogController controller =
+        new SaveDialogController(saveService, prompt, i18n, themeService);
     SinglePlayerGame snapshot =
         SinglePlayerGame.tryCreate(
                 AiLevel.ESPERTO, ColorChoice.WHITE, "Test", new SplittableRandom(42L))

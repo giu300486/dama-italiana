@@ -1,18 +1,20 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <?import javafx.scene.control.Label?>
-<?import javafx.scene.control.ProgressIndicator?>
+<?import javafx.scene.control.ProgressBar?>
 <?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
-<?import org.kordamp.ikonli.javafx.FontIcon?>
 
 <StackPane xmlns:fx="http://javafx.com/fxml/1"
            fx:controller="com.damaitaliana.client.ui.splash.SplashController"
+           styleClass="splash-root"
            prefWidth="1024" prefHeight="768">
-    <VBox alignment="CENTER" spacing="16">
-        <FontIcon iconLiteral="mdi2c-checkerboard" iconSize="96"/>
-        <Label text="Dama Italiana" styleClass="label-title"/>
-        <Label fx:id="loadingLabel" styleClass="label-secondary"/>
-        <ProgressIndicator/>
+    <VBox alignment="CENTER" spacing="14">
+        <Label fx:id="titleLabel" text="Dama Italiana"
+               styleClass="label-display, label-display-lg, splash-title"/>
+        <Label fx:id="subtitleLabel" styleClass="splash-subtitle"/>
+        <ProgressBar fx:id="progressBar" prefWidth="320" progress="-1.0"
+                     styleClass="splash-progress"/>
+        <Label fx:id="loadingLabel" styleClass="label-secondary, splash-loading"/>
     </VBox>
 </StackPane>

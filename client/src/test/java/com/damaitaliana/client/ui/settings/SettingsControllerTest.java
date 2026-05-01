@@ -12,6 +12,7 @@ import com.damaitaliana.client.app.SceneId;
 import com.damaitaliana.client.app.SceneRouter;
 import com.damaitaliana.client.app.UiScalingService;
 import com.damaitaliana.client.app.UserPromptService;
+import com.damaitaliana.client.audio.AudioService;
 import com.damaitaliana.client.i18n.I18n;
 import com.damaitaliana.client.persistence.PreferencesService;
 import com.damaitaliana.client.persistence.UserPreferences;
@@ -28,6 +29,7 @@ class SettingsControllerTest {
   private PreferencesService preferencesService;
   private UserPromptService prompt;
   private UiScalingService uiScalingService;
+  private AudioService audioService;
   private SettingsController controller;
 
   @BeforeEach
@@ -37,10 +39,12 @@ class SettingsControllerTest {
     preferencesService = Mockito.mock(PreferencesService.class);
     prompt = Mockito.mock(UserPromptService.class);
     uiScalingService = Mockito.mock(UiScalingService.class);
+    audioService = Mockito.mock(AudioService.class);
     when(i18n.t(anyString())).thenAnswer(inv -> inv.getArgument(0));
     when(i18n.t(anyString(), any(Object[].class))).thenAnswer(inv -> inv.getArgument(0));
     controller =
-        new SettingsController(sceneRouter, i18n, preferencesService, prompt, uiScalingService);
+        new SettingsController(
+            sceneRouter, i18n, preferencesService, prompt, uiScalingService, audioService);
   }
 
   @Test
