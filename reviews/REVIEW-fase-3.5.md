@@ -128,4 +128,4 @@
 - [x] SPEC change requests con stato non-PENDING (0 CR pending)
 
 **Review chiusa il**: 2026-05-02
-**Commit di chiusura**: _(set after commit)_
+**Commit di chiusura**: `12a5e4e`
