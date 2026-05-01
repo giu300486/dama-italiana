@@ -633,6 +633,64 @@
     -fx-font-style: italic;
 }
 
+/* Custom UNDECORATED dialog (JavaFxUserPromptService, post-3.5.11 visual review).
+ * Replaces the JavaFX Alert whose stage chrome is owned by the platform; here
+ * the entire surface is themable: deep-walnut header bar with gold title +
+ * draggable + close glyph, cream content area, primary/secondary button bar. */
+.themed-dialog {
+    -fx-background-color: -color-bg-elevated;
+    -fx-border-color: -color-border-frame;
+    -fx-border-width: 2;
+    -fx-border-radius: 10;
+    -fx-background-radius: 10;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.55), 18, 0, 0, 6);
+}
+.themed-dialog-header {
+    -fx-background-color: -color-bg-surface;
+    -fx-background-radius: 8 8 0 0;
+    -fx-border-color: -color-border-subtle;
+    -fx-border-width: 0 0 1 0;
+    -fx-cursor: move;
+}
+.themed-dialog-title {
+    -fx-text-fill: -color-accent-gold;
+    -fx-font-size: 22px;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.45), 4, 0.35, 0, 1);
+}
+.themed-dialog-close {
+    -fx-background-color: transparent;
+    -fx-text-fill: -color-text-on-dark;
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+    -fx-padding: 2 10 2 10;
+    -fx-border-width: 0;
+    -fx-border-color: transparent;
+    -fx-background-radius: 4;
+    -fx-cursor: hand;
+}
+.themed-dialog-close:hover {
+    -fx-background-color: -color-accent-deep-red;
+    -fx-text-fill: -color-text-on-dark;
+}
+.themed-dialog-close:focused {
+    -fx-effect: none;
+}
+.themed-dialog-content {
+    -fx-background-color: -color-bg-elevated;
+}
+.themed-dialog-content .label {
+    -fx-text-fill: -color-text-on-light;
+}
+.themed-dialog-header-text {
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -color-text-on-light;
+}
+.themed-dialog-button-bar {
+    -fx-background-color: -color-bg-elevated;
+    -fx-background-radius: 0 0 8 8;
+}
+
 /* Alert / DialogPane: temable interior so the JavaFX content area matches the
  * wood theme. The OS title bar is owned by the platform and stays native. */
 .dialog-pane {
