@@ -39,7 +39,15 @@ class PreferencesServiceTest {
   void saveThenLoadRoundTrips() {
     var prefs =
         new UserPreferences(
-            UserPreferences.CURRENT_SCHEMA_VERSION, Locale.ENGLISH, "light", 125, false);
+            UserPreferences.CURRENT_SCHEMA_VERSION,
+            Locale.ENGLISH,
+            "light",
+            125,
+            false,
+            45,
+            85,
+            true,
+            false);
     service.save(prefs);
 
     UserPreferences loaded = service.load();
@@ -48,6 +56,10 @@ class PreferencesServiceTest {
     assertThat(loaded.themeId()).isEqualTo("light");
     assertThat(loaded.uiScalePercent()).isEqualTo(125);
     assertThat(loaded.firstLaunch()).isFalse();
+    assertThat(loaded.musicVolumePercent()).isEqualTo(45);
+    assertThat(loaded.sfxVolumePercent()).isEqualTo(85);
+    assertThat(loaded.musicMuted()).isTrue();
+    assertThat(loaded.sfxMuted()).isFalse();
   }
 
   @Test
@@ -124,5 +136,31 @@ class PreferencesServiceTest {
     Files.writeString(configFile, missingLocale, StandardCharsets.UTF_8);
 
     assertThat(service.load().locale()).isEqualTo(Locale.ITALIAN);
+  }
+
+  @Test
+  void migratesSchemaV1FileFillingAudioDefaults() throws IOException {
+    String v1Json =
+        """
+        {
+          "schemaVersion": 1,
+          "locale": "en",
+          "themeId": "light",
+          "uiScalePercent": 125,
+          "firstLaunch": false
+        }
+        """;
+    Files.writeString(configFile, v1Json, StandardCharsets.UTF_8);
+
+    UserPreferences loaded = service.load();
+
+    assertThat(loaded.schemaVersion()).isEqualTo(UserPreferences.CURRENT_SCHEMA_VERSION);
+    assertThat(loaded.locale()).isEqualTo(Locale.ENGLISH);
+    assertThat(loaded.uiScalePercent()).isEqualTo(125);
+    assertThat(loaded.firstLaunch()).isFalse();
+    assertThat(loaded.musicVolumePercent()).isEqualTo(UserPreferences.DEFAULT_MUSIC_VOLUME_PERCENT);
+    assertThat(loaded.sfxVolumePercent()).isEqualTo(UserPreferences.DEFAULT_SFX_VOLUME_PERCENT);
+    assertThat(loaded.musicMuted()).isFalse();
+    assertThat(loaded.sfxMuted()).isFalse();
   }
 }

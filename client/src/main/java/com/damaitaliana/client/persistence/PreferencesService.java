@@ -52,14 +52,23 @@ public class PreferencesService {
     }
     try {
       UserPreferences prefs = mapper.readValue(configFile.toFile(), UserPreferences.class);
-      if (prefs.schemaVersion() != UserPreferences.CURRENT_SCHEMA_VERSION) {
-        log.warn(
-            "Unknown config schemaVersion {} (expected {}), using defaults",
-            prefs.schemaVersion(),
-            UserPreferences.CURRENT_SCHEMA_VERSION);
-        return UserPreferences.defaults();
+      int version = prefs.schemaVersion();
+      if (version == UserPreferences.CURRENT_SCHEMA_VERSION) {
+        return prefs;
       }
-      return prefs;
+      if (version == 1) {
+        log.info(
+            "Migrating config {} from schemaVersion 1 to {} (audio fields filled with SPEC §13.4"
+                + " defaults)",
+            configFile,
+            UserPreferences.CURRENT_SCHEMA_VERSION);
+        return prefs.withSchemaVersion(UserPreferences.CURRENT_SCHEMA_VERSION);
+      }
+      log.warn(
+          "Unknown config schemaVersion {} (expected {} or earlier supported), using defaults",
+          version,
+          UserPreferences.CURRENT_SCHEMA_VERSION);
+      return UserPreferences.defaults();
     } catch (IOException ex) {
       log.warn("Failed to parse config {} — using defaults", configFile, ex);
       return UserPreferences.defaults();

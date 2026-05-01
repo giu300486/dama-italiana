@@ -141,6 +141,11 @@
                 <!-- JavaFX Alert wrapper. The UserPromptService interface is what tests mock;
                      this implementation is only reachable on a live JavaFX thread. -->
                 <exclude>**/JavaFxUserPromptService.class</exclude>
+                <!-- JavaFX MediaPlayer wrapper. Same pattern: AudioService is the testable
+                     abstraction, JavaFxAudioService binds to javafx.scene.media which can only
+                     run on a booted toolkit. The non-toolkit branches (init from prefs, clamping,
+                     persistence) are unit-tested via JavaFxAudioServiceTest. (Task 3.5.4) -->
+                <exclude>**/JavaFxAudioService.class</exclude>
                 <!-- Pure JavaFX cell-factory inner classes (TableCell / ListCell / Task /
                      StringConverter) — instantiated by the FX runtime, no business logic. -->
                 <exclude>**/MoveHistoryView$MoveHistoryCell.class</exclude>
@@ -166,6 +171,7 @@
                 <exclude>**/JavaFxAppContextHolder.class</exclude>
                 <exclude>**/ClientApplication.class</exclude>
                 <exclude>**/JavaFxUserPromptService.class</exclude>
+                <exclude>**/JavaFxAudioService.class</exclude>
                 <exclude>**/MoveHistoryView$MoveHistoryCell.class</exclude>
                 <exclude>**/LoadScreenController$MiniatureCell.class</exclude>
                 <exclude>**/RulesController$1.class</exclude>
