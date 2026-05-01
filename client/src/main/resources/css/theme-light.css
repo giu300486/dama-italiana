@@ -1,47 +1,62 @@
 /*
- * Light theme. Mirrors SPEC §13.2 design tokens.
+ * Light theme — Fase 3.5 wood premium edition. Mirrors SPEC §13.2 design tokens.
  *
  * JavaFX CSS supports looked-up colors but not arbitrary value lookups, so spacing/radius/
  * font-size tokens are inlined with a comment indicating their semantic name. Color tokens
  * are real lookups and can be referenced by other stylesheets and overridden by the dark
  * theme stub (theme-dark.css).
+ *
+ * Motion tokens (-easing-out-quad, -easing-out-back) are documented in SPEC §13.2 for
+ * parity but JavaFX animations consume them via Interpolator class instances, not via CSS
+ * properties. They are referenced here as comments for cross-file traceability.
  */
 
 .root {
-    /* Palette */
-    -color-bg-primary: #FAFAFA;
-    -color-bg-surface: #FFFFFF;
-    -color-bg-elevated: #FFFFFF;
-    -color-border-subtle: #E5E5E5;
-    -color-border-default: #D4D4D4;
-    -color-text-primary: #18181B;
-    -color-text-secondary: #71717A;
-    -color-accent: #2563EB;
-    -color-accent-hover: #1D4ED8;
-    -color-success: #16A34A;
-    -color-warning: #EAB308;
-    -color-danger: #DC2626;
+    /* Palette wood premium (SPEC §13.2) */
+    -color-bg-primary: #2A1F15;        /* dark roast — main background */
+    -color-bg-surface: #3D2E20;        /* deep walnut — secondary surfaces */
+    -color-bg-elevated: #F5E6C8;       /* cream parchment — cards, popovers */
+    -color-border-subtle: #6B4423;     /* warm brown — subtle borders */
+    -color-border-frame: #4A2E18;      /* dark frame — panels, separators */
+    -color-text-on-dark: #F0E0C4;      /* cream — text on dark surfaces */
+    -color-text-on-light: #2A1F15;     /* dark roast — text on cream surfaces */
+    -color-text-secondary: #8B6F4E;    /* muted brown — secondary text */
+    -color-accent-gold: #C9A45C;       /* antique gold — primary accent */
+    -color-accent-gold-hover: #DDB874; /* gold hover */
+    -color-accent-deep-red: #8B3A3A;   /* deep red — secondary accent, kings */
+    -color-success: #6B8E4E;           /* moss green */
+    -color-warning: #C9A45C;           /* gold — palette-coherent */
+    -color-danger: #8B3A3A;            /* deep red — palette-coherent */
 
-    /* Damiera */
-    -color-board-light: #F0D9B5;
-    -color-board-dark: #B58863;
-    -color-piece-white: #FAFAFA;
-    -color-piece-black: #1F2937;
-    -color-highlight-legal: #FBBF24;
-    -color-highlight-mandatory: #DC2626;
+    /* Damiera (texture-driven; these are fallbacks before BackgroundImage loads in Task 3.5.6) */
+    -color-board-light: #E8C99A;
+    -color-board-dark: #6B4423;
+    -color-piece-white: #F0E0C4;
+    -color-piece-black: #2A1F15;
+    -color-piece-king-marker-white: #C9A45C;
+    -color-piece-king-marker-black: #8B3A3A;
+    -color-highlight-legal: #C9A45C;
+    -color-highlight-mandatory: #C9A45C;
 
-    /* Typography (SPEC §13.2 font-family-base, font-size-md) */
+    /* Typography (SPEC §13.2 font-family-base) */
     -fx-font-family: "Inter", "Segoe UI", "Helvetica Neue", sans-serif;
-    -fx-font-size: 16px;
+    -fx-font-size: 16px; /* font-size-md */
 
     /* Base */
     -fx-background-color: -color-bg-primary;
-    -fx-text-fill: -color-text-primary;
+    -fx-text-fill: -color-text-on-dark;
+}
+
+/* ====== LABELS ====== */
+
+.label {
+    -fx-text-fill: -color-text-on-dark;
 }
 
 .label-title {
     -fx-font-size: 24px; /* font-size-xl */
     -fx-font-weight: bold;
+    -fx-text-fill: -color-text-on-dark;
 }
 
 .label-subtitle {
@@ -54,104 +69,187 @@
     -fx-font-size: 14px; /* font-size-sm */
 }
 
-/* Button: default + 5 interactive states required by SPEC §13.2 */
+/* Display label (Fase 3.5) — Playfair Display serif in antique gold for hero titles. */
+.label-display {
+    -fx-font-family: "Playfair Display", "Cormorant Garamond", "Georgia", serif;
+    -fx-text-fill: -color-accent-gold;
+}
+.label-display-md {
+    -fx-font-size: 32px; /* font-size-display-md */
+}
+.label-display-lg {
+    -fx-font-size: 48px; /* font-size-display-lg */
+}
+
+/* ====== BUTTONS (default + 5 interactive states required by SPEC §13.2.2) ====== */
+
+/* Default button: neutral wood frame for secondary CTAs / menu items. */
 .button {
-    -fx-background-color: -color-accent;
-    -fx-text-fill: white;
+    -fx-background-color: -color-bg-surface;
+    -fx-text-fill: -color-text-on-dark;
+    -fx-border-color: -color-border-subtle;
+    -fx-border-width: 1;
+    -fx-border-radius: 8; /* radius-md */
+    -fx-background-radius: 8;
     -fx-padding: 8 16 8 16; /* spacing-2 spacing-4 */
-    -fx-background-radius: 8; /* radius-md */
     -fx-cursor: hand;
 }
 .button:hover {
-    -fx-background-color: -color-accent-hover;
+    -fx-background-color: derive(-color-bg-surface, 8%);
+    -fx-border-color: -color-accent-gold;
 }
 .button:pressed {
-    -fx-background-color: derive(-color-accent-hover, -10%);
+    -fx-background-color: derive(-color-bg-surface, -8%);
 }
 .button:focused {
-    -fx-effect: dropshadow(gaussian, -color-accent, 6, 0.5, 0, 0);
+    -fx-effect: dropshadow(gaussian, -color-accent-gold, 6, 0.5, 0, 0);
 }
 .button:disabled {
     -fx-opacity: 0.5;
     -fx-cursor: default;
 }
 
-.button-secondary {
-    -fx-background-color: -color-bg-surface;
-    -fx-text-fill: -color-text-primary;
-    -fx-border-color: -color-border-default;
+/*
+ * Primary button (Fase 3.5): gold gradient + bevel + glow on hover.
+ * For the main CTA per screen (e.g., "Avvia partita", "Conferma").
+ * Foreground is dark-roast for WCAG AA contrast on gold (~9:1).
+ */
+.button-primary {
+    -fx-background-color: linear-gradient(to bottom, -color-accent-gold-hover, -color-accent-gold);
+    -fx-text-fill: -color-text-on-light;
+    -fx-font-weight: bold;
+    -fx-border-color: -color-border-frame;
+    -fx-border-width: 1;
     -fx-border-radius: 8;
+    -fx-background-radius: 8;
+    -fx-padding: 10 22 10 22;
+    -fx-cursor: hand;
+    -fx-effect: innershadow(gaussian, rgba(255,255,255,0.25), 1, 0, 0, 1),
+                dropshadow(gaussian, rgba(0,0,0,0.30), 4, 0, 0, 2);
 }
-.button-secondary:hover {
-    -fx-background-color: derive(-color-bg-surface, -3%);
+.button-primary:hover {
+    -fx-background-color: linear-gradient(to bottom, derive(-color-accent-gold-hover, 6%), -color-accent-gold-hover);
+    -fx-effect: dropshadow(gaussian, -color-accent-gold, 16, 0.65, 0, 0),
+                innershadow(gaussian, rgba(255,255,255,0.35), 1, 0, 0, 1);
+}
+.button-primary:pressed {
+    -fx-background-color: derive(-color-accent-gold, -8%);
+    -fx-effect: innershadow(gaussian, rgba(0,0,0,0.30), 3, 0.5, 0, 1);
+}
+.button-primary:focused {
+    -fx-effect: dropshadow(gaussian, -color-accent-gold, 10, 0.7, 0, 0);
+}
+.button-primary:disabled {
+    -fx-opacity: 0.5;
+    -fx-cursor: default;
 }
 
-/* Card: default + hover + focused */
+/* Secondary button (Fase 3.5): wood-frame outline, no fill. */
+.button-secondary {
+    -fx-background-color: transparent;
+    -fx-text-fill: -color-text-on-dark;
+    -fx-border-color: -color-border-subtle;
+    -fx-border-width: 1.5;
+    -fx-border-radius: 8;
+    -fx-background-radius: 8;
+    -fx-padding: 8 16 8 16;
+    -fx-cursor: hand;
+}
+.button-secondary:hover {
+    -fx-background-color: rgba(201,164,92,0.10);
+    -fx-border-color: -color-accent-gold;
+}
+.button-secondary:pressed {
+    -fx-background-color: rgba(201,164,92,0.20);
+}
+.button-secondary:focused {
+    -fx-effect: dropshadow(gaussian, -color-accent-gold, 4, 0.5, 0, 0);
+}
+.button-secondary:disabled {
+    -fx-opacity: 0.5;
+    -fx-cursor: default;
+}
+
+/* ====== CARDS ====== */
+
+/* Card: cream parchment surface on dark background; foreground dark-roast for contrast. */
 .card {
-    -fx-background-color: -color-bg-surface;
+    -fx-background-color: -color-bg-elevated;
     -fx-border-color: -color-border-subtle;
     -fx-border-radius: 8;
     -fx-background-radius: 8;
-    -fx-padding: 16;
+    -fx-padding: 16; /* spacing-4 */
+}
+.card .label {
+    -fx-text-fill: -color-text-on-light;
 }
 .card:hover {
-    -fx-border-color: -color-border-default;
+    -fx-border-color: -color-accent-gold;
 }
 .card:focused {
-    -fx-border-color: -color-accent;
+    -fx-border-color: -color-accent-gold;
+    -fx-effect: dropshadow(gaussian, -color-accent-gold, 8, 0.5, 0, 0);
 }
 .card:disabled {
     -fx-opacity: 0.5;
 }
 
-/* Card elevated with soft shadow */
 .card-elevated {
     -fx-background-color: -color-bg-elevated;
     -fx-background-radius: 8;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.10), 8, 0, 0, 2);
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.30), 8, 0, 0, 2);
     -fx-padding: 16;
+}
+.card-elevated .label {
+    -fx-text-fill: -color-text-on-light;
 }
 
 .popover {
     -fx-background-color: -color-bg-elevated;
     -fx-background-radius: 12; /* radius-lg */
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.15), 16, 0, 0, 4);
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.40), 16, 0, 0, 4);
+}
+.popover .label {
+    -fx-text-fill: -color-text-on-light;
 }
 
-/* Text field */
+/* ====== INPUTS ====== */
+
+/* Text field: cream surface with wood border; foreground dark-roast. */
 .text-field {
-    -fx-background-color: -color-bg-surface;
-    -fx-border-color: -color-border-default;
-    -fx-border-radius: 4;  /* radius-sm */
+    -fx-background-color: -color-bg-elevated;
+    -fx-border-color: -color-border-subtle;
+    -fx-border-radius: 4; /* radius-sm */
     -fx-background-radius: 4;
     -fx-padding: 8 12 8 12;
-    -fx-text-fill: -color-text-primary;
+    -fx-text-fill: -color-text-on-light;
+    -fx-prompt-text-fill: -color-text-secondary;
 }
 .text-field:hover {
     -fx-border-color: -color-text-secondary;
 }
 .text-field:focused {
-    -fx-border-color: -color-accent;
+    -fx-border-color: -color-accent-gold;
 }
 .text-field:disabled {
     -fx-opacity: 0.5;
 }
 
-/* List cell */
+/* List cell: cream surface; selected uses gold with dark-roast foreground. */
 .list-cell {
     -fx-padding: 8 12 8 12;
-    -fx-background-color: -color-bg-surface;
-    -fx-text-fill: -color-text-primary;
+    -fx-background-color: -color-bg-elevated;
+    -fx-text-fill: -color-text-on-light;
 }
 .list-cell:hover {
-    -fx-background-color: derive(-color-bg-surface, -3%);
+    -fx-background-color: derive(-color-bg-elevated, -5%);
 }
 .list-cell:selected {
-    -fx-background-color: -color-accent;
-    -fx-text-fill: white;
+    -fx-background-color: -color-accent-gold;
+    -fx-text-fill: -color-text-on-light;
 }
 .list-cell:focused {
-    -fx-background-color: derive(-color-accent, 30%);
+    -fx-background-color: derive(-color-accent-gold, 20%);
 }
 .list-cell:disabled {
     -fx-opacity: 0.5;

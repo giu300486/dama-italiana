@@ -1,6 +1,10 @@
 /*
  * Component styles specific to the board renderer, move history pane and game-flow widgets.
  * Loaded after the active theme stylesheet so it can reference the looked-up color tokens.
+ *
+ * Fase 3.5: tokens remapped to the wood-premium vocabulary (SPEC §13.2). The board
+ * cells continue to use -color-board-light/dark as a fallback color; Task 3.5.6 will wire
+ * BackgroundImage textures (assets/textures/board_*.jpg) on top of these fallbacks.
  */
 
 /* ====== BOARD ====== */
@@ -12,21 +16,21 @@
     -fx-background-color: -color-board-dark;
 }
 .board-cell-selected {
-    -fx-effect: innershadow(gaussian, -color-accent, 12, 0.6, 0, 0);
+    -fx-effect: innershadow(gaussian, -color-accent-gold, 12, 0.6, 0, 0);
 }
 
 /* Pieces */
 .piece {
     -fx-fill: -color-piece-white;
-    -fx-stroke: -color-text-primary;
+    -fx-stroke: -color-text-on-light;
     -fx-stroke-width: 2;
 }
 .piece-black {
     -fx-fill: -color-piece-black;
-    -fx-stroke: -color-bg-surface;
+    -fx-stroke: -color-bg-elevated;
 }
 .piece-king {
-    -fx-stroke: -color-warning;
+    -fx-stroke: -color-accent-gold;
     -fx-stroke-width: 3;
 }
 
@@ -42,7 +46,7 @@
     -fx-opacity: 0.7;
 }
 .cell-focused-keyboard {
-    -fx-border-color: -color-accent;
+    -fx-border-color: -color-accent-gold;
     -fx-border-width: 2;
     -fx-border-radius: 2;
     -fx-border-insets: 1;
@@ -74,6 +78,6 @@
     -fx-font-family: "Inter", "Segoe UI", monospace;
 }
 .move-history-row-current {
-    -fx-background-color: derive(-color-bg-surface, -5%);
+    -fx-background-color: derive(-color-bg-surface, 10%);
     -fx-font-weight: bold;
 }

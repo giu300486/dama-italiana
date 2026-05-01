@@ -1,7 +1,11 @@
 ---
 last-updated: 2026-05-01
-license-policy: CC0 only (verified per asset). No CC-BY, no CC-BY-NC, no CC-BY-SA, no "free with credit".
-phase: F3.5 (Task 3.5.1 — asset acquisition approved 2026-05-01)
+license-policy: |
+  CC0 1.0 Universal for all visual + audio assets.
+  SIL OFL 1.1 for fonts only (PLAN-fase-3.5 §3.2 "asset CC-BY/OFL"). OFL has no
+  attribution requirement when embedded in software; the only obligation is to
+  redistribute the license text alongside the binaries — see fonts/*-OFL.txt.
+phase: F3.5 (Task 3.5.1 + 3.5.2)
 ---
 
 # Dama Italiana — Asset Credits
@@ -32,6 +36,27 @@ sovradimensionate per celle di ~80 px del tavoliere).
 | `textures/board_dark.jpg` | https://polyhaven.com/a/dark_wooden_planks | https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/dark_wooden_planks/dark_wooden_planks_diff_2k.jpg | CC0 1.0 | Poly Haven | 2.75 MB |
 | `textures/board_light.jpg` | https://polyhaven.com/a/oak_wood_planks | https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/oak_wood_planks/oak_wood_planks_diff_2k.jpg | CC0 1.0 | Poly Haven | 2.61 MB |
 | `textures/frame.jpg` | https://polyhaven.com/a/wood_table_worn | https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/wood_table_worn/wood_table_worn_diff_2k.jpg | CC0 1.0 | Poly Haven (foto: Dimitrios Savva, processing: Rico Cilliers) | 2.96 MB |
+
+## Fonts
+
+Aggiunti in Task 3.5.2 (PLAN-fase-3.5 §3 Foundation). Fonts variabili
+(weight axis), in `client/src/main/resources/fonts/`. Caricati al primo
+`ThemeService.applyTheme(Scene)` con `Font.loadFont`; CSS li referenzia via
+`-fx-font-family: "Inter"` (UI base) e `-fx-font-family: "Playfair Display"`
+(`.label-display`, hero titles).
+
+| Local file | Source URL | License | Author | Size on disk |
+|---|---|---|---|---:|
+| `fonts/InterVariable.ttf` | https://github.com/rsms/inter — `docs/font-files/InterVariable.ttf` | SIL OFL 1.1 | Rasmus Andersson + Inter Project Authors | 859 KB |
+| `fonts/Inter-OFL.txt` | https://github.com/rsms/inter/blob/master/LICENSE.txt | (license text) | — | 4.4 KB |
+| `fonts/PlayfairDisplay-Variable.ttf` | https://github.com/google/fonts — `ofl/playfairdisplay/PlayfairDisplay[wght].ttf` | SIL OFL 1.1 | Claus Eggers Sørensen + Google Fonts contributors | 294 KB |
+| `fonts/PlayfairDisplay-OFL.txt` | https://github.com/google/fonts/blob/main/ofl/playfairdisplay/OFL.txt | (license text) | — | 4.5 KB |
+
+**OFL compliance**: SIL OFL 1.1 imposes a single obligation when bundling
+fonts in software — redistribute the license text. The two `*-OFL.txt` files
+satisfy this. **No attribution is required in the app UI**. A "Reserved Font
+Name" clause forbids selling the font itself separately; it does not affect
+embedding.
 
 ## Audio — Music
 
