@@ -42,7 +42,9 @@ public final class MoveAnimator {
    * <p>Implemented as a custom {@link Interpolator} subclass because JavaFX's {@link
    * Interpolator#SPLINE(double, double, double, double)} validates all four control-point
    * coordinates lie in [0,1], which forbids the overshoot {@code y1 > 1} a cubic-bezier
-   * representation of out-back would need.
+   * representation of out-back would need. PLAN-fase-3.5 §3.5.8 originally suggested {@code
+   * Interpolator.SPLINE(0.34, 1.56, 0.64, 1)}; this anonymous subclass is the equivalent visible
+   * behavior given that limitation. See REVIEW-fase-3.5 finding F-002.
    */
   public static final Interpolator MOVE_INTERPOLATOR =
       new Interpolator() {
