@@ -199,6 +199,22 @@
 .card .label-secondary {
     -fx-text-fill: -color-text-on-light;
 }
+/*
+ * Plain <Label> nodes (no utility class) inside cards/popovers — use the type
+ * selector "Label" (capital L) so we match javafx.scene.control.Label
+ * instances *only*, NOT the LabeledText skin node that JavaFX Button uses
+ * internally (LabeledText extends Text, not Label). This keeps button text
+ * fills untouched while making body labels readable on cream surfaces.
+ *
+ * Without this rule plain Labels inherited the global `.label` cream fill →
+ * cream-on-cream → invisible body paragraphs (RulesController) and form
+ * sub-labels (settings audio sliders, board status pane).
+ */
+.card Label,
+.card-elevated Label,
+.popover Label {
+    -fx-text-fill: -color-text-on-light;
+}
 .card:hover {
     -fx-border-color: -color-accent-gold;
 }
