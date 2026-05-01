@@ -36,19 +36,52 @@
     -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.45), 16, 0, 0, 4);
 }
 
-/* Pieces */
+/* Pieces (Task 3.5.7 — wood-premium 3D-look). The body wears a radial gradient
+ * to simulate a bombed disc; an outer dashed ring stands in for the scanalatura
+ * on a physical disc; a small translucent gloss circle gives a light reflection
+ * in the upper-left; for kings, a Text "♛" marker bears the crown in palette
+ * accent gold (white) or deep red (black). */
 .piece {
-    -fx-fill: -color-piece-white;
+    -fx-fill: radial-gradient(focus-angle 0deg, focus-distance 0%, center 35% 35%, radius 60%,
+                              derive(-color-piece-white, 30%) 0%,
+                              -color-piece-white 65%,
+                              derive(-color-piece-white, -22%) 100%);
     -fx-stroke: -color-text-on-light;
-    -fx-stroke-width: 2;
+    -fx-stroke-width: 1.5;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.50), 4, 0, 2, 2);
 }
 .piece-black {
-    -fx-fill: -color-piece-black;
+    -fx-fill: radial-gradient(focus-angle 0deg, focus-distance 0%, center 35% 35%, radius 60%,
+                              derive(-color-piece-black, 50%) 0%,
+                              derive(-color-piece-black, 18%) 60%,
+                              -color-piece-black 100%);
     -fx-stroke: -color-bg-elevated;
 }
 .piece-king {
     -fx-stroke: -color-accent-gold;
     -fx-stroke-width: 3;
+}
+.piece-ring {
+    -fx-fill: transparent;
+    -fx-stroke: rgba(0,0,0,0.35);
+    -fx-stroke-width: 1;
+    -fx-stroke-dash-array: 3 2;
+}
+.piece-ring-black {
+    -fx-stroke: rgba(255,255,255,0.30);
+}
+.piece-gloss {
+    -fx-fill: rgba(255,255,255,0.45);
+    -fx-stroke: transparent;
+}
+.piece-king-marker {
+    -fx-fill: -color-piece-king-marker-white;
+    -fx-stroke: rgba(0,0,0,0.50);
+    -fx-stroke-width: 0.5;
+}
+.piece-king-marker-black {
+    -fx-fill: -color-piece-king-marker-black;
+    -fx-stroke: rgba(255,255,255,0.30);
 }
 
 /* Move highlights — FR-SP-04 (legal targets) and FR-SP-05 (mandatory captures) */
