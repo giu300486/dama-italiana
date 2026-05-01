@@ -6,6 +6,21 @@ Il formato è basato su [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1
 
 ## [Unreleased]
 
+### Added
+
+- **Task 3.5.5** — SFX wiring nei gameplay events (Fase 3.5, branch `feature/3.5-visual-polish-and-audio`):
+  - **`SinglePlayerController` ctor +4° arg `AudioService`** required (Spring auto-wires; tests aggiornati con mock `Mockito.mock(AudioService.class)`). Estratto helper `dispatchMoveSfx(move, preMovePiece)` invocato dentro `finalizeMove` dopo `applyMove`.
+  - **3 canali indipendenti**:
+    - `Sfx.CAPTURE` se `move.isCapture()`, altrimenti `Sfx.MOVE` (sempre uno per ogni mossa applicata, sia umana che IA — feedback acustico simmetrico per "videogame premium" SPEC §13.4).
+    - `Sfx.PROMOTION` quando `preMovePiece.kind == MAN && postMovePiece.kind == KING` (rilevata via `state.board().at(move.from())` pre-apply vs `at(move.to())` post-apply).
+    - `Sfx.VICTORY` / `Sfx.DEFEAT` su `state.status().isWin()` confrontando `winner == game.humanColor()`. Draws (DRAW_REPETITION/DRAW_FORTY_MOVES/DRAW_AGREEMENT) restano silenti.
+  - **`Sfx.ILLEGAL` in `onCellClicked`**: ramo "click su empty/enemy con `selected != null` e nessun match precedente" (target legale, deselect, reselect friendly) → `audioService.playSfx(Sfx.ILLEGAL)` + `deselect()`. Click senza selezione attiva non genera ILLEGAL (esperienza UX neutrale).
+  - **Tests** 9 nuovi (totale +9):
+    - `SinglePlayerControllerTest` 5: `simpleHumanMoveFiresMoveSfx`, `illegalClickWhileSelectionActiveFiresIllegalSfx`, `clickOnEmptySquareWithoutSelectionDoesNotFireIllegalSfx`, `reselectingFriendlyPieceDoesNotFireIllegalSfx`, `deselectingSameSquareDoesNotFireIllegalSfx`.
+    - `SinglePlayerE2ETest` 4 con setup hand-built `SerializedGameState`: `captureMoveFiresCaptureSfxNotMoveSfx` (W22 cattura B18→W15), `promotionMoveFiresMoveAndPromotionSfx` (W5→W1 rank 7), `capturingTheLastOpposingPieceFiresVictorySfx` (W22 cattura unico B18 → WHITE_WINS, humanColor=WHITE → VICTORY+CAPTURE), `aiWinningMoveFiresDefeatSfxFromHumanPerspective` (driven via `AiTurnService` mock con `CompletableFuture.completedFuture(captureMove)`, humanColor=BLACK → CAPTURE+DEFEAT).
+  - 6 ctor call sites aggiornati nei test files (5 in `SinglePlayerControllerTest`, 1 in `SinglePlayerE2ETest`) per il nuovo arg `AudioService`.
+  - `mvn -pl client verify -DexcludedGroups=slow,performance` BUILD SUCCESS, **310 test totali** (+9 vs 3.5.4 follow-up), JaCoCo client gate ✅, SpotBugs 0, Spotless OK.
+
 ### Changed
 
 - **Task 3.5.4 follow-up — audio formato pipeline (2026-05-01)**: dopo verifica empirica del 2026-05-01, **JavaFX Media su Windows non decodifica OGG Vorbis** — `MediaException — Unrecognized file signature!`. Tutti i 3 pack Kenney usati in Task 3.5.1 distribuiscono solo `.ogg`, niente `.wav`. **Soluzione (Opzione 2 approvata dall'utente)**: pipeline pure-Java OGG→WAV in fase di asset acquisition.

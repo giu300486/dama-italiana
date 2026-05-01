@@ -1,7 +1,11 @@
 package com.damaitaliana.client.controller;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 
+import com.damaitaliana.client.audio.AudioService;
+import com.damaitaliana.client.audio.Sfx;
 import com.damaitaliana.client.persistence.SerializedGameState;
 import com.damaitaliana.client.ui.board.BoardRenderer;
 import com.damaitaliana.shared.ai.AiLevel;
@@ -44,11 +48,13 @@ class SinglePlayerE2ETest {
 
   private BoardRenderer renderer;
   private AutosaveTrigger autosave;
+  private AudioService audio;
 
   @BeforeEach
   void setUp() {
     renderer = Mockito.mock(BoardRenderer.class);
     autosave = Mockito.mock(AutosaveTrigger.class);
+    audio = Mockito.mock(AudioService.class);
   }
 
   @Test
@@ -143,9 +149,111 @@ class SinglePlayerE2ETest {
     assertThat(controller.canRedo()).isFalse();
   }
 
+  // ---------------------------------------------------------------------------------------------
+  // SFX dispatch (Task 3.5.5) — uses the same hand-built positions as the rule-flow tests
+  // ---------------------------------------------------------------------------------------------
+
+  @Test
+  void captureMoveFiresCaptureSfxNotMoveSfx() {
+    // White man at FID 22 captures black man at FID 18, jumping to FID 15.
+    SerializedGameState position =
+        new SerializedGameState(
+            List.of(22), List.of(), List.of(18), List.of(), Color.WHITE, 0, List.of());
+    SinglePlayerController controller = startGame(position);
+
+    Square from = FidNotation.toSquare(22);
+    Square to = FidNotation.toSquare(15);
+    controller.onCellClicked(from);
+    Mockito.clearInvocations(audio);
+
+    controller.onCellClicked(to);
+
+    verify(audio).playSfx(Sfx.CAPTURE);
+    verify(audio, never()).playSfx(Sfx.MOVE);
+  }
+
+  @Test
+  void promotionMoveFiresMoveAndPromotionSfx() {
+    // Same setup as promotionStopsSequenceInUi: white man at FID 5 (rank 6) steps to FID 1 (rank 7)
+    // and gets promoted. Both MOVE (since the move is not a capture) and PROMOTION fire.
+    SerializedGameState position =
+        new SerializedGameState(
+            List.of(5), List.of(), List.of(), List.of(), Color.WHITE, 0, List.of());
+    SinglePlayerController controller = startGame(position);
+
+    Square from = FidNotation.toSquare(5);
+    Square to = FidNotation.toSquare(1);
+    controller.onCellClicked(from);
+    Mockito.clearInvocations(audio);
+
+    controller.onCellClicked(to);
+
+    verify(audio).playSfx(Sfx.MOVE);
+    verify(audio).playSfx(Sfx.PROMOTION);
+    verify(audio, never()).playSfx(Sfx.CAPTURE);
+  }
+
+  @Test
+  void capturingTheLastOpposingPieceFiresVictorySfx() {
+    // White man at FID 22 captures the only remaining black piece (man at FID 18). Black has zero
+    // pieces left → BLACK_WINS=false / WHITE_WINS=true → human (White) wins → VICTORY.
+    SerializedGameState position =
+        new SerializedGameState(
+            List.of(22), List.of(), List.of(18), List.of(), Color.WHITE, 0, List.of());
+    SinglePlayerController controller = startGame(position);
+
+    Square from = FidNotation.toSquare(22);
+    Square to = FidNotation.toSquare(15);
+    controller.onCellClicked(from);
+    Mockito.clearInvocations(audio);
+
+    controller.onCellClicked(to);
+
+    verify(audio).playSfx(Sfx.CAPTURE);
+    verify(audio).playSfx(Sfx.VICTORY);
+    verify(audio, never()).playSfx(Sfx.DEFEAT);
+  }
+
+  @Test
+  void aiWinningMoveFiresDefeatSfxFromHumanPerspective() {
+    // Human plays BLACK; the AI (WHITE) captures the only black piece at FID 18 by jumping from
+    // FID 22 to FID 15. After the capture Black has zero pieces → status WHITE_WINS → from the
+    // human's perspective (BLACK) this is a DEFEAT. Drives the AI move via a stubbed
+    // AiTurnService so the test stays synchronous.
+    SerializedGameState position =
+        new SerializedGameState(
+            List.of(22), List.of(), List.of(18), List.of(), Color.WHITE, 0, List.of());
+
+    Move whiteWinningMove =
+        RULES.legalMoves(position.toState()).stream()
+            .filter(Move::isCapture)
+            .findFirst()
+            .orElseThrow();
+
+    AiTurnService aiService = Mockito.mock(AiTurnService.class);
+    Mockito.when(aiService.requestMove(Mockito.any(), Mockito.any(), Mockito.any()))
+        .thenReturn(java.util.concurrent.CompletableFuture.completedFuture(whiteWinningMove));
+
+    SinglePlayerController controller =
+        new SinglePlayerController(RULES, Optional.of(autosave), Optional.of(aiService), audio);
+    controller.setFxExecutor(Runnable::run);
+    SinglePlayerGame humanIsBlack =
+        new SinglePlayerGame(
+            AiLevel.PRINCIPIANTE,
+            Color.BLACK,
+            "E2E-defeat",
+            position.toState(),
+            new SplittableRandom(42L));
+    controller.start(humanIsBlack, renderer);
+
+    verify(audio).playSfx(Sfx.CAPTURE);
+    verify(audio).playSfx(Sfx.DEFEAT);
+    verify(audio, never()).playSfx(Sfx.VICTORY);
+  }
+
   private SinglePlayerController startGame(SerializedGameState position) {
     SinglePlayerController controller =
-        new SinglePlayerController(RULES, Optional.of(autosave), Optional.empty());
+        new SinglePlayerController(RULES, Optional.of(autosave), Optional.empty(), audio);
     SinglePlayerGame game =
         new SinglePlayerGame(
             AiLevel.PRINCIPIANTE,
