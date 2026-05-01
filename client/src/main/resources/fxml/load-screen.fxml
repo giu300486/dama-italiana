@@ -12,6 +12,7 @@
 
 <BorderPane xmlns:fx="http://javafx.com/fxml/1"
             fx:controller="com.damaitaliana.client.ui.save.LoadScreenController"
+            styleClass="screen-root"
             prefWidth="1024" prefHeight="768">
     <padding>
         <Insets top="24" right="24" bottom="24" left="24"/>
@@ -22,7 +23,7 @@
             <padding>
                 <Insets bottom="16"/>
             </padding>
-            <Label fx:id="titleLabel" styleClass="label-title"/>
+            <Label fx:id="titleLabel" styleClass="label-display, label-display-md"/>
         </HBox>
     </top>
 
@@ -50,7 +51,8 @@
             <Button fx:id="backButton" onAction="#onBack" styleClass="button-secondary"/>
             <Region HBox.hgrow="ALWAYS" maxWidth="Infinity"/>
             <Button fx:id="deleteButton" onAction="#onDelete" styleClass="button-secondary"/>
-            <Button fx:id="loadButton" onAction="#onLoad" defaultButton="true"/>
+            <Button fx:id="loadButton" onAction="#onLoad" defaultButton="true"
+                    styleClass="button-primary"/>
         </HBox>
     </bottom>
 </BorderPane>

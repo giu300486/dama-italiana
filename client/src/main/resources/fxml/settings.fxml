@@ -15,6 +15,7 @@
 
 <StackPane xmlns:fx="http://javafx.com/fxml/1"
            fx:controller="com.damaitaliana.client.ui.settings.SettingsController"
+           styleClass="screen-root"
            prefWidth="1024" prefHeight="768">
     <padding>
         <Insets top="32" right="32" bottom="32" left="32"/>
@@ -25,7 +26,7 @@
     </fx:define>
 
     <VBox styleClass="card-elevated" alignment="TOP_LEFT" spacing="20" maxWidth="560">
-        <Label fx:id="titleLabel" styleClass="label-title"/>
+        <Label fx:id="titleLabel" styleClass="label-display, label-display-md"/>
 
         <VBox spacing="8">
             <Label fx:id="languageLabel" styleClass="label-secondary"/>
@@ -68,7 +69,7 @@
         <HBox spacing="12" alignment="CENTER_RIGHT">
             <Button fx:id="backButton" onAction="#onBack" styleClass="button-secondary"/>
             <Region HBox.hgrow="ALWAYS" maxWidth="Infinity"/>
-            <Button fx:id="saveButton" onAction="#onSave"/>
+            <Button fx:id="saveButton" onAction="#onSave" styleClass="button-primary"/>
         </HBox>
     </VBox>
 </StackPane>

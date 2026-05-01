@@ -433,3 +433,25 @@
 .main-menu-card .ikonli-font-icon {
     -fx-icon-color: -color-border-subtle;
 }
+
+/* ====== SCREEN ROOTS (Task 3.5.11) ====== */
+
+/* Generic wood backdrop applied to the root container of the form-screens
+ * (sp-setup, load-screen, settings, rules). Re-uses board_dark.jpg already
+ * employed by .board-cell-dark and .main-menu-root for visual coherence. */
+.screen-root {
+    -fx-background-image: url("/assets/textures/board_dark.jpg");
+    -fx-background-size: cover;
+    -fx-background-position: center;
+}
+
+/* Display labels inherit -color-accent-gold from .label-display, which is the
+ * right call on the dark wood backdrop. Inside cream card surfaces the gold
+ * fails WCAG AA, so flip the fill to dark-roast when nested in a card.
+ * (Same defensive scoping pattern as the .card .label-* fill overrides in
+ * the CARDS section above.) */
+.card .label-display,
+.card-elevated .label-display,
+.popover .label-display {
+    -fx-text-fill: -color-text-on-light;
+}
