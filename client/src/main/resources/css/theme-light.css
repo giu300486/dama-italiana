@@ -172,7 +172,17 @@
 
 /* ====== CARDS ====== */
 
-/* Card: cream parchment surface on dark background; foreground dark-roast for contrast. */
+/*
+ * Card: cream parchment surface on dark background; foreground dark-roast for contrast.
+ *
+ * Note on the label override: rules target the explicit label utility classes
+ * (.label-title, .label-subtitle, .label-secondary) rather than the generic .label
+ * selector. JavaFX Button has an internal Label node whose styleClass *includes*
+ * .label — a `.card-elevated .label` rule would therefore bleed onto button text
+ * and override the button's own -fx-text-fill, producing dark-on-dark when the
+ * button background is deep-walnut. Targeting the named utility classes keeps the
+ * cascade predictable.
+ */
 .card {
     -fx-background-color: -color-bg-elevated;
     -fx-border-color: -color-border-subtle;
@@ -180,7 +190,9 @@
     -fx-background-radius: 8;
     -fx-padding: 16; /* spacing-4 */
 }
-.card .label {
+.card .label-title,
+.card .label-subtitle,
+.card .label-secondary {
     -fx-text-fill: -color-text-on-light;
 }
 .card:hover {
@@ -200,7 +212,9 @@
     -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.30), 8, 0, 0, 2);
     -fx-padding: 16;
 }
-.card-elevated .label {
+.card-elevated .label-title,
+.card-elevated .label-subtitle,
+.card-elevated .label-secondary {
     -fx-text-fill: -color-text-on-light;
 }
 
@@ -209,7 +223,9 @@
     -fx-background-radius: 12; /* radius-lg */
     -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.40), 16, 0, 0, 4);
 }
-.popover .label {
+.popover .label-title,
+.popover .label-subtitle,
+.popover .label-secondary {
     -fx-text-fill: -color-text-on-light;
 }
 
@@ -233,6 +249,75 @@
 }
 .text-field:disabled {
     -fx-opacity: 0.5;
+}
+
+/* ====== MENU BAR / CONTEXT MENU ======
+ *
+ * JavaFX defaults assume a light-mode environment. Without these overrides the
+ * menu bar text inherits a near-default fill that washes out on the wood-premium
+ * dark page; menu dropdowns also need their cream background spelled out.
+ */
+
+.menu-bar {
+    -fx-background-color: -color-bg-surface;
+    -fx-padding: 2 8 2 8;
+}
+.menu-bar > .container > .menu-button {
+    -fx-background-color: transparent;
+    -fx-padding: 4 12 4 12;
+}
+.menu-bar > .container > .menu-button > .label {
+    -fx-text-fill: -color-text-on-dark;
+}
+.menu-bar > .container > .menu-button:hover {
+    -fx-background-color: derive(-color-bg-surface, 12%);
+}
+.menu-bar > .container > .menu-button:showing {
+    -fx-background-color: -color-bg-elevated;
+}
+.menu-bar > .container > .menu-button:showing > .label {
+    -fx-text-fill: -color-text-on-light;
+}
+
+.context-menu {
+    -fx-background-color: -color-bg-elevated;
+    -fx-border-color: -color-border-subtle;
+    -fx-border-width: 1;
+    -fx-border-radius: 4;
+    -fx-background-radius: 4;
+    -fx-padding: 4 0 4 0;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.40), 12, 0, 0, 4);
+}
+.menu-item {
+    -fx-background-color: transparent;
+    -fx-padding: 6 16 6 16;
+}
+.menu-item .label {
+    -fx-text-fill: -color-text-on-light;
+}
+.menu-item:hover,
+.menu-item:focused {
+    -fx-background-color: -color-accent-gold;
+}
+.menu-item:hover > .label,
+.menu-item:focused > .label {
+    -fx-text-fill: -color-text-on-light;
+}
+.menu-item:disabled {
+    -fx-opacity: 0.5;
+}
+
+/* ====== TOOLTIP ====== */
+
+.tooltip {
+    -fx-background-color: -color-bg-elevated;
+    -fx-text-fill: -color-text-on-light;
+    -fx-border-color: -color-border-subtle;
+    -fx-border-width: 1;
+    -fx-border-radius: 4;
+    -fx-background-radius: 4;
+    -fx-padding: 6 10 6 10;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.40), 8, 0, 0, 2);
 }
 
 /* List cell: cream surface; selected uses gold with dark-roast foreground. */

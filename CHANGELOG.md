@@ -6,6 +6,10 @@ Il formato è basato su [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1
 
 ## [Unreleased]
 
+### Fixed
+
+- **Task 3.5.2 readability follow-up** (post manual user test 2026-05-01): `theme-light.css` aveva selettori troppo larghi `.card .label` / `.card-elevated .label` / `.popover .label` che matchavano anche il `.label` interno del `Button` JavaFX (struttura skin del controllo), sovrascrivendo `-fx-text-fill` del bottone (cream `#F0E0C4`) con `-color-text-on-light` (dark-roast `#2A1F15`) → testo dark-roast su sfondo deep-walnut del pulsante → invisibile (~1.5:1 contrast). Fix: ristretti i selettori alle utility class esplicite `.card-elevated .label-title, .label-subtitle, .label-secondary` (idem per `.card` e `.popover`); il commento sopra il blocco documenta il rationale. Inoltre aggiunto styling completo del `MenuBar` + `MenuItem` + `ContextMenu` + `Tooltip` (mai stilizzati per il tema dark — i default JavaFX assumono ambiente light): menu bar `bg-surface` deep walnut con label cream, dropdown `bg-elevated` cream con label dark-roast e hover `accent-gold`. Tutti i 5 stati interattivi (hover/focused/showing/disabled). `mvn -pl client verify -DexcludedGroups=slow,performance` BUILD SUCCESS, **281 test totali** invariato.
+
 ### Changed
 
 - **SPEC.md v2.2** (2026-04-30) — pull-forward per esigenza **demo cliente Win 10/11**, applicato post-approvazione PLAN-fase-3.5 §10. CR-F3.5-001..005:
