@@ -10,6 +10,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.damaitaliana.client.app.ClientProperties;
+import com.damaitaliana.client.app.ThemeService;
 import com.damaitaliana.client.app.UserPromptService;
 import com.damaitaliana.client.controller.ColorChoice;
 import com.damaitaliana.client.controller.SinglePlayerGame;
@@ -38,6 +39,7 @@ class SaveDialogControllerTest {
   private SaveService saveService;
   private UserPromptService prompt;
   private I18n i18n;
+  private ThemeService themeService;
   private SaveDialogController controller;
   private SinglePlayerGame snapshot;
 
@@ -53,9 +55,10 @@ class SaveDialogControllerTest {
     i18n = Mockito.mock(I18n.class);
     when(i18n.t(anyString())).thenAnswer(inv -> inv.getArgument(0));
     when(i18n.t(anyString(), any(Object[].class))).thenAnswer(inv -> inv.getArgument(0));
+    themeService = Mockito.mock(ThemeService.class);
 
     Clock fixedClock = Clock.fixed(Instant.parse("2026-04-29T10:00:00Z"), ZoneId.of("UTC"));
-    controller = new SaveDialogController(saveService, prompt, i18n, fixedClock);
+    controller = new SaveDialogController(saveService, prompt, i18n, themeService, fixedClock);
 
     snapshot =
         SinglePlayerGame.tryCreate(
