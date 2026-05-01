@@ -298,7 +298,8 @@ public class SinglePlayerController {
     }
     busy = true;
     Animation animation =
-        AnimationOrchestrator.animateMove(move, renderer::pieceAt, renderer.currentCellSize());
+        AnimationOrchestrator.animateMove(
+            move, renderer::pieceAt, renderer.currentCellSize(), renderer.particleHost());
     animation.setOnFinished(ev -> finalizeMove(move, sideThatMoved));
     animation.playFromStart();
   }

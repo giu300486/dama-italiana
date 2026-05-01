@@ -14,6 +14,7 @@ import javafx.animation.ParallelTransition;
 import javafx.animation.SequentialTransition;
 import javafx.animation.TranslateTransition;
 import javafx.scene.Node;
+import javafx.scene.layout.Pane;
 
 /**
  * Composes the {@link MoveAnimator} primitives into the {@link Animation} for a full {@link Move}.
@@ -50,6 +51,17 @@ public final class AnimationOrchestrator {
    *     via {@link BoardLayoutMath#xFor(int, double)} / {@link BoardLayoutMath#yFor(int, double)}.
    */
   public static Animation animateMove(Move move, Function<Square, Node> pieceAt, double cellSize) {
+    return animateMove(move, pieceAt, cellSize, null);
+  }
+
+  /**
+   * Same as {@link #animateMove(Move, Function, double)} but, when {@code particleHost} is
+   * non-null, layers a {@link ParticleEffects#captureSplash} on each capture leg (Task 3.5.8).
+   * Splash particles are spawned at the captured square's centre so the user sees a brown/grey dust
+   * burst as the captured piece dissolves.
+   */
+  public static Animation animateMove(
+      Move move, Function<Square, Node> pieceAt, double cellSize, Pane particleHost) {
     Objects.requireNonNull(move, "move");
     Objects.requireNonNull(pieceAt, "pieceAt");
     if (cellSize <= 0) {
@@ -63,7 +75,7 @@ public final class AnimationOrchestrator {
       return slideLeg(movingPiece, sm.from(), sm.to(), cellSize);
     }
     if (move instanceof CaptureSequence cs) {
-      return sequenceForCapture(cs, movingPiece, pieceAt, cellSize);
+      return sequenceForCapture(cs, movingPiece, pieceAt, cellSize, particleHost);
     }
     throw new IllegalArgumentException("Unsupported move kind: " + move.getClass());
   }
@@ -77,7 +89,11 @@ public final class AnimationOrchestrator {
   }
 
   private static SequentialTransition sequenceForCapture(
-      CaptureSequence cs, Node movingPiece, Function<Square, Node> pieceAt, double cellSize) {
+      CaptureSequence cs,
+      Node movingPiece,
+      Function<Square, Node> pieceAt,
+      double cellSize,
+      Pane particleHost) {
     List<Animation> legs = new ArrayList<>();
     Square cursor = cs.from();
     for (int i = 0; i < cs.path().size(); i++) {
@@ -86,10 +102,20 @@ public final class AnimationOrchestrator {
 
       TranslateTransition slide = slideLeg(movingPiece, cursor, landing, cellSize);
       Node capturedNode = pieceAt.apply(capturedSquare);
-      Animation legAnim =
-          (capturedNode == null)
-              ? slide
-              : new ParallelTransition(slide, MoveAnimator.fadeCapture(capturedNode));
+      Animation legAnim;
+      if (capturedNode == null) {
+        legAnim = slide;
+      } else {
+        List<Animation> parts = new ArrayList<>();
+        parts.add(slide);
+        parts.add(MoveAnimator.fadeCapture(capturedNode));
+        if (particleHost != null) {
+          double cx = BoardLayoutMath.xFor(capturedSquare.file(), cellSize) + cellSize / 2.0;
+          double cy = BoardLayoutMath.yFor(capturedSquare.rank(), cellSize) + cellSize / 2.0;
+          parts.add(ParticleEffects.captureSplash(particleHost, cx, cy));
+        }
+        legAnim = new ParallelTransition(parts.toArray(Animation[]::new));
+      }
       legs.add(legAnim);
       cursor = landing;
     }
