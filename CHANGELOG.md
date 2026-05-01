@@ -8,7 +8,46 @@ Il formato è basato su [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1
 
 ### Added
 
-- **Task 3.5.5** — SFX wiring nei gameplay events (Fase 3.5, branch `feature/3.5-visual-polish-and-audio`):
+- **Task 3.5.15** — Documentation + ADR + CHANGELOG + TRACEABILITY (Fase 3.5, branch `feature/3.5-visual-polish-and-audio`):
+  - **`ARCHITECTURE.md`**: 4 nuovi ADR. **ADR-034** (visual rework "videogame premium wood") documenta il rationale del riscrivere `theme-light.css` con vocabolario duale `bg-*/text-on-*`, tipografia bi-classe Playfair display + Inter UI, classi pulsante primary/secondary, texture Poly Haven applicata via `BackgroundImage`, pezzi composti `Group` con gradient/ring/gloss/marker, e single-source-of-truth `ThemeService` (tracing del finding F-001 / Task 3.5.14a). **ADR-035** (architettura `AudioService`): interface testabile + impl `JavaFxAudioService` single MediaPlayer music + `EnumMap<Sfx,MediaPlayer>` cache, threading runOnFxThread con catch IllegalStateException, persistence via UserPreferences v2, JaCoCo exclusion sull'impl. **ADR-036** (jpackage Windows MSI): pipeline opt-in profilo `installer`, prerequisito WiX 3.x, `--win-upgrade-uuid` stabile per upgrade in-place, fallback `APP_IMAGE`, AppIconGenerator pattern. **ADR-037** (asset licensing strategy): CC0 visual+audio, OFL 1.1 fonts, `CREDITS.md` come single source of truth con audit trail e esclusioni dettagliate.
+  - **`README.md`**: sezione "Build installer Windows (Fase 3.5+)" già presente (Task 3.5.12), aggiunta nota dedicata "Demo cliente" che documenta il flusso target (doppio-click `.msi` → install → Start menu shortcut → no prerequisito Java).
+  - **`tests/TRACEABILITY.md`**: nuova sezione "Acceptance criteria di Fase 3.5 (PLAN-fase-3.5.md §2.2)" con mapping completo A3.5.1..A3.5.21 → test class/method o output di build. Riga aggiuntiva FR-SP/FR-RUL invariate (rework solo visual, niente nuovi FR coperti).
+  - **`AI_CONTEXT.md`**: stato avanzato a Task 3.5.15 completato; "Prossimo task" → Task 3.5.16 (REVIEW Fase 3.5).
+  - **Nessun nuovo test** prodotto in 3.5.15 (per design del piano: solo documentazione).
+
+- **Task 3.5.14** — Manual demo run + visual review (Fase 3.5, branch `feature/3.5-visual-polish-and-audio`):
+  - **MSI buildato 2 volte** via profilo opt-in `installer` con WiX 3.14 freshly-installed e `PATH=...` workaround inline (WiX non auto-aggiunto al PATH di sistema dall'installer; documentato in README). Output: `client/target/jpackage/Dama Italiana-0.3.5.msi` 152 MB col JRE bundled, `--win-upgrade-uuid 9d8c4a02-...` per upgrade in-place automatico tra build successive.
+  - **Installazione su Win 11 locale** OK (shortcut Start menu, niente prerequisito Java, lancio dal shortcut → splash → main menu in <2s).
+  - **8 schermate review**: 7/8 catturate in `tests/visual-review/{main-menu,sp-setup,board-game,save-dialog,load-screen,settings,rules}.png` come baseline visuale; **splash** non screenshot-able (durata ~1.5s) ma look verificato a occhio dall'utente — non bloccante.
+  - **Gameplay full vs IA Esperto** verificato: tutti gli A3.5.x audio/animazione/visual PASS — easing OUT_BACK overshoot, particle splash su cattura, raggi dorati su promozione, glow halo cattura obbligatoria, music shuffle 30%, SFX MOVE/CAPTURE/PROMOTION/VICTORY|DEFEAT su rispettivi eventi, sliders Volume musica + Effetti reagiscono in tempo reale.
+  - **Finding F-001 [REQUIREMENT_GAP, High]** emerso e risolto in **Task 3.5.14a** (vedi sotto).
+  - `tests/TEST-PLAN-fase-3.5.md §7` finalizzato esito **PASS** (con i 7 PNG baseline checked-in). A3.5.4 PASS post-fix Task 3.5.14a, A3.5.5..15 PASS direttamente.
+
+### Fixed
+
+- **Task 3.5.14a** — Wood-theming del save dialog (Fase 3.5, branch `feature/3.5-visual-polish-and-audio`):
+  - `SaveDialogController` creava il proprio `Stage` modale con `new Scene(root)` senza chiamare `ThemeService.applyTheme(scene)` — il dialog renderizzava con la chrome JavaFX di default (sfondo bianco, font sistema), in violazione di A3.5.4 (8 schermate ridisegnate).
+  - **Fix**: iniettata dipendenza `ThemeService` nel costruttore @Autowired (ora 4-arg) + visible-for-tests (5-arg); chiamata `applyTheme(scene)` immediatamente dopo `new Scene(root)`. Pattern già usato da `SceneRouter`.
+  - Test aggiornati: `SaveDialogControllerTest` + `FxmlLoadingSmokeTest` mockano `ThemeService`; `SaveDialogSpringContextTest` invariato (autowiring risolve ThemeService come `@Component` esistente).
+  - `mvn -pl client verify -DexcludedGroups=slow,performance` BUILD SUCCESS, 321 test totali (invariato vs 3.5.13), JaCoCo client gate ✅, SpotBugs 0, Spotless OK.
+
+### Added
+
+- **Task 3.5.13** — Audit FXML smoke breakage post-rework: 0 test rotti dalle modifiche FXML/layout dei task 3.5.6 / 3.5.9 / 3.5.10 / 3.5.11. Pattern dei test (lookup by `fx:id`/styleClass + asserzioni sullo stato del controller) intenzionalmente robusto a refactor visivi. **Deviazione vs PLAN**: stimati 5-15 fix necessari, valore reale 0. Verificato `mvn -pl client verify` (322 test) + `mvn clean verify` root (BUILD SUCCESS 19:48 min, 673/673 verdi).
+
+- **Task 3.5.12** — `jpackage` Windows MSI installer (vedi ADR-036). Profilo Maven `installer` opt-in con pipeline 3-step (`maven-dependency-plugin` stage runtime deps + `maven-resources-plugin` stage self-jar + `org.panteleyev:jpackage-maven-plugin:1.6.5`). Icona `app-icon.ico` multi-size generata via nuovo `AppIconGenerator` test-scope (PNG-in-ICO Vista+). README sezione "Build installer Windows (Fase 3.5+)" aggiunta. Verifica end-to-end deferred a Task 3.5.14 (WiX install + manual demo).
+
+- **Task 3.5.11** — Restyling coordinato 5 schermate restanti (SP setup, Save dialog, Load screen, Settings, Rules) con i token v2 già definiti. Niente nuovi token CSS se non `.screen-root` (backdrop wood) e una regola context-scoped per il fill dei display label dentro card/popover (flip a dark-roast su cream, evita fail WCAG AA). 4 CTAs primary highlight (gradient gold). Deviazione documentata: paragraphs delle rules restano Inter (Playfair italic ridurrebbe leggibilità).
+
+- **Task 3.5.10** — Main menu restyling: 5-card grid (`.main-menu-card`) con cornice in legno scura + dropshadow + hover glow gold; titoli card in `.main-menu-card-title` Playfair 22px bold dark-roast (gold troppo basso contrasto su cream); icon Ikonli ricolorate warm brown #6B4423; backdrop `.main-menu-root` riusa la stessa texture wood scura della board.
+
+- **Task 3.5.9** — Splash screen restyling: rimossi FontIcon checkerboard + ProgressIndicator spinner; aggiunto sottotitolo italics + ProgressBar barber-pole gold orizzontale; backdrop riusa `frame.jpg` di Task 3.5.6; nuova chiave i18n `splash.subtitle` IT/EN. Loading time invariato (1.5s).
+
+- **Task 3.5.8** — Animation polish (juicy easing + particle effects + glow halo): `MoveAnimator` switch da `Interpolator.EASE_OUT` a `Interpolator.SPLINE(0.34, 1.56, 0.64, 1)` (out-back, overshoot leggero); nuovo `ParticleEffects` con `captureSplash` (8-12 Circle marrone/grigie, 350ms ParallelTransition translate radiale + fade + shrink), `promotionGlow` (8-12 Line gold radiali, 600ms expand+fade), `mandatoryGlow` (DropShadow Timeline cycle 1200ms su pezzo che deve catturare). `AnimationOrchestrator` invoca i nuovi effetti.
+
+- **Task 3.5.7** — `PieceNode` redesign 3D-look: composizione `Group(Circle bg radial gradient + Circle ring scanalato + Circle gloss highlight + Text king-marker)`. Marker dame: gold su bianco, deep red su nero. DropShadow ombra. `PieceNodeTest` 5 test rendering uomo/dama bianco/nero + marker presence.
+
+- **Task 3.5.6** — `BoardCellNode` redesign con texture legno: `BackgroundImage` chiaro/scuro alternato (Poly Haven CC0 da Task 3.5.1); cornice `Region` decorativa con texture wood scura + padding 24px; highlight legali via DropShadow gold (sostituisce overlay verde piatto).
   - **`SinglePlayerController` ctor +4° arg `AudioService`** required (Spring auto-wires; tests aggiornati con mock `Mockito.mock(AudioService.class)`). Estratto helper `dispatchMoveSfx(move, preMovePiece)` invocato dentro `finalizeMove` dopo `applyMove`.
   - **3 canali indipendenti**:
     - `Sfx.CAPTURE` se `move.isCapture()`, altrimenti `Sfx.MOVE` (sempre uno per ogni mossa applicata, sia umana che IA — feedback acustico simmetrico per "videogame premium" SPEC §13.4).

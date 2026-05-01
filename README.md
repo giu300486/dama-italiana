@@ -157,6 +157,8 @@ Genera `client/target/jpackage/Dama Italiana/` con il `.exe` di lancio + JRE —
 
 > Nota: l'`-DskipTests` è raccomandato perché la phase `package` con il profilo `installer` esegue dep-staging + jpackage, non i test (già coperti da `mvn verify`). Per smoke test pre-build: `mvn -pl client -Pinstaller dependency:copy-dependencies@jpackage-stage-runtime-deps` popola `target/jpackage-input/` senza invocare `jpackage`.
 
+**Demo cliente Win 10/11**: l'MSI è pensato per la consegna come pacchetto autosufficiente. Il cliente riceve il file, fa **doppio-click**, completa l'installer wizard standard Windows (accetta i default, scope per-utente in `%LocalAppData%\Dama Italiana\`), e dal Start menu trova la voce "Dama Italiana" pronta al lancio. **Nessun prerequisito Java** sul target (JRE bundled). Le build successive con stesso `--win-upgrade-uuid` (UUID stabile committato nel POM) fanno upgrade in-place automatico senza disinstallazione manuale. Il flusso è coperto dal manual demo run di Task 3.5.14 (vedi `tests/TEST-PLAN-fase-3.5.md §7`).
+
 ### Headless / dev mode
 
 I test FXML smoke usano `Platform.startup` con guard `Assumptions.assumeTrue(fxToolkitReady)`: in ambienti senza display vengono saltati anziché fallire. Per il fast loop di sviluppo F3:

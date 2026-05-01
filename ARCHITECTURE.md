@@ -294,6 +294,81 @@ Riferimento autoritativo: `SPEC.md` Appendice B.
 
 ---
 
+### ADR-034 — Visual rework "videogame premium wood" (Fase 3.5)
+
+- **Data**: 2026-05-02
+- **Stato**: Accepted (Fase 3.5)
+- **Contesto**: SPEC §1.5 e SPEC §13.2 (v2.2, CR-F3.5-001) richiedono uno stile videogame classico ispirato all'app Play Store del cliente. Il design system di F3 (palette neutra, font Inter unico) era "moderno controllato" ma percepito come gestionale. Per la demo cliente Win 10/11 (SPEC §16 Fase 3.5) servono una pelle wood premium e una serie di affordance percettive (bevel, glow, gradient gold) coerenti su tutte le 8 schermate e sulla scacchiera/pezzi.
+- **Decisione**: Riscrittura completa di `theme-light.css` con un nuovo vocabolario duale: token color `bg-primary/bg-surface/bg-elevated` (dark roast / deep walnut / cream parchment) accoppiati a `text-on-dark/text-on-light/text-secondary` per gestire le superfici miste (sfondo dark + card cream). Tipografia bi-classe: Playfair Display variabile per i display titles (`-font-family-display`, classi `.label-display{,-md,-lg}`), Inter variabile per UI/body. Entrambi i font binari bundled in `client/src/main/resources/fonts/` (SIL OFL 1.1, license text alongside). Token motion `-easing-out-back` per overshoot juicy. Componenti rifatti: `.button-primary` (gradient gold + bevel innershadow + dropshadow + hover glow), `.button-secondary` (wood-frame outline su `bg-surface` deep walnut). Texture wood (Poly Haven CC0) applicate via `BackgroundImage` ai 4 backdrop principali (`splash-root`, `main-menu-root`, `screen-root`, `board-cell-{light,dark}`). Pezzi ridisegnati come composizione `Group(Circle bg radial gradient + ring scanalato + gloss highlight + Text king-marker)` con DropShadow ombra. Il dark theme resta stub coordinato (token speculari) ma non attivato in F3.5: il toggle runtime e la verifica WCAG AA in dark mode restano F11.
+- **Conseguenze**:
+  - `ThemeService.applyTheme(Scene)` resta single source of truth: ogni Scene istanziata fuori da `SceneRouter` (es. `SaveDialogController` modal Stage) deve invocarlo esplicitamente, altrimenti gli stylesheet non vengono caricati. Finding F-001 di Task 3.5.14 reso visibile e fixato in Task 3.5.14a (commit `19e5227`) — `SaveDialogController` ora inietta `ThemeService` e chiama `applyTheme(scene)` dopo `new Scene(root)`.
+  - Il bundle JaCoCo `client` cresce (~70 classi totali) ma le esclusioni F3 (Task 3.22) coprono ancora le classi pure-JavaFX/Spring bootstrap; il gate 60% line+branch resta verde.
+  - Le esistenti FXML smoke test (Task 3.18 + 3.21) hanno retto al rework senza modifiche (Task 3.5.13: 0 fix necessari) perché scritte fin dall'inizio con lookup by `fx:id`/styleClass robusto.
+  - Eventuale dark mode richiederà sintonia separata su contrasti su entrambi i palette (oggi solo light verificato manualmente).
+- **Alternative considerate**:
+  - Mantenere il design system F3 e fare solo "skinning" via overlay CSS: rifiutato perché l'effetto premium richiede la riscrittura di token/tipografia/ombre, non solo copertura.
+  - JavaFX CSS `theme="Modena"` con override mirati: rifiutato per la stessa ragione e per perdere la consistenza cross-component.
+  - Precaricare il dark theme in F3.5: rifiutato — il toggle runtime non è scope F3.5 (resta F11), e il dark con palette wood richiede una passata di contrast checking che dilata la fase oltre il budget demo.
+
+---
+
+### ADR-035 — Architettura `AudioService` (single MediaPlayer music + per-cue SFX cache)
+
+- **Data**: 2026-05-02
+- **Stato**: Accepted (Fase 3.5)
+- **Contesto**: SPEC §13.4 (v2.2, CR-F3.5-003) richiede ambient music orchestrale (3-5 tracce, random shuffle, default 30%, mutabile) + 6 SFX gameplay (MOVE, CAPTURE, PROMOTION, ILLEGAL, VICTORY, DEFEAT). I controller di gameplay (`SinglePlayerController`) e di setup (`SettingsController`) devono dispatchare audio senza dipendenze sul toolkit JavaFX (testabilità) e con persistenza allineata a `UserPreferences`.
+- **Decisione**: Dualismo interfaccia / impl. **`AudioService`** (`@Component` interface in `client/audio`) espone solo l'API testabile: `playMusicShuffle()`, `stopMusic()`, `playSfx(Sfx)`, `setVolume(AudioBus, int 0-100)`, `volume(AudioBus)`, `setMuted(AudioBus, boolean)`, `isMuted(AudioBus)`. **`JavaFxAudioService`** è l'unica impl prod. Music bus = single `MediaPlayer` driven da `MusicPlaylist` (deck shuffle deterministico con `RandomGenerator` injectable, anti back-to-back across reshuffle); `setOnEndOfMedia` dispone il player e ne crea uno nuovo per il prossimo brano. SFX bus = `EnumMap<Sfx, MediaPlayer>` cache lazy: ogni cue è un `MediaPlayer` riusato via `seek(Duration.ZERO) + play()` (one-shot pattern). Threading: helper `runOnFxThread()` con `try/catch IllegalStateException` per resilienza unit-test (toolkit non avviato → run inline). Persistence: ogni `setVolume`/`setMuted` invoca `persistAudioPreferences()` (`load + with* + save`); failure swallowed con WARN log per non bloccare il game loop. Mute semantics: `setMuted(MUSIC, true)` dispone il player corrente; `false` ri-avvia se la music era richiesta. `@PreDestroy shutdown()` dispone tutti i player. **JaCoCo** esclude `JavaFxAudioService.class` dal bundle (stesso pattern di `JavaFxUserPromptService`): l'interface `AudioService` è la testable abstraction, mockabile dai controller test.
+- **Conseguenze**:
+  - JavaFX Media su Windows non decodifica OGG Vorbis (verifica empirica 2026-05-01: `MediaException — Unrecognized file signature!`). Pipeline OGG→WAV pure-Java con `OggToWavConverter` (build-tool, scope `test`, basato su JOrbis low-level — la rotta `javax.sound.sampled` SPI ha un bug con clip <400ms). Master `.ogg` preservati in `assets/audio/sfx-master/`; runtime carica `.wav` PCM 16-bit signed LE.
+  - Schema `UserPreferences` bumpato a v2 con 4 campi audio (`musicVolumePercent`/`sfxVolumePercent`/`musicMuted`/`sfxMuted`) + migrazione v1→v2 trasparente (`@JsonCreator` riempie i defaults SPEC).
+  - Music bus tollera l'assenza dei binari (warn log "Music bus has no playable tracks") — utile in CI/test environments senza i WAV/MP3 (~64MB) a runtime classpath; il prod jar/MSI li include sempre.
+  - `SettingsController` ctor cresce a 6 arg (sceneRouter, i18n, prefs, prompt, scaling, audio); `SinglePlayerController` ctor a 4 arg (... + audio). Test: 6 ctor call sites aggiornati.
+- **Alternative considerate**:
+  - `javax.sound.sampled` puro: rifiutato per la music (no OGG/MP3 nativo, serve SPI esterno). Mantenuto in `OggToWavConverter` build-time.
+  - JavaZoom JLayer per MP3: aggiunge dipendenza runtime; JavaFX Media legge MP3 nativo, basta convertire OGG.
+  - Multi-source mixer (più SFX simultanei): SFX di gameplay sono one-shot e non si sovrappongono nello stesso evento; cache singola per cue è sufficiente.
+  - Dispatch SFX via Observable pattern (event bus): rifiutato — overhead di subscribe/unsubscribe, complica testing rispetto a injection diretta.
+
+---
+
+### ADR-036 — Packaging Windows MSI via `jpackage` + `org.panteleyev:jpackage-maven-plugin`
+
+- **Data**: 2026-05-02
+- **Stato**: Accepted (Fase 3.5)
+- **Contesto**: SPEC §16 Fase 3.5 (v2.2, CR-F3.5-004) richiede un installer Windows demo-ready: doppio-click su `.msi` → installazione senza prerequisiti Java → shortcut Start menu → app lanciata. Pull-forward parziale di Fase 11 (lì restano `.dmg` Mac + `.deb` Linux). Il bundle JRE è obbligatorio per evitare attriti su macchine cliente.
+- **Decisione**: Pipeline Maven a 3 step opt-in via profilo `installer` (assente dal default per non rallentare il fast loop). Step 1: `maven-dependency-plugin@jpackage-stage-runtime-deps` copia 89 jar runtime in `target/jpackage-input/`. Step 2: `maven-resources-plugin@jpackage-stage-self-jar` aggiunge `client-0.1.0-SNAPSHOT.jar` come `--main-jar`. Step 3: `org.panteleyev:jpackage-maven-plugin:1.6.5` invoca `jpackage --type MSI` con `--name "Dama Italiana"`, `--app-version 0.3.5`, `--vendor "Dama Italiana"`, `--main-class com.damaitaliana.client.ClientApplication`, `--icon assets/icons/app-icon.ico`, `--win-shortcut --win-menu --win-menu-group "Dama Italiana" --win-dir-chooser`, `--win-upgrade-uuid 9d8c4a02-3f1b-4f7e-9c2a-5a6e1b3c8d92` (UUID stabile per upgrade in-place automatico tra build). Output: `client/target/jpackage/Dama Italiana-0.3.5.msi` ~152 MB col JRE bundled. Prerequisiti macchina build: JDK 21 + WiX Toolset 3.x (3.11+) sul PATH (`candle.exe`, `light.exe`); WiX 4.x non supportato da `jpackage` di JDK 21. Fallback portable: `-Djpackage.type=APP_IMAGE` produce una cartella eseguibile senza WiX. **Icona**: `AppIconGenerator` (Java standalone in `client/src/test/java/buildtools/`, scope test fuori dal jar prod, stesso pattern di `OggToWavConverter`) disegna disco wood-themed multi-size (16/32/48/64/128/256 px) e scrive `app-icon.ico` come PNG-in-ICO (formato supportato da Vista+, copre Win 10/11).
+- **Conseguenze**:
+  - L'MSI è bundled JRE (~80 MB) + asset (~70 MB texture+audio); non richiede Java sul target. Cliente apre installer e gioca, no friction.
+  - `--runtime-image` jlink non utilizzato in F3.5 (Spring Boot non-modular richiederebbe `--ignore-missing-deps`); deferred a follow-up come ottimizzazione di tagliare ulteriormente la JRE bundled (~80 → ~60 MB stimato). Documentato nel changelog Task 3.5.12.
+  - Test in CI/headless skippano la fase `jpackage` perché il profilo è opt-in (`-Pinstaller`). Build manuale dello sviluppatore + Task 3.5.14 manual demo coprono la verifica end-to-end.
+  - WiX Toolset deve restare sul PATH della macchina build: documentato nel README sezione "Build installer Windows (Fase 3.5+)". Workaround inline `PATH=...` se WiX è installato ma non sul PATH globale.
+- **Alternative considerate**:
+  - `launch4j` + JRE separato: pre-jpackage, non genera MSI nativo; rifiutato.
+  - `jlink` + `jpackage --runtime-image` per JRE custom modular: bloccato da Spring Boot non-modular (CLASSPATH); deferred.
+  - `install4j`/`Advanced Installer`: commerciali, fuori scope budget.
+  - `--type APP_IMAGE` come default: niente shortcut Start menu, esperienza non-installer; mantenuto come fallback documentato (no WiX).
+  - WiX 4.x: non supportato da `jpackage` JDK 21 (limit upstream).
+
+---
+
+### ADR-037 — Asset licensing strategy: CC0 visual+audio, OFL fonts, audit `CREDITS.md`
+
+- **Data**: 2026-05-02
+- **Stato**: Accepted (Fase 3.5)
+- **Contesto**: SPEC §13.2.3 (v2.2, CR-F3.5-001) e PLAN-fase-3.5 §3.2 richiedono che tutti gli asset visivi e audio siano CC0 o CC-BY (preferenza CC0) con audit trail completo. La pelle "videogame premium wood" introduce ~10 binary asset (3 texture + 4 music + 6 SFX-master + 6 SFX-wav + 2 fonts + 1 icona generata). Necessario un policy uniforme + un inventario cito-citabile per evitare sorprese di compliance.
+- **Decisione**: Doppia regola di licensing dichiarata in `CREDITS.md` (root del repo) come `license-policy` frontmatter: **CC0 1.0 Universal per visual+audio** (preferenza assoluta, fallback CC-BY 4.0 con attribution); **SIL OFL 1.1 per i font binari** (license text redistribuita alongside il `.ttf`, unico obbligo OFL). `CREDITS.md` mantiene un inventario tabellato per ogni asset: local file path, source page URL, direct file URL, license, author, durata o size on disk. Audit trail della verifica licenza al momento dell'acquisizione (data + nota). Esclusioni documentate in dettaglio (Patreon-locked, 404, sito chiuso, mood non aderente, custom non-CC0). Asset generati programmaticamente (es. `app-icon.ico` da `AppIconGenerator`) sono opera del progetto (autore "Dama Italiana", licensing implicito = repo license). Task 3.5.1 ha consolidato questo pattern; tutti i task successivi (3.5.2 Inter+Playfair, 3.5.4 music binari, 3.5.4 follow-up SFX WAV) hanno appiccato voce all'inventario nello stesso commit dell'asset.
+- **Conseguenze**:
+  - Aggiungere asset al repo richiede sempre l'aggiornamento di `CREDITS.md` nello stesso commit (regola cresciuta de facto in F3.5; possibile spec-change request F11 per istituirla nei prossimi cicli).
+  - LGPL build-time tooling (`jorbis`, `vorbisspi` per `OggToWavConverter`) tracciato come **eccezione SPEC §6** in AI_CONTEXT.md / Task 3.5.4 follow-up: scope test, NON shippato nel jar/MSI prod, quindi nessun obbligo LGPL di redistribuzione.
+  - Le esclusioni mantenute esplicite (CC-BY require attribution stringente, custom Pixabay/Mixkit non OK) impediscono drift futuro su asset comodi-ma-ambigui.
+  - Eventuali asset CC-BY introdotti in futuro richiederanno una sotto-sezione "Attribution" in `CREDITS.md` con il testo di credito esatto come da licenza.
+- **Alternative considerate**:
+  - Solo CC0 senza fallback CC-BY: rifiutato — la lista di sorgenti CC0 di qualità per orchestral music è stretta (OpenGameArt non abbondante), CC-BY accettabile con disciplina.
+  - License `package.json`-style (file JSON parsabile): overkill per questa scala, markdown leggibile vince.
+  - SPDX expressions in headers `package-info.java`: non si applica agli asset binari, e la duplicazione con `CREDITS.md` introduce drift.
+
+---
+
 ## Vincoli architetturali invariabili
 
 Di seguito i vincoli che CLAUDE.md §8 impone come "anti-pattern" — qui esplicitati come positivi:
