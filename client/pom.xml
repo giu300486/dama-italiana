@@ -255,4 +255,118 @@
     </plugins>
   </build>
 
+  <profiles>
+    <!--
+      Windows installer build (Task 3.5.12). Activated explicitly with
+      `mvn -pl client -Pinstaller package`. Default produces an MSI (PLAN-fase-3.5
+      Task 3.5.12), which requires WiX Toolset 3.x on PATH. To build without WiX
+      (CI / dev smoke test) override the type:
+
+        mvn -pl client -Pinstaller -Djpackage.type=APP_IMAGE package
+
+      APP_IMAGE produces a runnable folder under target/jpackage/Dama Italiana/
+      containing the launcher .exe + bundled JRE — useful for ad-hoc distribution
+      as a zip while WiX is being provisioned on the build machine.
+
+      Output: target/jpackage/dama-italiana-0.3.5.msi (or APP_IMAGE folder).
+
+      Future optimisation (deferred from PLAN-fase-3.5 Task 3.5.12): pass an
+      explicit runtime image built via jlink to shrink the bundled JRE from
+      ~300 MB to ~80 MB. Spring Boot is classpath-only (non-modular) so jdeps
+      requires ignore-missing-deps; left for review-cycle follow-up.
+    -->
+    <profile>
+      <id>installer</id>
+      <properties>
+        <jpackage.type>MSI</jpackage.type>
+        <jpackage.app.version>0.3.5</jpackage.app.version>
+        <!-- Stable UUID required by WiX so upgrade installs replace prior versions
+             instead of double-installing. Generated once for this product line; do
+             NOT change unless intentionally creating a separate product. -->
+        <jpackage.win.upgrade.uuid>9d8c4a02-3f1b-4f7e-9c2a-5a6e1b3c8d92</jpackage.win.upgrade.uuid>
+      </properties>
+      <build>
+        <plugins>
+          <!-- Stage runtime dependencies into target/jpackage-input/ for jpackage. -->
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-dependency-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>jpackage-stage-runtime-deps</id>
+                <phase>package</phase>
+                <goals>
+                  <goal>copy-dependencies</goal>
+                </goals>
+                <configuration>
+                  <outputDirectory>${project.build.directory}/jpackage-input</outputDirectory>
+                  <includeScope>runtime</includeScope>
+                  <overWriteReleases>true</overWriteReleases>
+                  <overWriteSnapshots>true</overWriteSnapshots>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+          <!-- Stage the client jar itself alongside the runtime deps. -->
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-resources-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>jpackage-stage-self-jar</id>
+                <phase>package</phase>
+                <goals>
+                  <goal>copy-resources</goal>
+                </goals>
+                <configuration>
+                  <outputDirectory>${project.build.directory}/jpackage-input</outputDirectory>
+                  <resources>
+                    <resource>
+                      <directory>${project.build.directory}</directory>
+                      <includes>
+                        <include>${project.build.finalName}.jar</include>
+                      </includes>
+                    </resource>
+                  </resources>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <groupId>org.panteleyev</groupId>
+            <artifactId>jpackage-maven-plugin</artifactId>
+            <version>1.6.5</version>
+            <executions>
+              <execution>
+                <id>jpackage-build-installer</id>
+                <phase>package</phase>
+                <goals>
+                  <goal>jpackage</goal>
+                </goals>
+                <configuration>
+                  <type>${jpackage.type}</type>
+                  <name>Dama Italiana</name>
+                  <appVersion>${jpackage.app.version}</appVersion>
+                  <vendor>Dama Italiana</vendor>
+                  <copyright>Copyright (c) 2026 Dama Italiana</copyright>
+                  <description>Dama Italiana — Italian draughts (single-player demo)</description>
+                  <input>${project.build.directory}/jpackage-input</input>
+                  <destination>${project.build.directory}/jpackage</destination>
+                  <mainJar>${project.build.finalName}.jar</mainJar>
+                  <mainClass>com.damaitaliana.client.ClientApplication</mainClass>
+                  <icon>${project.basedir}/src/main/resources/assets/icons/app-icon.ico</icon>
+                  <winShortcut>true</winShortcut>
+                  <winMenu>true</winMenu>
+                  <winMenuGroup>Dama Italiana</winMenuGroup>
+                  <winDirChooser>true</winDirChooser>
+                  <winUpgradeUuid>${jpackage.win.upgrade.uuid}</winUpgradeUuid>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
+
 </project>

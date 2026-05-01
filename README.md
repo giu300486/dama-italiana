@@ -128,6 +128,35 @@ Schema dei salvataggi documentato in [`ARCHITECTURE.md`](ARCHITECTURE.md) ADR-03
 
 Le lingue disponibili in Fase 3 sono **Italiano** (default) e **Inglese**. Il cambio avviene da Settings → Lingua e richiede il riavvio del client (runtime hot-swap rinviato a Fase 11; vedi ADR-033).
 
+### Build installer Windows (Fase 3.5+)
+
+Il client può essere impacchettato in un installer **MSI** Windows tramite `jpackage` (JDK 21) e il plugin `org.panteleyev:jpackage-maven-plugin`. L'installer include il JRE bundled, scorciatoia desktop, voce nel menu Start "Dama Italiana" e icona dedicata.
+
+**Prerequisiti**:
+
+| Tool | Versione | Note |
+|---|---|---|
+| JDK | 21 LTS | `jpackage` ne fa parte da JDK 14+ |
+| **WiX Toolset** | **3.x (3.11+)** | Solo per `--type MSI`. Scaricabile da [wixtoolset.org](https://wixtoolset.org/releases/). Aggiungere `bin/` al `PATH` di sistema (deve esporre `candle.exe` e `light.exe`). WiX 4.x **non** è supportato da `jpackage` di JDK 21 |
+
+**Comando**:
+
+```bash
+mvn -pl client -Pinstaller -DskipTests package
+```
+
+Output: `client/target/jpackage/Dama Italiana-0.3.5.msi` (~150-200 MB col JRE bundled).
+
+**Fallback senza WiX** (smoke test / distribuzione zip ad-hoc):
+
+```bash
+mvn -pl client -Pinstaller -Djpackage.type=APP_IMAGE -DskipTests package
+```
+
+Genera `client/target/jpackage/Dama Italiana/` con il `.exe` di lancio + JRE — non installer ma cartella eseguibile portabile.
+
+> Nota: l'`-DskipTests` è raccomandato perché la phase `package` con il profilo `installer` esegue dep-staging + jpackage, non i test (già coperti da `mvn verify`). Per smoke test pre-build: `mvn -pl client -Pinstaller dependency:copy-dependencies@jpackage-stage-runtime-deps` popola `target/jpackage-input/` senza invocare `jpackage`.
+
 ### Headless / dev mode
 
 I test FXML smoke usano `Platform.startup` con guard `Assumptions.assumeTrue(fxToolkitReady)`: in ambienti senza display vengono saltati anziché fallire. Per il fast loop di sviluppo F3:
