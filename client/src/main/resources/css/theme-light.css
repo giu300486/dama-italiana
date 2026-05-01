@@ -393,3 +393,43 @@
     -fx-font-style: italic;
     -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.45), 3, 0.35, 0, 1);
 }
+
+/* ====== MAIN MENU (Task 3.5.10) ====== */
+
+/* Subtle dark-wood backdrop behind the cards (board_dark.jpg also dresses
+ * .board-cell-dark — re-using it gives the menu a coherent "this is a checkers
+ * game" identity while staying visually distinct from the splash's frame.jpg). */
+.main-menu-root {
+    -fx-background-image: url("/assets/textures/board_dark.jpg");
+    -fx-background-size: cover;
+    -fx-background-position: center;
+}
+
+/* Wood frame around each card: thicker dark-walnut border + softer shadow.
+ * Pairs with .card-elevated which contributes the cream surface + radius. */
+.main-menu-card {
+    -fx-border-color: -color-border-frame;
+    -fx-border-width: 2;
+    -fx-border-radius: 10;
+    -fx-background-radius: 10;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.45), 12, 0, 0, 4);
+}
+.main-menu-card:hover {
+    -fx-border-color: -color-accent-gold;
+    -fx-effect: dropshadow(gaussian, -color-accent-gold, 14, 0.55, 0, 0),
+                dropshadow(gaussian, rgba(0,0,0,0.45), 12, 0, 0, 4);
+}
+
+/* Card titles in serif display, dark-roast for WCAG AA on the cream surface. */
+.main-menu-card-title {
+    -fx-font-family: "Playfair Display", "Cormorant Garamond", "Georgia", serif;
+    -fx-font-size: 22px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -color-text-on-light;
+}
+
+/* Ikonli FontIcon inside the cards: warm brown so the icon glyphs read as
+ * "wood game pieces" rather than the default near-black. */
+.main-menu-card .ikonli-font-icon {
+    -fx-icon-color: -color-border-subtle;
+}
