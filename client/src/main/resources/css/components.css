@@ -2,21 +2,38 @@
  * Component styles specific to the board renderer, move history pane and game-flow widgets.
  * Loaded after the active theme stylesheet so it can reference the looked-up color tokens.
  *
- * Fase 3.5: tokens remapped to the wood-premium vocabulary (SPEC §13.2). The board
- * cells continue to use -color-board-light/dark as a fallback color; Task 3.5.6 will wire
- * BackgroundImage textures (assets/textures/board_*.jpg) on top of these fallbacks.
+ * Fase 3.5: tokens remapped to the wood-premium vocabulary (SPEC §13.2). Cells now wear
+ * BackgroundImage textures (assets/textures/board_{light,dark}.jpg, Task 3.5.1 CC0) on top
+ * of the -color-board-light/dark fallback colors. The board renderer is wrapped by a
+ * .board-frame StackPane (board-view.fxml) backed by frame.jpg with 24px padding (Task 3.5.6).
  */
 
 /* ====== BOARD ====== */
 
 .board-cell-light {
     -fx-background-color: -color-board-light;
+    -fx-background-image: url("/assets/textures/board_light.jpg");
+    -fx-background-size: 100% 100%;
+    -fx-background-repeat: no-repeat;
 }
 .board-cell-dark {
     -fx-background-color: -color-board-dark;
+    -fx-background-image: url("/assets/textures/board_dark.jpg");
+    -fx-background-size: 100% 100%;
+    -fx-background-repeat: no-repeat;
 }
 .board-cell-selected {
     -fx-effect: innershadow(gaussian, -color-accent-gold, 12, 0.6, 0, 0);
+}
+
+/* Wood frame surrounding the BoardRenderer (Task 3.5.6).
+ * StackPane in board-view.fxml; 24px padding so the texture peeks around the playing area. */
+.board-frame {
+    -fx-background-image: url("/assets/textures/frame.jpg");
+    -fx-background-size: cover;
+    -fx-background-position: center;
+    -fx-background-radius: 8;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.45), 16, 0, 0, 4);
 }
 
 /* Pieces */
@@ -35,10 +52,11 @@
 }
 
 /* Move highlights — FR-SP-04 (legal targets) and FR-SP-05 (mandatory captures) */
+/* Legal target: gold gaussian halo (Task 3.5.6) so the wood texture stays visible.
+ * Replaces the flat green overlay; spread + radius tuned so neighbouring cells
+ * receive a soft glow without obscuring their own textures. */
 .legal-target {
-    -fx-background-color: -color-highlight-legal;
-    -fx-background-radius: 4;
-    -fx-opacity: 0.65;
+    -fx-effect: dropshadow(gaussian, -color-accent-gold, 16, 0.70, 0, 0);
 }
 .pulse-mandatory {
     -fx-background-color: -color-highlight-mandatory;

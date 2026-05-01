@@ -12,6 +12,7 @@
 <?import javafx.scene.layout.BorderPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.Priority?>
+<?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
 
 <BorderPane xmlns:fx="http://javafx.com/fxml/1"
@@ -45,7 +46,12 @@
                 <Insets top="16" right="16" bottom="16" left="16"/>
             </padding>
             <center>
-                <BoardRenderer fx:id="boardRenderer" minWidth="640" minHeight="640"/>
+                <StackPane styleClass="board-frame">
+                    <padding>
+                        <Insets top="24" right="24" bottom="24" left="24"/>
+                    </padding>
+                    <BoardRenderer fx:id="boardRenderer" minWidth="640" minHeight="640"/>
+                </StackPane>
             </center>
             <right>
                 <VBox spacing="12" prefWidth="280" styleClass="card-elevated">
