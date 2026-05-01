@@ -471,3 +471,187 @@
 .popover .label-display {
     -fx-text-fill: -color-text-on-light;
 }
+
+/* ====== FORM CONTROLS (post 3.5.11 visual review) ======
+ *
+ * JavaFX modena.css defaults paint selection indicators in light blue / teal
+ * and tracks/thumbs in neutral grey, both of which clash on the wood theme.
+ * The rules below replace those accents with wood-brown rings + gold gilding
+ * so RadioButtons, CheckBoxes, Sliders, ChoiceBoxes, ListViews, TableViews
+ * and Alert dialogs all read as part of the same wood-premium palette.
+ */
+
+/* RadioButton: brown ring around cream centre, gold dot when selected. */
+.radio-button > .radio {
+    -fx-background-color: -color-border-subtle, -color-bg-elevated;
+    -fx-background-insets: 0, 1.5;
+}
+.radio-button:hover > .radio {
+    -fx-background-color: -color-accent-gold, -color-bg-elevated;
+}
+.radio-button:focused > .radio {
+    -fx-background-color: -color-accent-gold, -color-bg-elevated;
+    -fx-effect: dropshadow(gaussian, -color-accent-gold, 4, 0.5, 0, 0);
+}
+.radio-button:selected > .radio {
+    -fx-background-color: -color-accent-gold, -color-bg-elevated;
+}
+.radio-button:selected > .radio > .dot {
+    -fx-background-color: -color-accent-gold;
+}
+
+/* CheckBox: same treatment as RadioButton, square instead of round. */
+.check-box > .box {
+    -fx-background-color: -color-border-subtle, -color-bg-elevated;
+    -fx-background-insets: 0, 1.5;
+}
+.check-box:hover > .box {
+    -fx-background-color: -color-accent-gold, -color-bg-elevated;
+}
+.check-box:focused > .box {
+    -fx-background-color: -color-accent-gold, -color-bg-elevated;
+    -fx-effect: dropshadow(gaussian, -color-accent-gold, 4, 0.5, 0, 0);
+}
+.check-box:selected > .box {
+    -fx-background-color: -color-accent-gold, -color-bg-elevated;
+}
+.check-box:selected > .box > .mark {
+    -fx-background-color: -color-text-on-light;
+}
+
+/* Slider: walnut track + bevelled gold thumb, dark tick labels for cream context. */
+.slider .track {
+    -fx-background-color: -color-bg-surface;
+    -fx-border-color: -color-border-subtle;
+    -fx-border-radius: 4;
+    -fx-background-radius: 4;
+}
+.slider .thumb {
+    -fx-background-color: -color-border-frame,
+        linear-gradient(to bottom, -color-accent-gold-hover, -color-accent-gold);
+    -fx-background-insets: 0, 1.5;
+    -fx-background-radius: 1em;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.35), 3, 0, 0, 1);
+}
+.slider .thumb:hover {
+    -fx-effect: dropshadow(gaussian, -color-accent-gold, 8, 0.5, 0, 0);
+}
+.slider .axis {
+    -fx-tick-label-fill: -color-text-on-light;
+}
+
+/* ChoiceBox: cream surface like .text-field, gold focus glow, brown arrow. */
+.choice-box {
+    -fx-background-color: -color-bg-elevated;
+    -fx-border-color: -color-border-subtle;
+    -fx-border-width: 1;
+    -fx-border-radius: 4;
+    -fx-background-radius: 4;
+    -fx-padding: 4 8 4 8;
+}
+.choice-box:hover {
+    -fx-border-color: -color-text-secondary;
+}
+.choice-box:focused {
+    -fx-border-color: -color-accent-gold;
+    -fx-effect: dropshadow(gaussian, -color-accent-gold, 4, 0.5, 0, 0);
+}
+.choice-box:disabled {
+    -fx-opacity: 0.5;
+}
+.choice-box > .label {
+    -fx-text-fill: -color-text-on-light;
+}
+.choice-box > .open-button > .arrow {
+    -fx-background-color: -color-text-secondary;
+}
+
+/* ListView: cream surface for the virtual flow so empty state isn't a stark
+ * white box (e.g. fresh game's MoveHistoryView, rules sidebar before first
+ * paint). Cells already styled by the .list-cell rules in the CARDS section. */
+.list-view {
+    -fx-background-color: -color-bg-elevated;
+    -fx-background-insets: 0;
+    -fx-border-color: -color-border-subtle;
+    -fx-border-width: 1;
+    -fx-border-radius: 4;
+    -fx-background-radius: 4;
+}
+.list-view:focused {
+    -fx-border-color: -color-accent-gold;
+}
+.list-view .virtual-flow,
+.list-view .virtual-flow .clipped-container {
+    -fx-background-color: -color-bg-elevated;
+}
+.list-view .placeholder .label {
+    -fx-text-fill: -color-text-secondary;
+    -fx-font-style: italic;
+}
+
+/* TableView: same idea as ListView. Headers wear the deep walnut surface so
+ * they read as a "wooden header bar" above cream rows. */
+.table-view {
+    -fx-background-color: -color-bg-elevated;
+    -fx-background-insets: 0;
+    -fx-border-color: -color-border-subtle;
+    -fx-border-width: 1;
+    -fx-border-radius: 4;
+    -fx-background-radius: 4;
+}
+.table-view .column-header-background {
+    -fx-background-color: -color-bg-surface;
+    -fx-background-radius: 4 4 0 0;
+}
+.table-view .column-header,
+.table-view .filler {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+}
+.table-view .column-header .label {
+    -fx-text-fill: -color-text-on-dark;
+    -fx-font-weight: bold;
+}
+.table-view .table-row-cell {
+    -fx-background-color: -color-bg-elevated;
+}
+.table-view .table-row-cell:odd {
+    -fx-background-color: derive(-color-bg-elevated, -4%);
+}
+.table-view .table-row-cell:selected {
+    -fx-background-color: -color-accent-gold;
+}
+.table-view .table-row-cell:empty {
+    -fx-background-color: -color-bg-elevated;
+}
+.table-cell {
+    -fx-text-fill: -color-text-on-light;
+    -fx-padding: 4 8 4 8;
+}
+.table-view .placeholder .label {
+    -fx-text-fill: -color-text-secondary;
+    -fx-font-style: italic;
+}
+
+/* Alert / DialogPane: temable interior so the JavaFX content area matches the
+ * wood theme. The OS title bar is owned by the platform and stays native. */
+.dialog-pane {
+    -fx-background-color: -color-bg-elevated;
+    -fx-border-color: -color-border-frame;
+    -fx-border-width: 1;
+}
+.dialog-pane > .header-panel {
+    -fx-background-color: derive(-color-bg-elevated, -4%);
+    -fx-border-color: -color-border-subtle;
+    -fx-border-width: 0 0 1 0;
+}
+.dialog-pane > .header-panel > .label,
+.dialog-pane > .header-panel .label {
+    -fx-text-fill: -color-text-on-light;
+}
+.dialog-pane > .content,
+.dialog-pane > .content .label,
+.dialog-pane .content-text,
+.dialog-pane .label {
+    -fx-text-fill: -color-text-on-light;
+}
