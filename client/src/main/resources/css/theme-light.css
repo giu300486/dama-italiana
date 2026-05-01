@@ -144,9 +144,13 @@
     -fx-cursor: default;
 }
 
-/* Secondary button (Fase 3.5): wood-frame outline, no fill. */
+/*
+ * Secondary button (Fase 3.5): same deep-walnut fill as the default .button so the
+ * text stays readable on cream card surfaces (e.g. "Indietro" inside .card-elevated);
+ * differentiated from .button by a thicker border that turns gold on hover.
+ */
 .button-secondary {
-    -fx-background-color: transparent;
+    -fx-background-color: -color-bg-surface;
     -fx-text-fill: -color-text-on-dark;
     -fx-border-color: -color-border-subtle;
     -fx-border-width: 1.5;
@@ -156,11 +160,11 @@
     -fx-cursor: hand;
 }
 .button-secondary:hover {
-    -fx-background-color: rgba(201,164,92,0.10);
+    -fx-background-color: derive(-color-bg-surface, 8%);
     -fx-border-color: -color-accent-gold;
 }
 .button-secondary:pressed {
-    -fx-background-color: rgba(201,164,92,0.20);
+    -fx-background-color: derive(-color-bg-surface, -8%);
 }
 .button-secondary:focused {
     -fx-effect: dropshadow(gaussian, -color-accent-gold, 4, 0.5, 0, 0);
