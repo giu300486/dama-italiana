@@ -16,6 +16,7 @@ import javafx.animation.ParallelTransition;
 import javafx.animation.SequentialTransition;
 import javafx.animation.TranslateTransition;
 import javafx.scene.Node;
+import javafx.scene.layout.Pane;
 import javafx.scene.shape.Rectangle;
 import org.junit.jupiter.api.Test;
 
@@ -119,6 +120,28 @@ class AnimationOrchestratorTest {
         .isThrownBy(() -> AnimationOrchestrator.animateMove(null, resolver, CELL));
     assertThatNullPointerException()
         .isThrownBy(() -> AnimationOrchestrator.animateMove(m, null, CELL));
+  }
+
+  @Test
+  void captureLegWithParticleHostAddsSplashAsThirdChild() {
+    // Task 3.5.8 — when a Pane host is provided, each capture leg becomes a 3-child
+    // ParallelTransition: slide + fadeCapture + ParticleEffects.captureSplash.
+    CaptureSequence cs =
+        new CaptureSequence(new Square(2, 2), List.of(new Square(4, 4)), List.of(new Square(3, 3)));
+    Node piece = new Rectangle();
+    Node captured = new Rectangle();
+    Map<Square, Node> nodes = new HashMap<>();
+    nodes.put(new Square(2, 2), piece);
+    nodes.put(new Square(3, 3), captured);
+    Pane host = new Pane();
+
+    Animation anim = AnimationOrchestrator.animateMove(cs, nodes::get, CELL, host);
+
+    SequentialTransition seq = (SequentialTransition) anim;
+    assertThat(seq.getChildren()).hasSize(1);
+    ParallelTransition leg = (ParallelTransition) seq.getChildren().get(0);
+    assertThat(leg.getChildren()).hasSize(3); // slide + fadeCapture + captureSplash
+    assertThat(host.getChildren()).hasSize(ParticleEffects.SPLASH_PARTICLE_COUNT);
   }
 
   @Test

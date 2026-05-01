@@ -12,7 +12,8 @@
 
 <GridPane xmlns:fx="http://javafx.com/fxml/1"
           fx:controller="com.damaitaliana.client.ui.menu.MainMenuController"
-          alignment="CENTER" hgap="16" vgap="16">
+          alignment="CENTER" hgap="16" vgap="16"
+          styleClass="main-menu-root">
     <padding>
         <Insets top="32" right="32" bottom="32" left="32"/>
     </padding>
@@ -27,19 +28,19 @@
     </rowConstraints>
 
     <!-- Single Player -->
-    <VBox styleClass="card-elevated" alignment="CENTER" spacing="12"
+    <VBox styleClass="card-elevated, main-menu-card" alignment="CENTER" spacing="12"
           GridPane.columnIndex="0" GridPane.rowIndex="0">
         <FontIcon iconLiteral="mdi2g-gamepad-variant" iconSize="48"/>
-        <Label fx:id="singlePlayerTitle" styleClass="label-subtitle"/>
+        <Label fx:id="singlePlayerTitle" styleClass="main-menu-card-title"/>
         <Label fx:id="singlePlayerSubtitle" styleClass="label-secondary" wrapText="true"/>
         <Button fx:id="singlePlayerButton" onAction="#openSinglePlayer"/>
     </VBox>
 
     <!-- LAN (disabled in Fase 3) -->
-    <VBox styleClass="card-elevated" alignment="CENTER" spacing="12"
+    <VBox styleClass="card-elevated, main-menu-card" alignment="CENTER" spacing="12"
           GridPane.columnIndex="1" GridPane.rowIndex="0">
         <FontIcon iconLiteral="mdi2l-lan" iconSize="48"/>
-        <Label fx:id="lanTitle" styleClass="label-subtitle"/>
+        <Label fx:id="lanTitle" styleClass="main-menu-card-title"/>
         <Label fx:id="lanSubtitle" styleClass="label-secondary" wrapText="true"/>
         <Button fx:id="lanButton" disable="true">
             <tooltip>
@@ -49,10 +50,10 @@
     </VBox>
 
     <!-- Online (disabled in Fase 3) -->
-    <VBox styleClass="card-elevated" alignment="CENTER" spacing="12"
+    <VBox styleClass="card-elevated, main-menu-card" alignment="CENTER" spacing="12"
           GridPane.columnIndex="0" GridPane.rowIndex="1">
         <FontIcon iconLiteral="mdi2w-web" iconSize="48"/>
-        <Label fx:id="onlineTitle" styleClass="label-subtitle"/>
+        <Label fx:id="onlineTitle" styleClass="main-menu-card-title"/>
         <Label fx:id="onlineSubtitle" styleClass="label-secondary" wrapText="true"/>
         <Button fx:id="onlineButton" disable="true">
             <tooltip>
@@ -62,20 +63,20 @@
     </VBox>
 
     <!-- Rules -->
-    <VBox styleClass="card-elevated" alignment="CENTER" spacing="12"
+    <VBox styleClass="card-elevated, main-menu-card" alignment="CENTER" spacing="12"
           GridPane.columnIndex="1" GridPane.rowIndex="1">
         <FontIcon iconLiteral="mdi2b-book-open-page-variant" iconSize="48"/>
-        <Label fx:id="rulesTitle" styleClass="label-subtitle"/>
+        <Label fx:id="rulesTitle" styleClass="main-menu-card-title"/>
         <Label fx:id="rulesSubtitle" styleClass="label-secondary" wrapText="true"/>
         <Button fx:id="rulesButton" onAction="#openRules"/>
     </VBox>
 
     <!-- Settings -->
-    <VBox styleClass="card-elevated" alignment="CENTER" spacing="12"
+    <VBox styleClass="card-elevated, main-menu-card" alignment="CENTER" spacing="12"
           GridPane.columnIndex="0" GridPane.rowIndex="2"
           GridPane.columnSpan="2">
         <FontIcon iconLiteral="mdi2c-cog" iconSize="48"/>
-        <Label fx:id="settingsTitle" styleClass="label-subtitle"/>
+        <Label fx:id="settingsTitle" styleClass="main-menu-card-title"/>
         <Label fx:id="settingsSubtitle" styleClass="label-secondary" wrapText="true"/>
         <Button fx:id="settingsButton" onAction="#openSettings"/>
     </VBox>

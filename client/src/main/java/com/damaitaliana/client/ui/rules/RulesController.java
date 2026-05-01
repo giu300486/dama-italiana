@@ -122,7 +122,10 @@ public class RulesController {
     contentBox.getChildren().clear();
 
     Label header = new Label(i18n.t(section.titleKey()));
-    header.getStyleClass().add("label-subtitle");
+    // Task 3.5.11: section heading switches from .label-subtitle (sans-serif muted)
+    // to the display family (Playfair). The .card-elevated context override flips
+    // the gold fill to dark-roast for WCAG AA on the cream content surface.
+    header.getStyleClass().addAll("label-display", "label-display-md");
     contentBox.getChildren().add(header);
 
     String body = i18n.t(section.bodyKey());

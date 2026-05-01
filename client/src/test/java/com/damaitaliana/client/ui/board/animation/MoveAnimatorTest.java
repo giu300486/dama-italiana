@@ -33,9 +33,11 @@ class MoveAnimatorTest {
   }
 
   @Test
-  void slideMoveInterpolatorIsEaseOut() {
+  void slideMoveInterpolatorIsOutBackSpline() {
+    // Task 3.5.8: out-back overshoot replaces plain EASE_OUT for juicy landings.
     TranslateTransition tt = MoveAnimator.slideMove(node, 0, 0);
-    assertThat(tt.getInterpolator()).isSameAs(Interpolator.EASE_OUT);
+    assertThat(tt.getInterpolator()).isSameAs(MoveAnimator.MOVE_INTERPOLATOR);
+    assertThat(MoveAnimator.MOVE_INTERPOLATOR).isNotSameAs(Interpolator.EASE_OUT);
   }
 
   @Test

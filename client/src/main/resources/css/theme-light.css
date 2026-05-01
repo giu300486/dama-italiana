@@ -1,47 +1,62 @@
 /*
- * Light theme. Mirrors SPEC §13.2 design tokens.
+ * Light theme — Fase 3.5 wood premium edition. Mirrors SPEC §13.2 design tokens.
  *
  * JavaFX CSS supports looked-up colors but not arbitrary value lookups, so spacing/radius/
  * font-size tokens are inlined with a comment indicating their semantic name. Color tokens
  * are real lookups and can be referenced by other stylesheets and overridden by the dark
  * theme stub (theme-dark.css).
+ *
+ * Motion tokens (-easing-out-quad, -easing-out-back) are documented in SPEC §13.2 for
+ * parity but JavaFX animations consume them via Interpolator class instances, not via CSS
+ * properties. They are referenced here as comments for cross-file traceability.
  */
 
 .root {
-    /* Palette */
-    -color-bg-primary: #FAFAFA;
-    -color-bg-surface: #FFFFFF;
-    -color-bg-elevated: #FFFFFF;
-    -color-border-subtle: #E5E5E5;
-    -color-border-default: #D4D4D4;
-    -color-text-primary: #18181B;
-    -color-text-secondary: #71717A;
-    -color-accent: #2563EB;
-    -color-accent-hover: #1D4ED8;
-    -color-success: #16A34A;
-    -color-warning: #EAB308;
-    -color-danger: #DC2626;
+    /* Palette wood premium (SPEC §13.2) */
+    -color-bg-primary: #2A1F15;        /* dark roast — main background */
+    -color-bg-surface: #3D2E20;        /* deep walnut — secondary surfaces */
+    -color-bg-elevated: #F5E6C8;       /* cream parchment — cards, popovers */
+    -color-border-subtle: #6B4423;     /* warm brown — subtle borders */
+    -color-border-frame: #4A2E18;      /* dark frame — panels, separators */
+    -color-text-on-dark: #F0E0C4;      /* cream — text on dark surfaces */
+    -color-text-on-light: #2A1F15;     /* dark roast — text on cream surfaces */
+    -color-text-secondary: #8B6F4E;    /* muted brown — secondary text */
+    -color-accent-gold: #C9A45C;       /* antique gold — primary accent */
+    -color-accent-gold-hover: #DDB874; /* gold hover */
+    -color-accent-deep-red: #8B3A3A;   /* deep red — secondary accent, kings */
+    -color-success: #6B8E4E;           /* moss green */
+    -color-warning: #C9A45C;           /* gold — palette-coherent */
+    -color-danger: #8B3A3A;            /* deep red — palette-coherent */
 
-    /* Damiera */
-    -color-board-light: #F0D9B5;
-    -color-board-dark: #B58863;
-    -color-piece-white: #FAFAFA;
-    -color-piece-black: #1F2937;
-    -color-highlight-legal: #FBBF24;
-    -color-highlight-mandatory: #DC2626;
+    /* Damiera (texture-driven; these are fallbacks before BackgroundImage loads in Task 3.5.6) */
+    -color-board-light: #E8C99A;
+    -color-board-dark: #6B4423;
+    -color-piece-white: #F0E0C4;
+    -color-piece-black: #2A1F15;
+    -color-piece-king-marker-white: #C9A45C;
+    -color-piece-king-marker-black: #8B3A3A;
+    -color-highlight-legal: #C9A45C;
+    -color-highlight-mandatory: #C9A45C;
 
-    /* Typography (SPEC §13.2 font-family-base, font-size-md) */
+    /* Typography (SPEC §13.2 font-family-base) */
     -fx-font-family: "Inter", "Segoe UI", "Helvetica Neue", sans-serif;
-    -fx-font-size: 16px;
+    -fx-font-size: 16px; /* font-size-md */
 
     /* Base */
     -fx-background-color: -color-bg-primary;
-    -fx-text-fill: -color-text-primary;
+    -fx-text-fill: -color-text-on-dark;
+}
+
+/* ====== LABELS ====== */
+
+.label {
+    -fx-text-fill: -color-text-on-dark;
 }
 
 .label-title {
     -fx-font-size: 24px; /* font-size-xl */
     -fx-font-weight: bold;
+    -fx-text-fill: -color-text-on-dark;
 }
 
 .label-subtitle {
@@ -54,105 +69,647 @@
     -fx-font-size: 14px; /* font-size-sm */
 }
 
-/* Button: default + 5 interactive states required by SPEC §13.2 */
+/* Display label (Fase 3.5) — Playfair Display serif in antique gold for hero titles. */
+.label-display {
+    -fx-font-family: "Playfair Display", "Cormorant Garamond", "Georgia", serif;
+    -fx-text-fill: -color-accent-gold;
+}
+.label-display-md {
+    -fx-font-size: 32px; /* font-size-display-md */
+}
+.label-display-lg {
+    -fx-font-size: 48px; /* font-size-display-lg */
+}
+
+/* ====== BUTTONS (default + 5 interactive states required by SPEC §13.2.2) ====== */
+
+/* Default button: neutral wood frame for secondary CTAs / menu items. */
 .button {
-    -fx-background-color: -color-accent;
-    -fx-text-fill: white;
+    -fx-background-color: -color-bg-surface;
+    -fx-text-fill: -color-text-on-dark;
+    -fx-border-color: -color-border-subtle;
+    -fx-border-width: 1;
+    -fx-border-radius: 8; /* radius-md */
+    -fx-background-radius: 8;
     -fx-padding: 8 16 8 16; /* spacing-2 spacing-4 */
-    -fx-background-radius: 8; /* radius-md */
     -fx-cursor: hand;
 }
 .button:hover {
-    -fx-background-color: -color-accent-hover;
+    -fx-background-color: derive(-color-bg-surface, 8%);
+    -fx-border-color: -color-accent-gold;
 }
 .button:pressed {
-    -fx-background-color: derive(-color-accent-hover, -10%);
+    -fx-background-color: derive(-color-bg-surface, -8%);
 }
 .button:focused {
-    -fx-effect: dropshadow(gaussian, -color-accent, 6, 0.5, 0, 0);
+    -fx-effect: dropshadow(gaussian, -color-accent-gold, 6, 0.5, 0, 0);
 }
 .button:disabled {
     -fx-opacity: 0.5;
     -fx-cursor: default;
 }
 
-.button-secondary {
-    -fx-background-color: -color-bg-surface;
-    -fx-text-fill: -color-text-primary;
-    -fx-border-color: -color-border-default;
+/*
+ * Primary button (Fase 3.5): gold gradient + bevel + glow on hover.
+ * For the main CTA per screen (e.g., "Avvia partita", "Conferma").
+ * Foreground is dark-roast for WCAG AA contrast on gold (~9:1).
+ */
+.button-primary {
+    -fx-background-color: linear-gradient(to bottom, -color-accent-gold-hover, -color-accent-gold);
+    -fx-text-fill: -color-text-on-light;
+    -fx-font-weight: bold;
+    -fx-border-color: -color-border-frame;
+    -fx-border-width: 1;
     -fx-border-radius: 8;
+    -fx-background-radius: 8;
+    -fx-padding: 10 22 10 22;
+    -fx-cursor: hand;
+    -fx-effect: innershadow(gaussian, rgba(255,255,255,0.25), 1, 0, 0, 1),
+                dropshadow(gaussian, rgba(0,0,0,0.30), 4, 0, 0, 2);
 }
-.button-secondary:hover {
-    -fx-background-color: derive(-color-bg-surface, -3%);
+.button-primary:hover {
+    -fx-background-color: linear-gradient(to bottom, derive(-color-accent-gold-hover, 6%), -color-accent-gold-hover);
+    -fx-effect: dropshadow(gaussian, -color-accent-gold, 16, 0.65, 0, 0),
+                innershadow(gaussian, rgba(255,255,255,0.35), 1, 0, 0, 1);
+}
+.button-primary:pressed {
+    -fx-background-color: derive(-color-accent-gold, -8%);
+    -fx-effect: innershadow(gaussian, rgba(0,0,0,0.30), 3, 0.5, 0, 1);
+}
+.button-primary:focused {
+    -fx-effect: dropshadow(gaussian, -color-accent-gold, 10, 0.7, 0, 0);
+}
+.button-primary:disabled {
+    -fx-opacity: 0.5;
+    -fx-cursor: default;
 }
 
-/* Card: default + hover + focused */
-.card {
+/*
+ * Secondary button (Fase 3.5): same deep-walnut fill as the default .button so the
+ * text stays readable on cream card surfaces (e.g. "Indietro" inside .card-elevated);
+ * differentiated from .button by a thicker border that turns gold on hover.
+ */
+.button-secondary {
     -fx-background-color: -color-bg-surface;
+    -fx-text-fill: -color-text-on-dark;
+    -fx-border-color: -color-border-subtle;
+    -fx-border-width: 1.5;
+    -fx-border-radius: 8;
+    -fx-background-radius: 8;
+    -fx-padding: 8 16 8 16;
+    -fx-cursor: hand;
+}
+.button-secondary:hover {
+    -fx-background-color: derive(-color-bg-surface, 8%);
+    -fx-border-color: -color-accent-gold;
+}
+.button-secondary:pressed {
+    -fx-background-color: derive(-color-bg-surface, -8%);
+}
+.button-secondary:focused {
+    -fx-effect: dropshadow(gaussian, -color-accent-gold, 4, 0.5, 0, 0);
+}
+.button-secondary:disabled {
+    -fx-opacity: 0.5;
+    -fx-cursor: default;
+}
+
+/* ====== CARDS ====== */
+
+/*
+ * Card: cream parchment surface on dark background; foreground dark-roast for contrast.
+ *
+ * Note on the label override: rules target the explicit label utility classes
+ * (.label-title, .label-subtitle, .label-secondary) rather than the generic .label
+ * selector. JavaFX Button has an internal Label node whose styleClass *includes*
+ * .label — a `.card-elevated .label` rule would therefore bleed onto button text
+ * and override the button's own -fx-text-fill, producing dark-on-dark when the
+ * button background is deep-walnut. Targeting the named utility classes keeps the
+ * cascade predictable.
+ */
+.card {
+    -fx-background-color: -color-bg-elevated;
     -fx-border-color: -color-border-subtle;
     -fx-border-radius: 8;
     -fx-background-radius: 8;
-    -fx-padding: 16;
+    -fx-padding: 16; /* spacing-4 */
+}
+.card .label-title,
+.card .label-subtitle,
+.card .label-secondary {
+    -fx-text-fill: -color-text-on-light;
+}
+/*
+ * Plain <Label> nodes (no utility class) inside cards/popovers — use the type
+ * selector "Label" (capital L) so we match javafx.scene.control.Label
+ * instances *only*, NOT the LabeledText skin node that JavaFX Button uses
+ * internally (LabeledText extends Text, not Label). This keeps button text
+ * fills untouched while making body labels readable on cream surfaces.
+ *
+ * Without this rule plain Labels inherited the global `.label` cream fill →
+ * cream-on-cream → invisible body paragraphs (RulesController) and form
+ * sub-labels (settings audio sliders, board status pane).
+ */
+.card Label,
+.card-elevated Label,
+.popover Label {
+    -fx-text-fill: -color-text-on-light;
 }
 .card:hover {
-    -fx-border-color: -color-border-default;
+    -fx-border-color: -color-accent-gold;
 }
 .card:focused {
-    -fx-border-color: -color-accent;
+    -fx-border-color: -color-accent-gold;
+    -fx-effect: dropshadow(gaussian, -color-accent-gold, 8, 0.5, 0, 0);
 }
 .card:disabled {
     -fx-opacity: 0.5;
 }
 
-/* Card elevated with soft shadow */
 .card-elevated {
     -fx-background-color: -color-bg-elevated;
     -fx-background-radius: 8;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.10), 8, 0, 0, 2);
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.30), 8, 0, 0, 2);
     -fx-padding: 16;
+}
+.card-elevated .label-title,
+.card-elevated .label-subtitle,
+.card-elevated .label-secondary {
+    -fx-text-fill: -color-text-on-light;
 }
 
 .popover {
     -fx-background-color: -color-bg-elevated;
     -fx-background-radius: 12; /* radius-lg */
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.15), 16, 0, 0, 4);
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.40), 16, 0, 0, 4);
+}
+.popover .label-title,
+.popover .label-subtitle,
+.popover .label-secondary {
+    -fx-text-fill: -color-text-on-light;
 }
 
-/* Text field */
+/* ====== INPUTS ====== */
+
+/* Text field: cream surface with wood border; foreground dark-roast. */
 .text-field {
-    -fx-background-color: -color-bg-surface;
-    -fx-border-color: -color-border-default;
-    -fx-border-radius: 4;  /* radius-sm */
+    -fx-background-color: -color-bg-elevated;
+    -fx-border-color: -color-border-subtle;
+    -fx-border-radius: 4; /* radius-sm */
     -fx-background-radius: 4;
     -fx-padding: 8 12 8 12;
-    -fx-text-fill: -color-text-primary;
+    -fx-text-fill: -color-text-on-light;
+    -fx-prompt-text-fill: -color-text-secondary;
 }
 .text-field:hover {
     -fx-border-color: -color-text-secondary;
 }
 .text-field:focused {
-    -fx-border-color: -color-accent;
+    -fx-border-color: -color-accent-gold;
 }
 .text-field:disabled {
     -fx-opacity: 0.5;
 }
 
-/* List cell */
+/* ====== MENU BAR / CONTEXT MENU ======
+ *
+ * JavaFX defaults assume a light-mode environment. Without these overrides the
+ * menu bar text inherits a near-default fill that washes out on the wood-premium
+ * dark page; menu dropdowns also need their cream background spelled out.
+ */
+
+.menu-bar {
+    -fx-background-color: -color-bg-surface;
+    -fx-padding: 2 8 2 8;
+}
+.menu-bar > .container > .menu-button {
+    -fx-background-color: transparent;
+    -fx-padding: 4 12 4 12;
+}
+.menu-bar > .container > .menu-button > .label {
+    -fx-text-fill: -color-text-on-dark;
+}
+.menu-bar > .container > .menu-button:hover {
+    -fx-background-color: derive(-color-bg-surface, 12%);
+}
+.menu-bar > .container > .menu-button:showing {
+    -fx-background-color: -color-bg-elevated;
+}
+.menu-bar > .container > .menu-button:showing > .label {
+    -fx-text-fill: -color-text-on-light;
+}
+
+.context-menu {
+    -fx-background-color: -color-bg-elevated;
+    -fx-border-color: -color-border-subtle;
+    -fx-border-width: 1;
+    -fx-border-radius: 4;
+    -fx-background-radius: 4;
+    -fx-padding: 4 0 4 0;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.40), 12, 0, 0, 4);
+}
+.menu-item {
+    -fx-background-color: transparent;
+    -fx-padding: 6 16 6 16;
+}
+.menu-item .label {
+    -fx-text-fill: -color-text-on-light;
+}
+.menu-item:hover,
+.menu-item:focused {
+    -fx-background-color: -color-accent-gold;
+}
+.menu-item:hover > .label,
+.menu-item:focused > .label {
+    -fx-text-fill: -color-text-on-light;
+}
+.menu-item:disabled {
+    -fx-opacity: 0.5;
+}
+
+/* ====== TOOLTIP ====== */
+
+.tooltip {
+    -fx-background-color: -color-bg-elevated;
+    -fx-text-fill: -color-text-on-light;
+    -fx-border-color: -color-border-subtle;
+    -fx-border-width: 1;
+    -fx-border-radius: 4;
+    -fx-background-radius: 4;
+    -fx-padding: 6 10 6 10;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.40), 8, 0, 0, 2);
+}
+
+/* List cell: cream surface; selected uses gold with dark-roast foreground. */
 .list-cell {
     -fx-padding: 8 12 8 12;
-    -fx-background-color: -color-bg-surface;
-    -fx-text-fill: -color-text-primary;
+    -fx-background-color: -color-bg-elevated;
+    -fx-text-fill: -color-text-on-light;
 }
 .list-cell:hover {
-    -fx-background-color: derive(-color-bg-surface, -3%);
+    -fx-background-color: derive(-color-bg-elevated, -5%);
 }
 .list-cell:selected {
-    -fx-background-color: -color-accent;
-    -fx-text-fill: white;
+    -fx-background-color: -color-accent-gold;
+    -fx-text-fill: -color-text-on-light;
 }
 .list-cell:focused {
-    -fx-background-color: derive(-color-accent, 30%);
+    -fx-background-color: derive(-color-accent-gold, 20%);
 }
 .list-cell:disabled {
     -fx-opacity: 0.5;
+}
+
+/* ====== SPLASH SCREEN (Task 3.5.9) ====== */
+
+/* Polished wood backdrop using the frame texture (Task 3.5.1 CC0). */
+.splash-root {
+    -fx-background-image: url("/assets/textures/frame.jpg");
+    -fx-background-size: cover;
+    -fx-background-position: center;
+}
+
+/* Hero title sits a bit higher and gets a subtle drop-shadow so the gold reads
+ * cleanly against the wood texture. Inherits font-family/size from .label-display + lg. */
+.splash-title {
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.55), 6, 0.4, 0, 2);
+}
+
+/* Italic Playfair subtitle in muted gold, smaller than the title. */
+.splash-subtitle {
+    -fx-font-family: "Playfair Display", "Cormorant Garamond", "Georgia", serif;
+    -fx-font-style: italic;
+    -fx-font-size: 18px;
+    -fx-text-fill: -color-accent-gold-hover;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.45), 4, 0.35, 0, 1);
+}
+
+/* Wood-themed indeterminate progress bar: dark walnut track, gold sweep. */
+.splash-progress {
+    -fx-pref-height: 10;
+    -fx-accent: -color-accent-gold;
+}
+.splash-progress > .track {
+    -fx-background-color: -color-bg-surface;
+    -fx-background-radius: 6;
+    -fx-border-color: -color-border-frame;
+    -fx-border-radius: 6;
+    -fx-border-width: 1;
+}
+.splash-progress > .bar {
+    -fx-background-color: linear-gradient(to right, -color-accent-gold-hover, -color-accent-gold);
+    -fx-background-radius: 5;
+    -fx-background-insets: 1;
+    -fx-effect: dropshadow(gaussian, -color-accent-gold, 6, 0.55, 0, 0);
+}
+
+/* Loading text under the progress bar — cream on wood, smaller than the body label. */
+.splash-loading {
+    -fx-text-fill: -color-text-on-dark;
+    -fx-font-style: italic;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.45), 3, 0.35, 0, 1);
+}
+
+/* ====== MAIN MENU (Task 3.5.10) ====== */
+
+/* Subtle dark-wood backdrop behind the cards (board_dark.jpg also dresses
+ * .board-cell-dark — re-using it gives the menu a coherent "this is a checkers
+ * game" identity while staying visually distinct from the splash's frame.jpg). */
+.main-menu-root {
+    -fx-background-image: url("/assets/textures/board_dark.jpg");
+    -fx-background-size: cover;
+    -fx-background-position: center;
+}
+
+/* Wood frame around each card: thicker dark-walnut border + softer shadow.
+ * Pairs with .card-elevated which contributes the cream surface + radius. */
+.main-menu-card {
+    -fx-border-color: -color-border-frame;
+    -fx-border-width: 2;
+    -fx-border-radius: 10;
+    -fx-background-radius: 10;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.45), 12, 0, 0, 4);
+}
+.main-menu-card:hover {
+    -fx-border-color: -color-accent-gold;
+    -fx-effect: dropshadow(gaussian, -color-accent-gold, 14, 0.55, 0, 0),
+                dropshadow(gaussian, rgba(0,0,0,0.45), 12, 0, 0, 4);
+}
+
+/* Card titles in serif display, dark-roast for WCAG AA on the cream surface. */
+.main-menu-card-title {
+    -fx-font-family: "Playfair Display", "Cormorant Garamond", "Georgia", serif;
+    -fx-font-size: 22px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -color-text-on-light;
+}
+
+/* Ikonli FontIcon inside the cards: warm brown so the icon glyphs read as
+ * "wood game pieces" rather than the default near-black. */
+.main-menu-card .ikonli-font-icon {
+    -fx-icon-color: -color-border-subtle;
+}
+
+/* ====== SCREEN ROOTS (Task 3.5.11) ====== */
+
+/* Generic wood backdrop applied to the root container of the form-screens
+ * (sp-setup, load-screen, settings, rules). Re-uses board_dark.jpg already
+ * employed by .board-cell-dark and .main-menu-root for visual coherence. */
+.screen-root {
+    -fx-background-image: url("/assets/textures/board_dark.jpg");
+    -fx-background-size: cover;
+    -fx-background-position: center;
+}
+
+/* Display labels inherit -color-accent-gold from .label-display, which is the
+ * right call on the dark wood backdrop. Inside cream card surfaces the gold
+ * fails WCAG AA, so flip the fill to dark-roast when nested in a card.
+ * (Same defensive scoping pattern as the .card .label-* fill overrides in
+ * the CARDS section above.) */
+.card .label-display,
+.card-elevated .label-display,
+.popover .label-display {
+    -fx-text-fill: -color-text-on-light;
+}
+
+/* ====== FORM CONTROLS (post 3.5.11 visual review) ======
+ *
+ * JavaFX modena.css defaults paint selection indicators in light blue / teal
+ * and tracks/thumbs in neutral grey, both of which clash on the wood theme.
+ * The rules below replace those accents with wood-brown rings + gold gilding
+ * so RadioButtons, CheckBoxes, Sliders, ChoiceBoxes, ListViews, TableViews
+ * and Alert dialogs all read as part of the same wood-premium palette.
+ */
+
+/* RadioButton: brown ring around cream centre, gold dot when selected. */
+.radio-button > .radio {
+    -fx-background-color: -color-border-subtle, -color-bg-elevated;
+    -fx-background-insets: 0, 1.5;
+}
+.radio-button:hover > .radio {
+    -fx-background-color: -color-accent-gold, -color-bg-elevated;
+}
+.radio-button:focused > .radio {
+    -fx-background-color: -color-accent-gold, -color-bg-elevated;
+    -fx-effect: dropshadow(gaussian, -color-accent-gold, 4, 0.5, 0, 0);
+}
+.radio-button:selected > .radio {
+    -fx-background-color: -color-accent-gold, -color-bg-elevated;
+}
+.radio-button:selected > .radio > .dot {
+    -fx-background-color: -color-accent-gold;
+}
+
+/* CheckBox: same treatment as RadioButton, square instead of round. */
+.check-box > .box {
+    -fx-background-color: -color-border-subtle, -color-bg-elevated;
+    -fx-background-insets: 0, 1.5;
+}
+.check-box:hover > .box {
+    -fx-background-color: -color-accent-gold, -color-bg-elevated;
+}
+.check-box:focused > .box {
+    -fx-background-color: -color-accent-gold, -color-bg-elevated;
+    -fx-effect: dropshadow(gaussian, -color-accent-gold, 4, 0.5, 0, 0);
+}
+.check-box:selected > .box {
+    -fx-background-color: -color-accent-gold, -color-bg-elevated;
+}
+.check-box:selected > .box > .mark {
+    -fx-background-color: -color-text-on-light;
+}
+
+/* Slider: walnut track + bevelled gold thumb, dark tick labels for cream context. */
+.slider .track {
+    -fx-background-color: -color-bg-surface;
+    -fx-border-color: -color-border-subtle;
+    -fx-border-radius: 4;
+    -fx-background-radius: 4;
+}
+.slider .thumb {
+    -fx-background-color: -color-border-frame,
+        linear-gradient(to bottom, -color-accent-gold-hover, -color-accent-gold);
+    -fx-background-insets: 0, 1.5;
+    -fx-background-radius: 1em;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.35), 3, 0, 0, 1);
+}
+.slider .thumb:hover {
+    -fx-effect: dropshadow(gaussian, -color-accent-gold, 8, 0.5, 0, 0);
+}
+.slider .axis {
+    -fx-tick-label-fill: -color-text-on-light;
+}
+
+/* ChoiceBox: cream surface like .text-field, gold focus glow, brown arrow. */
+.choice-box {
+    -fx-background-color: -color-bg-elevated;
+    -fx-border-color: -color-border-subtle;
+    -fx-border-width: 1;
+    -fx-border-radius: 4;
+    -fx-background-radius: 4;
+    -fx-padding: 4 8 4 8;
+}
+.choice-box:hover {
+    -fx-border-color: -color-text-secondary;
+}
+.choice-box:focused {
+    -fx-border-color: -color-accent-gold;
+    -fx-effect: dropshadow(gaussian, -color-accent-gold, 4, 0.5, 0, 0);
+}
+.choice-box:disabled {
+    -fx-opacity: 0.5;
+}
+.choice-box > .label {
+    -fx-text-fill: -color-text-on-light;
+}
+.choice-box > .open-button > .arrow {
+    -fx-background-color: -color-text-secondary;
+}
+
+/* ListView: cream surface for the virtual flow so empty state isn't a stark
+ * white box (e.g. fresh game's MoveHistoryView, rules sidebar before first
+ * paint). Cells already styled by the .list-cell rules in the CARDS section. */
+.list-view {
+    -fx-background-color: -color-bg-elevated;
+    -fx-background-insets: 0;
+    -fx-border-color: -color-border-subtle;
+    -fx-border-width: 1;
+    -fx-border-radius: 4;
+    -fx-background-radius: 4;
+}
+.list-view:focused {
+    -fx-border-color: -color-accent-gold;
+}
+.list-view .virtual-flow,
+.list-view .virtual-flow .clipped-container {
+    -fx-background-color: -color-bg-elevated;
+}
+.list-view .placeholder .label {
+    -fx-text-fill: -color-text-secondary;
+    -fx-font-style: italic;
+}
+
+/* TableView: same idea as ListView. Headers wear the deep walnut surface so
+ * they read as a "wooden header bar" above cream rows. */
+.table-view {
+    -fx-background-color: -color-bg-elevated;
+    -fx-background-insets: 0;
+    -fx-border-color: -color-border-subtle;
+    -fx-border-width: 1;
+    -fx-border-radius: 4;
+    -fx-background-radius: 4;
+}
+.table-view .column-header-background {
+    -fx-background-color: -color-bg-surface;
+    -fx-background-radius: 4 4 0 0;
+}
+.table-view .column-header,
+.table-view .filler {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+}
+.table-view .column-header .label {
+    -fx-text-fill: -color-text-on-dark;
+    -fx-font-weight: bold;
+}
+.table-view .table-row-cell {
+    -fx-background-color: -color-bg-elevated;
+}
+.table-view .table-row-cell:odd {
+    -fx-background-color: derive(-color-bg-elevated, -4%);
+}
+.table-view .table-row-cell:selected {
+    -fx-background-color: -color-accent-gold;
+}
+.table-view .table-row-cell:empty {
+    -fx-background-color: -color-bg-elevated;
+}
+.table-cell {
+    -fx-text-fill: -color-text-on-light;
+    -fx-padding: 4 8 4 8;
+}
+.table-view .placeholder .label {
+    -fx-text-fill: -color-text-secondary;
+    -fx-font-style: italic;
+}
+
+/* Custom UNDECORATED dialog (JavaFxUserPromptService, post-3.5.11 visual review).
+ * Replaces the JavaFX Alert whose stage chrome is owned by the platform; here
+ * the entire surface is themable: deep-walnut header bar with gold title +
+ * draggable + close glyph, cream content area, primary/secondary button bar. */
+.themed-dialog {
+    -fx-background-color: -color-bg-elevated;
+    -fx-border-color: -color-border-frame;
+    -fx-border-width: 2;
+    -fx-border-radius: 10;
+    -fx-background-radius: 10;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.55), 18, 0, 0, 6);
+}
+.themed-dialog-header {
+    -fx-background-color: -color-bg-surface;
+    -fx-background-radius: 8 8 0 0;
+    -fx-border-color: -color-border-subtle;
+    -fx-border-width: 0 0 1 0;
+    -fx-cursor: move;
+}
+.themed-dialog-title {
+    -fx-text-fill: -color-accent-gold;
+    -fx-font-size: 22px;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.45), 4, 0.35, 0, 1);
+}
+.themed-dialog-close {
+    -fx-background-color: transparent;
+    -fx-text-fill: -color-text-on-dark;
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+    -fx-padding: 2 10 2 10;
+    -fx-border-width: 0;
+    -fx-border-color: transparent;
+    -fx-background-radius: 4;
+    -fx-cursor: hand;
+}
+.themed-dialog-close:hover {
+    -fx-background-color: -color-accent-deep-red;
+    -fx-text-fill: -color-text-on-dark;
+}
+.themed-dialog-close:focused {
+    -fx-effect: none;
+}
+.themed-dialog-content {
+    -fx-background-color: -color-bg-elevated;
+}
+.themed-dialog-content .label {
+    -fx-text-fill: -color-text-on-light;
+}
+.themed-dialog-header-text {
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -color-text-on-light;
+}
+.themed-dialog-button-bar {
+    -fx-background-color: -color-bg-elevated;
+    -fx-background-radius: 0 0 8 8;
+}
+
+/* Alert / DialogPane: temable interior so the JavaFX content area matches the
+ * wood theme. The OS title bar is owned by the platform and stays native. */
+.dialog-pane {
+    -fx-background-color: -color-bg-elevated;
+    -fx-border-color: -color-border-frame;
+    -fx-border-width: 1;
+}
+.dialog-pane > .header-panel {
+    -fx-background-color: derive(-color-bg-elevated, -4%);
+    -fx-border-color: -color-border-subtle;
+    -fx-border-width: 0 0 1 0;
+}
+.dialog-pane > .header-panel > .label,
+.dialog-pane > .header-panel .label {
+    -fx-text-fill: -color-text-on-light;
+}
+.dialog-pane > .content,
+.dialog-pane > .content .label,
+.dialog-pane .content-text,
+.dialog-pane .label {
+    -fx-text-fill: -color-text-on-light;
 }

@@ -114,6 +114,45 @@
       <groupId>org.testfx</groupId>
       <artifactId>testfx-core</artifactId>
     </dependency>
+
+    <!--
+      Asset pipeline tooling — OGG Vorbis decoder used ONLY by
+      `client/src/test/java/.../buildtools/OggToWavConverter.java` (one-shot main).
+      JavaFX Media on Windows does not decode OGG (verified empirically), so any new
+      `*.ogg` asset in `assets/audio/sfx/` is converted to `*.wav` PCM at acquisition
+      time and the WAV is committed. These two libs auto-register an `AudioFileReader`
+      SPI into `javax.sound.sampled` so plain `AudioSystem.getAudioInputStream(oggFile)`
+      returns decodable Vorbis frames; `OggToWavConverter` then re-encodes to PCM and
+      writes WAV via `AudioSystem.write(..., AudioFileFormat.Type.WAVE, ...)`.
+
+      `<scope>test</scope>` keeps both jars OUT of the runtime classpath and OUT of
+      the jpackage MSI installer (Task 3.5.14): nothing in production code references
+      jorbis/vorbisspi. They are LGPL — by not redistributing them no LGPL obligation
+      is triggered.
+
+      Run the converter once per asset acquisition with:
+        mvn -pl client exec:java
+            -Dexec.classpathScope=test
+            -Dexec.mainClass="com.damaitaliana.client.buildtools.OggToWavConverter"
+            -Dexec.args="<inputDir> <outputDir>"
+
+      SPEC §6 dependency note: jorbis + vorbisspi are NOT listed in §6 because §6
+      enumerates the runtime stack (Spring Boot, JavaFX, JmDNS, Jackson, etc.); these
+      are tooling-scope only. Documented as a deliberate informal exception in
+      AI_CONTEXT.md (CLAUDE.md §8 anti-pattern #13 grey area: build-time tooling).
+    -->
+    <dependency>
+      <groupId>com.googlecode.soundlibs</groupId>
+      <artifactId>jorbis</artifactId>
+      <version>0.0.17.4</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.googlecode.soundlibs</groupId>
+      <artifactId>vorbisspi</artifactId>
+      <version>1.0.3.3</version>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <build>
@@ -141,6 +180,11 @@
                 <!-- JavaFX Alert wrapper. The UserPromptService interface is what tests mock;
                      this implementation is only reachable on a live JavaFX thread. -->
                 <exclude>**/JavaFxUserPromptService.class</exclude>
+                <!-- JavaFX MediaPlayer wrapper. Same pattern: AudioService is the testable
+                     abstraction, JavaFxAudioService binds to javafx.scene.media which can only
+                     run on a booted toolkit. The non-toolkit branches (init from prefs, clamping,
+                     persistence) are unit-tested via JavaFxAudioServiceTest. (Task 3.5.4) -->
+                <exclude>**/JavaFxAudioService.class</exclude>
                 <!-- Pure JavaFX cell-factory inner classes (TableCell / ListCell / Task /
                      StringConverter) — instantiated by the FX runtime, no business logic. -->
                 <exclude>**/MoveHistoryView$MoveHistoryCell.class</exclude>
@@ -166,6 +210,7 @@
                 <exclude>**/JavaFxAppContextHolder.class</exclude>
                 <exclude>**/ClientApplication.class</exclude>
                 <exclude>**/JavaFxUserPromptService.class</exclude>
+                <exclude>**/JavaFxAudioService.class</exclude>
                 <exclude>**/MoveHistoryView$MoveHistoryCell.class</exclude>
                 <exclude>**/LoadScreenController$MiniatureCell.class</exclude>
                 <exclude>**/RulesController$1.class</exclude>
@@ -209,5 +254,119 @@
       </plugin>
     </plugins>
   </build>
+
+  <profiles>
+    <!--
+      Windows installer build (Task 3.5.12). Activated explicitly with
+      `mvn -pl client -Pinstaller package`. Default produces an MSI (PLAN-fase-3.5
+      Task 3.5.12), which requires WiX Toolset 3.x on PATH. To build without WiX
+      (CI / dev smoke test) override the type:
+
+        mvn -pl client -Pinstaller -Djpackage.type=APP_IMAGE package
+
+      APP_IMAGE produces a runnable folder under target/jpackage/Dama Italiana/
+      containing the launcher .exe + bundled JRE — useful for ad-hoc distribution
+      as a zip while WiX is being provisioned on the build machine.
+
+      Output: target/jpackage/dama-italiana-0.3.5.msi (or APP_IMAGE folder).
+
+      Future optimisation (deferred from PLAN-fase-3.5 Task 3.5.12): pass an
+      explicit runtime image built via jlink to shrink the bundled JRE from
+      ~300 MB to ~80 MB. Spring Boot is classpath-only (non-modular) so jdeps
+      requires ignore-missing-deps; left for review-cycle follow-up.
+    -->
+    <profile>
+      <id>installer</id>
+      <properties>
+        <jpackage.type>MSI</jpackage.type>
+        <jpackage.app.version>0.3.5</jpackage.app.version>
+        <!-- Stable UUID required by WiX so upgrade installs replace prior versions
+             instead of double-installing. Generated once for this product line; do
+             NOT change unless intentionally creating a separate product. -->
+        <jpackage.win.upgrade.uuid>9d8c4a02-3f1b-4f7e-9c2a-5a6e1b3c8d92</jpackage.win.upgrade.uuid>
+      </properties>
+      <build>
+        <plugins>
+          <!-- Stage runtime dependencies into target/jpackage-input/ for jpackage. -->
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-dependency-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>jpackage-stage-runtime-deps</id>
+                <phase>package</phase>
+                <goals>
+                  <goal>copy-dependencies</goal>
+                </goals>
+                <configuration>
+                  <outputDirectory>${project.build.directory}/jpackage-input</outputDirectory>
+                  <includeScope>runtime</includeScope>
+                  <overWriteReleases>true</overWriteReleases>
+                  <overWriteSnapshots>true</overWriteSnapshots>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+          <!-- Stage the client jar itself alongside the runtime deps. -->
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-resources-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>jpackage-stage-self-jar</id>
+                <phase>package</phase>
+                <goals>
+                  <goal>copy-resources</goal>
+                </goals>
+                <configuration>
+                  <outputDirectory>${project.build.directory}/jpackage-input</outputDirectory>
+                  <resources>
+                    <resource>
+                      <directory>${project.build.directory}</directory>
+                      <includes>
+                        <include>${project.build.finalName}.jar</include>
+                      </includes>
+                    </resource>
+                  </resources>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <groupId>org.panteleyev</groupId>
+            <artifactId>jpackage-maven-plugin</artifactId>
+            <version>1.6.5</version>
+            <executions>
+              <execution>
+                <id>jpackage-build-installer</id>
+                <phase>package</phase>
+                <goals>
+                  <goal>jpackage</goal>
+                </goals>
+                <configuration>
+                  <type>${jpackage.type}</type>
+                  <name>Dama Italiana</name>
+                  <appVersion>${jpackage.app.version}</appVersion>
+                  <vendor>Dama Italiana</vendor>
+                  <copyright>Copyright (c) 2026 Dama Italiana</copyright>
+                  <description>Dama Italiana — Italian draughts (single-player demo)</description>
+                  <input>${project.build.directory}/jpackage-input</input>
+                  <destination>${project.build.directory}/jpackage</destination>
+                  <mainJar>${project.build.finalName}.jar</mainJar>
+                  <mainClass>com.damaitaliana.client.ClientApplication</mainClass>
+                  <icon>${project.basedir}/src/main/resources/assets/icons/app-icon.ico</icon>
+                  <winShortcut>true</winShortcut>
+                  <winMenu>true</winMenu>
+                  <winMenuGroup>Dama Italiana</winMenuGroup>
+                  <winDirChooser>true</winDirChooser>
+                  <winUpgradeUuid>${jpackage.win.upgrade.uuid}</winUpgradeUuid>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
 
 </project>

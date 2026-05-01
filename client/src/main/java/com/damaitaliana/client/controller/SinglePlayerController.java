@@ -1,12 +1,16 @@
 package com.damaitaliana.client.controller;
 
+import com.damaitaliana.client.audio.AudioService;
+import com.damaitaliana.client.audio.Sfx;
 import com.damaitaliana.client.ui.board.BoardRenderer;
 import com.damaitaliana.client.ui.board.MoveHistoryViewModel;
 import com.damaitaliana.client.ui.board.animation.AnimationOrchestrator;
 import com.damaitaliana.shared.domain.Color;
 import com.damaitaliana.shared.domain.GameState;
+import com.damaitaliana.shared.domain.GameStatus;
 import com.damaitaliana.shared.domain.Move;
 import com.damaitaliana.shared.domain.Piece;
+import com.damaitaliana.shared.domain.PieceKind;
 import com.damaitaliana.shared.domain.Square;
 import com.damaitaliana.shared.rules.IllegalMoveException;
 import com.damaitaliana.shared.rules.RuleEngine;
@@ -63,6 +67,7 @@ public class SinglePlayerController {
   private final RuleEngine ruleEngine;
   private final Optional<AutosaveTrigger> autosaveTrigger;
   private final Optional<AiTurnService> aiTurnService;
+  private final AudioService audioService;
   private final MoveHistoryViewModel history = new MoveHistoryViewModel();
   private final AiThinkingState aiThinkingState = new AiThinkingState();
   private final Deque<GameState> undoStack = new ArrayDeque<>();
@@ -82,10 +87,12 @@ public class SinglePlayerController {
   public SinglePlayerController(
       RuleEngine ruleEngine,
       Optional<AutosaveTrigger> autosaveTrigger,
-      Optional<AiTurnService> aiTurnService) {
+      Optional<AiTurnService> aiTurnService,
+      AudioService audioService) {
     this.ruleEngine = Objects.requireNonNull(ruleEngine, "ruleEngine");
     this.autosaveTrigger = Objects.requireNonNull(autosaveTrigger, "autosaveTrigger");
     this.aiTurnService = Objects.requireNonNull(aiTurnService, "aiTurnService");
+    this.audioService = Objects.requireNonNull(audioService, "audioService");
   }
 
   /**
@@ -162,6 +169,12 @@ public class SinglePlayerController {
     if (piece.isPresent() && piece.get().color() == state.sideToMove()) {
       selectPiece(clicked);
     } else {
+      // Click hit empty / enemy square. If we had a selection and the earlier branches
+      // didn't match (not a legal target, not the same selected square), this is a
+      // user-issued illegal-move attempt — surface the audible feedback (Task 3.5.5).
+      if (selected != null) {
+        audioService.playSfx(Sfx.ILLEGAL);
+      }
       deselect();
     }
   }
@@ -285,7 +298,8 @@ public class SinglePlayerController {
     }
     busy = true;
     Animation animation =
-        AnimationOrchestrator.animateMove(move, renderer::pieceAt, renderer.currentCellSize());
+        AnimationOrchestrator.animateMove(
+            move, renderer::pieceAt, renderer.currentCellSize(), renderer.particleHost());
     animation.setOnFinished(ev -> finalizeMove(move, sideThatMoved));
     animation.playFromStart();
   }
@@ -295,6 +309,7 @@ public class SinglePlayerController {
       return;
     }
     GameState preMove = state;
+    Optional<Piece> preMovePiece = preMove.board().at(move.from());
     boolean isHumanMove = sideThatMoved == game.humanColor();
     try {
       state = ruleEngine.applyMove(state, move);
@@ -313,11 +328,45 @@ public class SinglePlayerController {
     renderer.renderState(state.board());
     renderer.clearHighlights();
     refreshMandatoryHighlights();
+    dispatchMoveSfx(move, preMovePiece);
     autosaveTrigger.ifPresent(t -> t.onMoveApplied(snapshot()));
     fireStateChange();
     busy = false;
     publishUndoState();
     scheduleAiTurnIfAi();
+  }
+
+  /**
+   * Fires SFX for the move that has just landed in {@link #state} (Task 3.5.5). Three independent
+   * cues stack:
+   *
+   * <ul>
+   *   <li>{@link Sfx#MOVE} or {@link Sfx#CAPTURE} on every applied move (always one).
+   *   <li>{@link Sfx#PROMOTION} when the piece transitioned MAN → KING during this move.
+   *   <li>{@link Sfx#VICTORY} or {@link Sfx#DEFEAT} when the move ended the game (relative to
+   *       {@code game.humanColor}). Draws stay silent.
+   * </ul>
+   *
+   * <p>Both human and AI moves trigger the cues — the player gets audible feedback on the
+   * opponent's reply too, which matches the "videogame premium" UX target of SPEC §13.4.
+   */
+  private void dispatchMoveSfx(Move move, Optional<Piece> preMovePiece) {
+    audioService.playSfx(move.isCapture() ? Sfx.CAPTURE : Sfx.MOVE);
+
+    Optional<Piece> postMovePiece = state.board().at(move.to());
+    boolean promoted =
+        preMovePiece.isPresent()
+            && postMovePiece.isPresent()
+            && preMovePiece.get().kind() == PieceKind.MAN
+            && postMovePiece.get().kind() == PieceKind.KING;
+    if (promoted) {
+      audioService.playSfx(Sfx.PROMOTION);
+    }
+
+    if (state.status().isWin()) {
+      Color winner = state.status() == GameStatus.WHITE_WINS ? Color.WHITE : Color.BLACK;
+      audioService.playSfx(winner == game.humanColor() ? Sfx.VICTORY : Sfx.DEFEAT);
+    }
   }
 
   private void scheduleAiTurnIfAi() {

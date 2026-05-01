@@ -1,5 +1,6 @@
 package com.damaitaliana.client.ui.save;
 
+import com.damaitaliana.client.app.ThemeService;
 import com.damaitaliana.client.app.UserPromptService;
 import com.damaitaliana.client.controller.SinglePlayerGame;
 import com.damaitaliana.client.i18n.I18n;
@@ -59,6 +60,7 @@ public class SaveDialogController {
   private final SaveService saveService;
   private final UserPromptService prompt;
   private final I18n i18n;
+  private final ThemeService themeService;
   private final Clock clock;
 
   @FXML private Label titleLabel;
@@ -73,15 +75,22 @@ public class SaveDialogController {
   private boolean saved;
 
   @Autowired
-  public SaveDialogController(SaveService saveService, UserPromptService prompt, I18n i18n) {
-    this(saveService, prompt, i18n, Clock.systemUTC());
+  public SaveDialogController(
+      SaveService saveService, UserPromptService prompt, I18n i18n, ThemeService themeService) {
+    this(saveService, prompt, i18n, themeService, Clock.systemUTC());
   }
 
   /** Visible for tests: lets a fixed clock drive deterministic createdAt/updatedAt timestamps. */
-  SaveDialogController(SaveService saveService, UserPromptService prompt, I18n i18n, Clock clock) {
+  SaveDialogController(
+      SaveService saveService,
+      UserPromptService prompt,
+      I18n i18n,
+      ThemeService themeService,
+      Clock clock) {
     this.saveService = Objects.requireNonNull(saveService, "saveService");
     this.prompt = Objects.requireNonNull(prompt, "prompt");
     this.i18n = Objects.requireNonNull(i18n, "i18n");
+    this.themeService = Objects.requireNonNull(themeService, "themeService");
     this.clock = Objects.requireNonNull(clock, "clock");
   }
 
@@ -102,7 +111,9 @@ public class SaveDialogController {
         stage.initOwner(owner);
       }
       stage.initModality(Modality.WINDOW_MODAL);
-      stage.setScene(new Scene(root));
+      Scene scene = new Scene(root);
+      themeService.applyTheme(scene);
+      stage.setScene(scene);
       stage.setResizable(false);
       stage.showAndWait();
       return saved;

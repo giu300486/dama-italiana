@@ -59,6 +59,34 @@
 
 ---
 
+## Acceptance criteria di Fase 3.5 (PLAN-fase-3.5.md §2.2)
+
+| ID       | Criterio                                                                                            | Verifica                                                                            |
+|----------|-----------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------|
+| A3.5.1   | `mvn -pl client verify -DexcludedGroups=slow,performance` BUILD SUCCESS                             | Output Maven (321 test, JaCoCo + SpotBugs + Spotless verdi)                          |
+| A3.5.2   | Coverage JaCoCo client ≥ 60% line+branch (gate `haltOnFailure=true`)                                | `client/target/site/jacoco/jacoco.csv` + `jacoco-check` execution                    |
+| A3.5.3   | SpotBugs 0 High, Spotless OK                                                                        | Output Maven verify                                                                 |
+| A3.5.4   | 8 schermate ridisegnate con design tokens v2 (palette wood, font display, bottoni gradient/bevel/glow) | `tests/visual-review/{splash,main-menu,sp-setup,board-game,save-dialog,load-screen,settings,rules}.png` + `ThemeServiceTest#themeLightDefinesWoodPremiumColorTokens`, `themeLightDefinesPrimaryAndSecondaryButtonAndDisplayLabel`, `themeLightDefinesFontFamilyChainsForUiAndDisplay` |
+| A3.5.5   | Tavola texture legno + pezzi 3D-look + dame con marker oro/rosso                                    | `tests/visual-review/board-game.png` + `PieceNodeTest` (5 test rendering)            |
+| A3.5.6   | Animazione mossa easing OUT_BACK (overshoot)                                                        | `MoveAnimatorTest` (interpolator assertion) + manual demo Task 3.5.14                |
+| A3.5.7   | Cattura: particle puff 8-12 marrone/grigie, fade+scale 350ms                                        | `ParticleEffectsTest` (count + lifecycle) + manual demo                              |
+| A3.5.8   | Promozione: raggi dorati 8-12 radiali, fade 600ms                                                   | `ParticleEffectsTest` (promotion glow) + manual demo                                 |
+| A3.5.9   | Cattura obbligatoria: glow halo oro animato 1200ms                                                  | `ParticleEffectsTest` (mandatoryGlow) + manual demo                                  |
+| A3.5.10  | Music shuffle 3-5 tracce orchestrali, default 30%, no overlap, loop continuo                        | `MusicPlaylistTest` (shuffle deterministic, no back-to-back, reset) + `JavaFxAudioServiceTest` (defaults SPEC §13.4) + manual demo |
+| A3.5.11  | SFX MOVE/CAPTURE/PROMOTION/VICTORY\|DEFEAT su 4 eventi gameplay, mutabili separatamente             | `SinglePlayerControllerTest` (5 test sfx), `SinglePlayerE2ETest` (capture/promotion/victory/defeat sfx, 4 test), `SfxTest` (6 enum + classpath), `SfxPlaybackSmokeTest` |
+| A3.5.12  | Settings: 2 slider Volume musica/effetti + 2 toggle Muto, persisti in `config.json`                 | `SettingsControllerTest` (audio handlers) + `PreferencesServiceTest#migratesSchemaV1FileFillingAudioDefaults` + `JavaFxAudioServiceTest` (persist) + manual `tests/visual-review/settings.png` |
+| A3.5.13  | `mvn -pl client -Pinstaller -DskipTests package` produce `Dama Italiana-0.3.5.msi` su Win 10/11    | Manual build Task 3.5.12+3.5.14 + ADR-036                                            |
+| A3.5.14  | Asset CC0 o CC-BY (visual+audio); `client/src/main/resources/assets/CREDITS.md` con autore/fonte/licenza | Manual audit (`CREDITS.md` + Task 3.5.1/3.5.4 follow-up) + ADR-037                   |
+| A3.5.15  | WCAG AA preservato light theme (contrast text/bg ≥ 4.5:1 sui token critici)                         | Manual check (Coolors/WebAIM) + `tests/visual-review/*.png` regression baseline      |
+| A3.5.16  | Nessun TODO/FIXME pending in `client/src/main/java/`                                                | grep                                                                                |
+| A3.5.17  | TRACEABILITY aggiornato con A3.5.x                                                                  | Questo file                                                                         |
+| A3.5.18  | TEST F3 debt estinto (TEST-PLAN-fase-3.md §2-6,8-10 + manuale §7.4 + regression slow+perf)          | Task 3.5.0 (commit `fc7b68c`), `tests/TEST-PLAN-fase-3.md` finalizzato              |
+| A3.5.19  | Manual demo run su Win 10/11 fresca, partita completa, tutti A3.5.x visibili                        | `tests/TEST-PLAN-fase-3.5.md §7` + screenshot baseline                              |
+| A3.5.20  | `mvn clean verify` (root) BUILD SUCCESS finale                                                      | Output Maven (regression Task 3.5.17)                                               |
+| A3.5.21  | `package-info.java` per nuovi sotto-package (`client.audio`)                                        | `client/src/main/java/com/damaitaliana/client/audio/package-info.java`               |
+
+---
+
 ## Acceptance criteria di Fase 3 (PLAN-fase-3.md §2.2)
 
 | ID    | Criterio                                                                                            | Verifica                                                                            |

@@ -15,7 +15,7 @@
         <Insets top="20" right="20" bottom="20" left="20"/>
     </padding>
 
-    <Label fx:id="titleLabel" styleClass="label-title"/>
+    <Label fx:id="titleLabel" styleClass="label-display, label-display-md"/>
 
     <VBox spacing="6">
         <Label fx:id="nameLabel" styleClass="label-secondary"/>
@@ -26,6 +26,7 @@
     <HBox spacing="12" alignment="CENTER_RIGHT">
         <Button fx:id="cancelButton" onAction="#onCancel" styleClass="button-secondary"/>
         <Region HBox.hgrow="ALWAYS" maxWidth="Infinity"/>
-        <Button fx:id="confirmButton" onAction="#onConfirm" defaultButton="true"/>
+        <Button fx:id="confirmButton" onAction="#onConfirm" defaultButton="true"
+                styleClass="button-primary"/>
     </HBox>
 </VBox>

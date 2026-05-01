@@ -18,9 +18,10 @@ import org.springframework.stereotype.Component;
  * tracked alongside but not selected (PLAN-fase-3 §7.3). The runtime toggle and WCAG AA
  * verification in dark mode are scheduled for Fase 11.
  *
- * <p>Inter font loading is best-effort: if the binaries under {@code /fonts/} are not present the
- * service logs an INFO line and JavaFX falls back to the rest of the font-family chain declared in
- * the active stylesheet. See {@code client/src/main/resources/fonts/README.md}.
+ * <p>Font loading is best-effort: Inter (UI) and Playfair Display (display) variable TTFs live
+ * under {@code /fonts/} as bundled resources (Fase 3.5, both SIL OFL 1.1). If a binary is missing
+ * the service logs an INFO line and JavaFX falls back to the rest of the font-family chain declared
+ * in the active stylesheet. See {@code client/src/main/resources/fonts/README.md}.
  */
 @Component
 public class ThemeService {
@@ -31,8 +32,8 @@ public class ThemeService {
   static final String THEME_DARK_PATH = "/css/theme-dark.css";
   static final String COMPONENTS_PATH = "/css/components.css";
 
-  static final String INTER_REGULAR_PATH = "/fonts/Inter-Regular.ttf";
-  static final String INTER_SEMIBOLD_PATH = "/fonts/Inter-SemiBold.ttf";
+  static final String INTER_VARIABLE_PATH = "/fonts/InterVariable.ttf";
+  static final String PLAYFAIR_DISPLAY_VARIABLE_PATH = "/fonts/PlayfairDisplay-Variable.ttf";
 
   private volatile boolean fontsAttempted;
 
@@ -69,8 +70,8 @@ public class ThemeService {
       return;
     }
     fontsAttempted = true;
-    tryLoadFont(INTER_REGULAR_PATH);
-    tryLoadFont(INTER_SEMIBOLD_PATH);
+    tryLoadFont(INTER_VARIABLE_PATH);
+    tryLoadFont(PLAYFAIR_DISPLAY_VARIABLE_PATH);
   }
 
   private void tryLoadFont(String resourcePath) {

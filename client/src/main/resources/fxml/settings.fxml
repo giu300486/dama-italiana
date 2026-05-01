@@ -2,9 +2,11 @@
 
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Button?>
+<?import javafx.scene.control.CheckBox?>
 <?import javafx.scene.control.ChoiceBox?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.RadioButton?>
+<?import javafx.scene.control.Slider?>
 <?import javafx.scene.control.ToggleGroup?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.Region?>
@@ -13,6 +15,7 @@
 
 <StackPane xmlns:fx="http://javafx.com/fxml/1"
            fx:controller="com.damaitaliana.client.ui.settings.SettingsController"
+           styleClass="screen-root"
            prefWidth="1024" prefHeight="768">
     <padding>
         <Insets top="32" right="32" bottom="32" left="32"/>
@@ -23,7 +26,7 @@
     </fx:define>
 
     <VBox styleClass="card-elevated" alignment="TOP_LEFT" spacing="20" maxWidth="560">
-        <Label fx:id="titleLabel" styleClass="label-title"/>
+        <Label fx:id="titleLabel" styleClass="label-display, label-display-md"/>
 
         <VBox spacing="8">
             <Label fx:id="languageLabel" styleClass="label-secondary"/>
@@ -45,10 +48,28 @@
             <Label fx:id="themeNoteLabel" styleClass="label-secondary"/>
         </VBox>
 
+        <VBox spacing="8">
+            <Label fx:id="audioLabel" styleClass="label-secondary"/>
+            <HBox spacing="12" alignment="CENTER_LEFT">
+                <Label fx:id="musicVolumeLabel" minWidth="100"/>
+                <Slider fx:id="musicVolumeSlider" min="0" max="100" majorTickUnit="25"
+                        showTickMarks="true" showTickLabels="true" prefWidth="240"
+                        onMouseReleased="#onMusicVolumeChanged"/>
+                <CheckBox fx:id="musicMutedCheck" onAction="#onMusicMutedChanged"/>
+            </HBox>
+            <HBox spacing="12" alignment="CENTER_LEFT">
+                <Label fx:id="sfxVolumeLabel" minWidth="100"/>
+                <Slider fx:id="sfxVolumeSlider" min="0" max="100" majorTickUnit="25"
+                        showTickMarks="true" showTickLabels="true" prefWidth="240"
+                        onMouseReleased="#onSfxVolumeChanged"/>
+                <CheckBox fx:id="sfxMutedCheck" onAction="#onSfxMutedChanged"/>
+            </HBox>
+        </VBox>
+
         <HBox spacing="12" alignment="CENTER_RIGHT">
             <Button fx:id="backButton" onAction="#onBack" styleClass="button-secondary"/>
             <Region HBox.hgrow="ALWAYS" maxWidth="Infinity"/>
-            <Button fx:id="saveButton" onAction="#onSave"/>
+            <Button fx:id="saveButton" onAction="#onSave" styleClass="button-primary"/>
         </HBox>
     </VBox>
 </StackPane>
