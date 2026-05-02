@@ -60,6 +60,20 @@
       <artifactId>mockito-junit-jupiter</artifactId>
       <scope>test</scope>
     </dependency>
+
+    <!-- Jackson (test scope only): smoke-tests JSON serializability of MatchEvent records.
+         Production code does NOT depend on Jackson — the wire layer (Fase 6 server / Fase 7 client)
+         brings its own ObjectMapper + custom Module for the sealed Move hierarchy. -->
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.fasterxml.jackson.datatype</groupId>
+      <artifactId>jackson-datatype-jsr310</artifactId>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <build>
