@@ -6,6 +6,10 @@ Il formato è basato su [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1
 
 ## [Unreleased]
 
+### Changed
+
+- **`CLAUDE.md` — anti-pattern #15 (vincolo design system F3.5 cross-fase)** (2026-05-02, su `develop` pre-Fase 4): aggiunto in §8 il divieto di introdurre nuovi stili visuali ad-hoc nelle fasi successive a F3.5. Tutte le schermate UI di F6 (lobby online), F7 (LAN host/discovery/chat), F8 (tornei eliminazione), F9 (classifiche/scheduler) e F11 (replay/profilo) DEVONO riusare il design system v2: `ThemeService.applyTheme(scene)`, token `-color-bg-*`/`-color-text-on-*`, classi utility `screen-root`/`card-elevated`/`popover`/`button-primary|secondary`/`label-display*`, fonts Playfair + Inter, texture wood, `BoardRenderer`/`BoardCellNode`/`PieceNode`, animation system (`MoveAnimator`/`ParticleEffects`/`AnimationOrchestrator`), `AudioService` per audio cue, asset CC0/CC-BY/OFL con audit `CREDITS.md`. Riferimenti normativi: SPEC §13.2 (v2.2), ADR-034/035/037. Estensioni del design system sono task dedicati con ADR, non improvvisazioni per fase. Aggiunta inoltre nota cross-fase in §7 "Avvio sessione" che rimanda a #15 quando la fase aggiunge schermate UI. Memoria di progetto associata: `memory/project_ui_restyling_constraint.md` (richiesta utente 2026-05-02 di propagare il vincolo in CLAUDE.md per ricordarlo a ogni avvio sessione).
+
 ### Added
 
 - **Task 3.5.15** — Documentation + ADR + CHANGELOG + TRACEABILITY (Fase 3.5, branch `feature/3.5-visual-polish-and-audio`):

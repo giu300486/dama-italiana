@@ -539,6 +539,8 @@ Ad ogni nuova sessione, Claude Code DEVE seguire questa procedura prima di scriv
 6. Se è in corso un piano, una review, o un test plan: leggerlo integralmente.
 7. **Confermare con l'utente** lo stato compreso prima di proseguire, sintetizzando in 3-5 righe cosa farà.
 
+> **Nota cross-fase (vincolante da F6+)**: se la fase corrente o un task aggiunge **schermate UI** (lobby online F6, LAN host/discovery/chat F7, tornei F8, classifiche F9, replay/profilo F11), rileggere **§8 anti-pattern #15** prima di disegnare FXML/CSS — il design system di Fase 3.5 è single source of truth per tutto il visual stack.
+
 ---
 
 ## 8. Anti-pattern (cose da NON fare)
@@ -559,6 +561,19 @@ Specifici per questo progetto. Sono regole assolute.
 12. **Non modificare `SPEC.md` di iniziativa propria.** Sempre passare per il flusso CR.
 13. **Non aggiungere dipendenze non menzionate in `SPEC.md` sezione 6** senza approvazione esplicita dell'utente.
 14. **Non rendere green un test sopprimendo l'asserzione o disabilitando il test.** Se un test fallisce, capire perché.
+15. **Non introdurre nuovi stili visuali ad-hoc nelle fasi successive a F3.5.** Tutte le nuove schermate (lobby online F6, LAN host/discovery/chat F7, tornei F8, classifiche/scheduler F9, polish/replay/profilo F11) DEVONO riusare il **design system di Fase 3.5**:
+    - `ThemeService.applyTheme(scene)` su ogni nuova `Scene` modale o root (pattern già usato da `SceneRouter` e `SaveDialogController`).
+    - Token CSS v2: vocabolario duale `-color-bg-*` / `-color-text-on-*`, classi utility `screen-root` / `card-elevated` / `popover` / `button-primary` / `button-secondary` / `label-display` / `label-display-md` / `label-title` / `label-subtitle` / `label-secondary`.
+    - Tipografia bi-classe: **Playfair Display** per heading display + **Inter** per UI/body.
+    - Texture wood (Poly Haven CC0) via `BackgroundImage` e cornici frame; mai flat-color piatti.
+    - Componenti gameplay riusabili: `BoardRenderer`, `BoardCellNode`, `PieceNode` (composito 3D-look gradient + ring + gloss + crown).
+    - Animation system: `MoveAnimator` (easing OUT_BACK), `ParticleEffects` (captureSplash, promotionGlow, mandatoryGlow), `AnimationOrchestrator`.
+    - `AudioService` per qualsiasi nuovo cue audio (mai `MediaPlayer` diretto in controller).
+    - Asset solo CC0/CC-BY/OFL, audit obbligatorio in `CREDITS.md`.
+
+    Riferimenti normativi: SPEC §13.2 (riscritta a v2.2 da CR-F3.5-001), ADR-034 (visual rework videogame premium wood), ADR-035 (AudioService), ADR-037 (asset licensing), `ThemeService` come single source of truth.
+
+    Eventuali estensioni del design system (es. nuova classe `tournament-bracket-table` per la classifica F9) sono **task dedicati con ADR**, non improvvisazioni per fase. Se una nuova schermata sembra richiedere uno stile non presente nei token v2, fermarsi (CLAUDE.md §9 stop-and-ask) e proporre l'estensione del design system **prima** di scrivere FXML/CSS.
 
 ---
 
