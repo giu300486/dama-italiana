@@ -39,6 +39,15 @@
       <artifactId>spring-messaging</artifactId>
     </dependency>
 
+    <!-- Logging: SLF4J API only (SPEC §6, CLAUDE.md §4.1 "Solo SLF4J"). The binding
+         (logback-classic) is supplied by the runtime modules — server (Fase 6), client (Fase 7
+         when LAN host wires CoreServerConfiguration). Tests run against slf4j-simple via the
+         JUnit-managed transitive of Spring Boot BOM if present; otherwise the no-op fallback. -->
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+    </dependency>
+
     <!-- Test -->
     <dependency>
       <groupId>org.junit.jupiter</groupId>
