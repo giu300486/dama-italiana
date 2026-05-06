@@ -8,6 +8,23 @@ Il formato è basato su [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1
 
 ### Added
 
+- **F4.5 Task 4.5.1** — apply CR-F4.5-001 to SPEC + add ADR-043 (sotto-fase IMPLEMENTA mini-fase F4.5, branch `feature/4.5-ui-responsiveness`):
+  - **`SPEC.md`** v2.2 → **v2.3** (commit `d3a431e`):
+    - §5: nuovo **NFR-U-05** "UI client adattiva 1280×720 → 4K, min Stage 1024×720, DPI 100/125/150/200%, Stage state persistito v3".
+    - §13.7: nuova sezione **"Layout responsive (da Fase 4.5)"** — Stage constraints (min 1024×720, initial 80% primary screen visualBounds centrato), BoardView centered StackPane + Pane (side = min(viewport.w − sidePanelMin, viewport.h − headerFooterReserved) − frameThickness), side panel adattivo (pref/min/max 320/240/400, auto-hide < 1024px), tipografia display fluida (binding programmatico — CSS clamp non supportato in JavaFX 21), ultrawide aspect 21:9/32:9 (cluster centrato max ~70% viewport, margini decorativi wood), `BackgroundRepeat.REPEAT` + asset 2048-4096px, DPI awareness implicita, `UiScalingService` ortogonale. Anti-pattern #15 ribadito.
+    - §17.2.8: nuovo AC "UI responsive desktop" verificato via `ResponsivenessParametricTest @Tag("slow")` 7 combinazioni + manual demo run.
+    - §16: nuova entry **Fase 4.5** "UI Responsiveness desktop" tra F4 e F5 (modello F3.5 mini-fase intermedia post-demo cliente).
+  - **`ARCHITECTURE.md`** (commit `6cd8d63`): nuovo **ADR-043** "Strategia layout responsive desktop (Fase 4.5)" — documenta la stack tecnologica (`Stage` constraints, `StackPane`/`Pane` per BoardView, `BorderPane` strutturale, side panel adattivo, `JavaFxScalingHelper` programmatic font binding, aspect ratio handling, `BackgroundRepeat.REPEAT`, DPI awareness) e le alternative valutate e scartate (MigLayout/FormsFX/ControlsFX framework esterni, ScrollPane fallback, CSS `clamp()`, schema persistence v4 separato, ultrawide indefinitely growing board).
+  - Nessuna modifica a codice prod/test in Task 4.5.1: SPEC + ADR documentation only. Build verde implicito (no codice nuovo).
+  - Hardware context cliente registrato in AI_CONTEXT (commit `cf782ae`): PC ~2014-2015, Intel HD 3000-4000, RAM 4-8 GB, HDD, display verosimilmente 1366×768 @ 100% DPI. Defect "parte bassa scacchiera tagliata" → quasi certamente 1366×768. Performance F3.5 animazioni su HD 3000/4000 da verificare a manual demo run A4.5.16 (eventuale "Performance mode" toggle è out of scope F4.5 — futura F4.6 / F11).
+
+- **PLAN-fase-4.5** — UI Responsiveness desktop (apertura mini-fase F4.5, commit `e478e29` su `develop`):
+  - **Mini-fase intermedia** tra Fase 4 (`v0.4.0`, chiusa 2026-05-06) e Fase 5 (server centrale skeleton). Modello F3.5: pull-forward parziale di feature di adattività UI da F11 per fix mirato post-demo cliente.
+  - **Scope**: adattività delle 8 schermate F3.5 al gamut desktop standard (1024×720 floor → 4K), aspect ratio handling 16:9/16:10 default + 21:9/32:9 ultrawide, Stage state persistence in `~/.dama-italiana/config.json` schema v3, asset audit texture wood ≥ 2048×2048 e ≤ 4096×4096, test parametric DPI matrix 7 combinazioni strategiche Win 10/11 reali. **Anti-pattern #15 vincolante**: design system F3.5 wood premium INVARIATO — diff finale tocca solo layout/binding/CSS.
+  - **PLAN approvato dall'utente** il 2026-05-06 con default raccomandazioni + **5 senior amendments** applicati al PLAN v1.1: (1) initial Stage size = computed 80% primary screen visualBounds centrato (sostituisce `1366×768` fisso); (2) ultrawide aspect ratio handling esplicito; (3) nuovo Task 4.5.7b Stage state persistence schema v3; (4) nuovo Task 4.5.3b asset audit upfront; (5) test matrix DPI focused 7 invece di 5×4=20 esaustive.
+  - **SPEC change request CR-F4.5-001** inclusa in PLAN §11 (NFR-U-05 + nuova §13.7 + AC §17.2.8 + entry §16 Fase 4.5) — applicata in Task 4.5.1.
+  - **Branch creato**: `feature/4.5-ui-responsiveness` (staccato da `develop` HEAD `e478e29`). **Tag finale previsto**: `v0.4.5`. F5 resta F5 con tag `v0.5.0`.
+
 - **TEST sotto-fase Fase 4** (chiusura sotto-fase TEST Fase 4, branch `feature/4-core-server-skeleton`):
   - **1 file di test nuovo** (`core-server/src/test/java/com/damaitaliana/core/repository/InMemoryRepositoryConcurrencyTest.java`, **3 test `@Tag("slow")`**) + **1 test plan nuovo** (`tests/TEST-PLAN-fase-4.md`, popolato §1-§7) + **TRACEABILITY** aggiornato (A4.12, A4.18, A4.19 promossi da `DEFERRED` a ✅ `COVERED`).
   - **`InMemoryRepositoryConcurrencyTest`**:
