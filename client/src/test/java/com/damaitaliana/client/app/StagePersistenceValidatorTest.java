@@ -90,6 +90,43 @@ class StagePersistenceValidatorTest {
   }
 
   @Test
+  void invalidWhenTopLeftIsOnscreenButMostOfWindowIsOffscreen() {
+    // F4.5 REVIEW F-002: window top-left at (1900, 50) is inside the 1920x1080 primary, BUT
+    // the window extends from x=1900 to x=3266 (well past the primary's right edge 1920). Only
+    // 20px wide × 768 tall is on-screen — about 1.5% of the window area. The pre-fix validator
+    // accepted this (top-left corner contained); the post-fix validator rejects via the 50%
+    // intersection ratio rule.
+    UserPreferences prefs = withWindow(1366, 768, 1900, 50, false);
+    assertThat(
+            StagePersistenceValidator.isStateValid(prefs, SINGLE_FHD_SCREEN, MIN_WIDTH, MIN_HEIGHT))
+        .isFalse();
+  }
+
+  @Test
+  void validWhenTopLeftIsOffscreenButMajorityOfWindowIsOnPrimary() {
+    // F4.5 REVIEW F-002: window straddles the primary's left edge. Top-left at (-200, 100) is
+    // outside the screen, but the window 1366x768 is mostly on-screen — intersection 1166x768
+    // out of 1366x768 = ~85.4%. Above the 50% threshold so the state is restorable: the user
+    // can still grab the title bar and drag it back.
+    UserPreferences prefs = withWindow(1366, 768, -200, 100, false);
+    assertThat(
+            StagePersistenceValidator.isStateValid(prefs, SINGLE_FHD_SCREEN, MIN_WIDTH, MIN_HEIGHT))
+        .isTrue();
+  }
+
+  @Test
+  void invalidWhenWindowSpansMostlyTheUnpluggedSecondary() {
+    // Window persisted spanning both monitors, mostly on the secondary. Disconnecting the
+    // secondary leaves only ~20% of the window on the primary — below the 50% threshold.
+    // Persisted: x=1700..3066 (1366 wide), screens (single primary 1920x1080) →
+    // intersection = (1920-1700)*768 = 168960 vs total 1366*768 = 1049088 → ~16%.
+    UserPreferences prefs = withWindow(1366, 768, 1700, 50, false);
+    assertThat(
+            StagePersistenceValidator.isStateValid(prefs, SINGLE_FHD_SCREEN, MIN_WIDTH, MIN_HEIGHT))
+        .isFalse();
+  }
+
+  @Test
   void invalidWhenNullPrefs() {
     assertThat(
             StagePersistenceValidator.isStateValid(null, SINGLE_FHD_SCREEN, MIN_WIDTH, MIN_HEIGHT))

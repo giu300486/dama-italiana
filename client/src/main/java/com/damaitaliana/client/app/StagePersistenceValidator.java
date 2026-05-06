@@ -15,8 +15,12 @@ import javafx.stage.Screen;
  * <ul>
  *   <li>Any of the four geometry fields is {@code null} (fresh install, v2 file just migrated).
  *   <li>Width or height below the responsive floor 1024×720 (corrupted file, schema downgrade).
- *   <li>Top-left corner sits outside every screen's {@link Screen#getVisualBounds() visualBounds} —
- *       happens when the user unplugs the secondary monitor on which the window was last shown.
+ *   <li>The persisted window rectangle does not overlap the union of {@link
+ *       Screen#getVisualBounds() screen visualBounds} by at least {@link #MIN_INTERSECTION_RATIO} —
+ *       happens when the user unplugs the secondary monitor on which the window was last shown, or
+ *       moves it so that most of the chrome ends up off-screen. The previous implementation only
+ *       checked that the top-left corner lay inside <em>some</em> screen, which let through windows
+ *       whose right/bottom edges fell off all displays (F4.5 REVIEW F-002).
  * </ul>
  *
  * <p>The pure-math {@link #isStateValid(UserPreferences, List, double, double)} takes synthetic
@@ -25,6 +29,14 @@ import javafx.stage.Screen;
  * screen list and the {@code PrimaryStageInitializer} min size for the JavaFx app.
  */
 public final class StagePersistenceValidator {
+
+  /**
+   * F4.5 REVIEW F-002 — minimum fraction of the persisted window rectangle that must lie within the
+   * union of the current screens' visualBounds for the state to be considered safe to restore. 50%
+   * gives the user enough chrome to drag the window to a usable position without auto-hiding the
+   * title bar.
+   */
+  static final double MIN_INTERSECTION_RATIO = 0.5;
 
   private StagePersistenceValidator() {}
 
@@ -43,14 +55,27 @@ public final class StagePersistenceValidator {
     if (prefs.windowWidth() < minWidth || prefs.windowHeight() < minHeight) {
       return false;
     }
-    double x = prefs.windowX();
-    double y = prefs.windowY();
+    Rectangle2D window =
+        new Rectangle2D(
+            prefs.windowX(), prefs.windowY(), prefs.windowWidth(), prefs.windowHeight());
+    double windowArea = window.getWidth() * window.getHeight();
+    double bestRatio = 0.0;
     for (Rectangle2D bounds : screenVisualBounds) {
-      if (bounds.contains(x, y)) {
-        return true;
+      double interW =
+          Math.min(bounds.getMaxX(), window.getMaxX())
+              - Math.max(bounds.getMinX(), window.getMinX());
+      double interH =
+          Math.min(bounds.getMaxY(), window.getMaxY())
+              - Math.max(bounds.getMinY(), window.getMinY());
+      if (interW <= 0 || interH <= 0) {
+        continue;
+      }
+      double ratio = (interW * interH) / windowArea;
+      if (ratio > bestRatio) {
+        bestRatio = ratio;
       }
     }
-    return false;
+    return bestRatio >= MIN_INTERSECTION_RATIO;
   }
 
   /**
