@@ -66,7 +66,15 @@ public record UserPreferences(
     uiScalePercent = uiScalePercent > 0 ? uiScalePercent : 100;
     musicVolumePercent = clampVolume(musicVolumePercent);
     sfxVolumePercent = clampVolume(sfxVolumePercent);
-    // window* geometry fields stay as-is: null means "no persisted state".
+    // F4.5 REVIEW F-011: reject negative width/height — null means "no persisted state".
+    // x/y may legitimately be negative on multi-monitor setups (secondary left of primary),
+    // so they are not clamped.
+    if (windowWidth != null && windowWidth < 0) {
+      windowWidth = null;
+    }
+    if (windowHeight != null && windowHeight < 0) {
+      windowHeight = null;
+    }
   }
 
   /**
@@ -288,6 +296,30 @@ public record UserPreferences(
         x,
         y,
         maximized);
+  }
+
+  /**
+   * F4.5 REVIEW F-001 — flips only {@code windowMaximized} while preserving the previously
+   * persisted geometry. Used by {@link com.damaitaliana.client.app.StagePersistenceCoordinator}
+   * when the stage closes while maximized but no windowed-bounds memory was tracked, so the
+   * persisted windowed geometry from a previous session must be carried forward.
+   */
+  public UserPreferences withWindowMaximized(boolean newWindowMaximized) {
+    return new UserPreferences(
+        schemaVersion,
+        locale,
+        themeId,
+        uiScalePercent,
+        firstLaunch,
+        musicVolumePercent,
+        sfxVolumePercent,
+        musicMuted,
+        sfxMuted,
+        windowWidth,
+        windowHeight,
+        windowX,
+        windowY,
+        newWindowMaximized);
   }
 
   /**
