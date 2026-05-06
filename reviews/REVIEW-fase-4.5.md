@@ -58,7 +58,7 @@ Nessun `BLOCKER` o `Critical`. I 2 `High` (F-001 + F-002) sono interazioni del f
   1. `setMaximized(true)` invocato prima di `primaryStage.show()` (chiamato in `JavaFxApp.start`). Il contract Javadoc di JavaFX 21 dice "may be ignored if the stage is not yet shown". Su Linux Wayland/X11 può essere ignorato; su Windows generalmente onorato ma non garantito.
   2. `persist()` (lines 73-77) cattura `stage.getWidth/Height/X/Y` incondizionatamente. Quando lo stage è **maximized at close time**, `getWidth/Height` ritornano le dimensioni maximized, non le windowed sottostanti. Reproducer: app aperta a 1366×768, drag-resize a 1500×900, maximize, close. Next launch apre maximized (OK). Utente clicca restore → finestra snap a maximized-screen-size, NON a 1500×900 originale. La memoria della "finestra che lui aveva configurato" è persa al primo close-da-maximized.
 - **Proposta di fix**: Catturare `windowWidth/Height/X/Y` solo quando NOT maximized. Pattern: in `setOnCloseRequest` se `stage.isMaximized()` write only `windowMaximized=true` preservando i geometry fields precedenti (load → modify maximized only → save). Per la transizione live, aggiungere listener su `stage.maximizedProperty()` che cattura la geometry windowed appena prima del maximize. Differire `setMaximized(true)` a dopo `stage.show()` via `Platform.runLater`, oppure restructure `JavaFxApp.start` per chiamare `coordinator.initialize` post-`show`.
-- **Status**: OPEN
+- **Status**: RESOLVED (vedi "Resolution log" in fondo)
 
 ---
 
@@ -80,7 +80,7 @@ Nessun `BLOCKER` o `Critical`. I 2 `High` (F-001 + F-002) sono interazioni del f
   }
   return false;
   ```
-- **Status**: OPEN
+- **Status**: RESOLVED (vedi "Resolution log" in fondo)
 
 ---
 
@@ -89,7 +89,7 @@ Nessun `BLOCKER` o `Critical`. I 2 `High` (F-001 + F-002) sono interazioni del f
 - **Posizione**: `client/src/main/java/com/damaitaliana/client/persistence/UserPreferences.java:91-106` + `StagePersistenceValidator.java:36-42`.
 - **Descrizione**: Se file v3 ha `windowMaximized=true` ma una qualsiasi delle 4 geometry int è `null` (es. utente chiude maximized prima volta dopo v2→v3 migration), validator ritorna `false` → fallback a 80% computed. La narrativa Javadoc (`UserPreferences.java:21-22`) dice "v2 → v3 migration leaves geometry null". Combinato con F-001 (persist cattura sempre maximized geometry come window), il primo save dopo migration v2→v3 in stato maximized scrive geometry maximized → al riavvio il restore funziona ma se l'utente fa restore window-mode, vede dimensioni maximized non windowed. Lo stato "maximized senza windowed memory" è non rappresentabile.
 - **Proposta di fix**: Trattare `windowMaximized=true` come sufficiente da solo (skip geometry-null check quando maximized), OR fixare F-001 per primo (capture windowed size separatamente dal flag maximized — è la fix preferita perché risolve entrambi).
-- **Status**: OPEN (dipendente da F-001)
+- **Status**: RESOLVED (vedi "Resolution log" in fondo) (dipendente da F-001)
 
 ---
 
@@ -98,7 +98,7 @@ Nessun `BLOCKER` o `Critical`. I 2 `High` (F-001 + F-002) sono interazioni del f
 - **Posizione**: `client/src/main/java/com/damaitaliana/client/app/StagePersistenceCoordinator.java:79-82` e `client/src/main/java/com/damaitaliana/client/persistence/PreferencesService.java:103-105`.
 - **Descrizione**: Race contrived ma reale: utente chiude la finestra splash (Alt+F4) prima che il main menu carichi. `stage.getWidth/Height/X/Y` possono ritornare `Double.NaN` o 0 se lo Stage non è stato sized completamente. `(int) Math.round(NaN) = 0` → persist scrive `(0, 0, 0, 0, false)` → `width=0 < MIN_WIDTH=1024` → al prossimo launch validator rifiuta → fallback a 80% (graceful) MA il previous valid state è stato sovrascritto. La intent dell'utente persa.
 - **Proposta di fix**: Guard al top di `persist`: se any of `stage.getWidth/Height ≤ 0` o `Double.isNaN` skip il save e log INFO ("stage geometry unavailable on close, preserving previous state"). Alternativa: persist solo se `width >= MIN_WIDTH && height >= MIN_HEIGHT`.
-- **Status**: OPEN
+- **Status**: RESOLVED (vedi "Resolution log" in fondo)
 
 ---
 
@@ -107,7 +107,7 @@ Nessun `BLOCKER` o `Critical`. I 2 `High` (F-001 + F-002) sono interazioni del f
 - **Posizione**: `client/src/main/java/com/damaitaliana/client/layout/BoardFrameThicknessHelper.java:47-66`.
 - **Descrizione**: Quando `BoardViewController.initialize()` chiama `bindFrameThickness(boardFrame, boardRenderer)`, il binding evaluator immediatamente computa `Math.min(renderer.getWidth(), renderer.getHeight())` con `width = height = 0.0` (renderer non ancora layoutato). `computeFrameThickness(0, 16, 48, 0.035) = max(16, 0) = 16`. Padding settato a `Insets(16)`, sovrascrivendo il fallback FXML `Insets(24)`. Il commento board-view.fxml:51 promette "static 24px below is the fallback when the controller isn't wired" — ma il controller runs at FXML load → bind immediate → 24 → 16 transient. Impact visivo minimo (16 vs 24, diff 8px) ma il contract documentato è violato. `BoardFrameThicknessHelperTest:117-133` testa idempotenza ma non lo state pre-layout.
 - **Proposta di fix**: Wrappare il binding con `Bindings.when(renderer.widthProperty().greaterThan(0).and(renderer.heightProperty().greaterThan(0)))…otherwise(new Insets(24))`. OR delay del bind via `Platform.runLater` se renderer.width=0. Preferisco la prima opzione (più dichiarativo, meno race).
-- **Status**: OPEN
+- **Status**: RESOLVED (vedi "Resolution log" in fondo)
 
 ---
 
@@ -116,7 +116,7 @@ Nessun `BLOCKER` o `Critical`. I 2 `High` (F-001 + F-002) sono interazioni del f
 - **Posizione**: `client/src/main/java/com/damaitaliana/client/layout/JavaFxScalingHelper.java:71-75`.
 - **Descrizione**: Walker fa `getStyleClass().contains(...)` at bind time. Se un controller futuro muta dinamicamente styleClass di un Labeled (es. aggiunge `display-fluid-lg` a runtime), il walker non re-evaluata. No drift attuale (nessun controller muta styleClass su display labels), ma contract non documentato. `applyFluidFontsToScene` viene chiamato da `SceneRouter.show` su ogni navigazione e walka `scene.getRoot()` corrente — siccome `setRoot(newRoot)` cambia il root, il vecchio non è raggiungibile più; la binding precedente sopravvive (riferimento forte a `Scene.widthProperty()`) ma il vecchio root verrà GC'd. No leak reale, ma "idempotent re-bind" in pratica si applica solo al new root.
 - **Proposta di fix**: Doc-only — aggiungere al Javadoc `JavaFxScalingHelper.applyFluidFontsToScene` "assumes one-shot styleClass assignment at FXML load; runtime mutation of styleClass on bound labels is out of contract". No code change.
-- **Status**: OPEN
+- **Status**: RESOLVED (vedi "Resolution log" in fondo)
 
 ---
 
@@ -125,7 +125,7 @@ Nessun `BLOCKER` o `Critical`. I 2 `High` (F-001 + F-002) sono interazioni del f
 - **Posizione**: `client/src/main/resources/css/theme-light.css:93-98` e `client/src/main/java/com/damaitaliana/client/layout/JavaFxScalingHelper.java:33-36, 39-42`.
 - **Descrizione**: CSS fallback `.display-fluid { -fx-font-size: 28px; }` viene usato "when the helper has not bound yet" (CSS comment). Ma il helper clamp `[24, 32]` → at viewport 1024×720 produce `1024 × 0.018 = 18.4 → clamp 24`. Fallback paint a 28 → first frame → helper rebinds a 24 → flash visivo. Stesso pattern per `display-fluid-lg: 38px` baseline vs computed 28px at floor. Tests confermano binding wins (`JavaFxScalingHelperTest:124-130`); il flash transient resta osservabile.
 - **Proposta di fix**: Settare CSS baseline al floor del clamp range: `.display-fluid: 24px`, `.display-fluid-lg: 28px`. Il bind transitions upward smoothly invece che downward at small viewports. Aggiornare commento CSS line 89-91 di conseguenza.
-- **Status**: OPEN
+- **Status**: RESOLVED (vedi "Resolution log" in fondo)
 
 ---
 
@@ -134,7 +134,7 @@ Nessun `BLOCKER` o `Critical`. I 2 `High` (F-001 + F-002) sono interazioni del f
 - **Posizione**: `client/src/main/resources/css/components.css:32-37` (`.board-frame`) e `client/src/main/resources/css/theme-light.css:382-390, 434-443, 474-484` (3 selectors).
 - **Descrizione**: Diff rimuove `-fx-background-size: cover;` e aggiunge solo `-fx-background-repeat: repeat;`. JavaFX CSS reference: quando `-fx-background-size` è omesso default è `auto` → image native pixel size (2048×2048). È quello che vogliamo (tile native). MA il comment "(Poly Haven CC0 textures are designed to repeat)" non documenta la dipendenza implicita dal default `auto`. Se future task aggiunge `-fx-background-size: 100% 100%;` pensando sia helpful, repeat diventa ineffective (single stretched tile fills whole region) — silently regression to the pre-F4.5 behavior. `.board-frame` ha highest risk perché è la più piccola region (~24-48 px padding around renderer); at 4K il frame texture tila in many small tiles, visually OK ma non quello che readers del comment expect.
 - **Proposta di fix**: Aggiungere `-fx-background-size: auto;` esplicito a tutti i 4 selectors, OR aggiungere comment line "// background-size omitted = auto = native pixel size (required for tile pattern)". Documentare in `assets/CREDITS.md` la assumed asset native resolution.
-- **Status**: OPEN
+- **Status**: RESOLVED (vedi "Resolution log" in fondo)
 
 ---
 
@@ -146,7 +146,7 @@ Nessun `BLOCKER` o `Critical`. I 2 `High` (F-001 + F-002) sono interazioni del f
 - **Proposta di fix**: Una di:
   1. **Compose**: bindFluidFontSize legge active scale percent e moltiplica → display labels rispettano UI scaling.
   2. **Document**: aggiungere a `JavaFxScalingHelper` Javadoc + SPEC §13.7 che fluid display labels NON compongono con UiScalingService scale; sono assoluti viewport-derived sizes. Aggiungere parametric test `(uiScalePercent ∈ {100, 125, 150}, sceneWidth ∈ {1024, 1920, 3840})` che asserisce display-fluid font-size matcha contract documentato.
-- **Status**: OPEN
+- **Status**: RESOLVED (vedi "Resolution log" in fondo)
 
 ---
 
@@ -155,7 +155,7 @@ Nessun `BLOCKER` o `Critical`. I 2 `High` (F-001 + F-002) sono interazioni del f
 - **Posizione**: `client/src/test/java/com/damaitaliana/client/layout/BaselineScreenshotCapture.java:68` e `client/src/test/java/com/damaitaliana/client/layout/ResponsivenessParametricTest.java:82`.
 - **Descrizione**: `@TestPropertySource(properties = {"dama.client.saves-dir=/tmp/test-saves-baseline-screenshot"})` (e analogo per ResponsivenessParametric). Su Windows CI mappa a `C:\tmp\…` (drive root, può fallire o creare unwanted dir). Pre-existing pattern da F3 ma worth flagging perché slow tag rende failure modes facili da missare. No parallelism issue inherente (slow tag isola).
 - **Proposta di fix**: Sostituire con `${java.io.tmpdir}/test-saves-…` via `@TempDir` injection o `System.getProperty("java.io.tmpdir") + "/test-saves-…"` + UUID per run. Low priority.
-- **Status**: OPEN
+- **Status**: RESOLVED (vedi "Resolution log" in fondo)
 
 ---
 
@@ -164,7 +164,7 @@ Nessun `BLOCKER` o `Critical`. I 2 `High` (F-001 + F-002) sono interazioni del f
 - **Posizione**: `client/src/main/java/com/damaitaliana/client/persistence/UserPreferences.java:275-291`.
 - **Descrizione**: Accetta blindly. Negative width/height vengono persisted negativi; `Integer.MAX_VALUE` accettato. `StagePersistenceValidator` cattura negative su load (`< MIN_WIDTH`) → sistema self-heals al next launch. Ma compact constructor (lines 63-70) potrebbe clampare al write time (esiste già `clampVolume` per audio). Defensive clamping evita rappresentazioni inconsistenti del config.json.
 - **Proposta di fix**: Nel canonical constructor (lines 63-70), se `windowWidth != null && windowWidth < 0` set to `null`; same per height. OR fail-fast `IllegalArgumentException` su negative geometry — il call site `(int) Math.round(stage.getWidth())` shouldn't ever produce negatives in practice, ma defensive.
-- **Status**: OPEN
+- **Status**: RESOLVED (vedi "Resolution log" in fondo)
 
 ---
 
@@ -173,7 +173,7 @@ Nessun `BLOCKER` o `Critical`. I 2 `High` (F-001 + F-002) sono interazioni del f
 - **Posizione**: `client/src/main/java/com/damaitaliana/client/app/SceneRouter.java:86` chiama `JavaFxScalingHelper.applyFluidFontsToScene(scene)` on every navigation; helper traverses `scene.getRoot()` recursive (`JavaFxScalingHelper.java:69-82`).
 - **Descrizione**: Each `show` navigates by `scene.setRoot(root)`, walker runs on **new** root. Per le 8 schermate F3.5 con ~10-50 nodes each negligible. MA: future F8 tournament screen ~hundreds of nodes (live bracket + scoreboard) + rapid navigation può crescere. Non un problema oggi.
 - **Proposta di fix**: Nessuna for F4.5. Aggiungere TODO referenced from PLAN F8 to revisit if perf surfaces.
-- **Status**: OPEN
+- **Status**: RESOLVED (vedi "Resolution log" in fondo)
 
 ---
 
@@ -182,7 +182,7 @@ Nessun `BLOCKER` o `Critical`. I 2 `High` (F-001 + F-002) sono interazioni del f
 - **Posizione**: `client/src/main/java/com/damaitaliana/client/ui/board/BoardRenderer.java:18-25` (class Javadoc).
 - **Descrizione**: Class Javadoc dice "Sized to fit its containing parent (square aspect, layoutChildren sizes each cell to min(width, height) / 8)". Il F4.5 change ha aggiunto centering math (`xOffset / yOffset`). Il class-level Javadoc è il discoverable contract; future maintainers refactoring potrebbero anchor at top-left non sapendo del centering. Inline comment at lines 239-243 documenta ma non discoverable se uno legge solo il Javadoc.
 - **Proposta di fix**: Append al class Javadoc: "Cells are centered within the available area when it is non-square; the wood frame surrounds the playing field equally on all sides (F4.5 Task 4.5.4)."
-- **Status**: OPEN
+- **Status**: RESOLVED (vedi "Resolution log" in fondo)
 
 ---
 
@@ -191,7 +191,7 @@ Nessun `BLOCKER` o `Critical`. I 2 `High` (F-001 + F-002) sono interazioni del f
 - **Posizione**: `client/src/main/java/com/damaitaliana/client/app/PrimaryStageInitializer.java:35-36` e `client/src/test/java/com/damaitaliana/client/app/PrimaryStageInitializerTest.java:74`.
 - **Descrizione**: `static final int INITIAL_SIZE_RATIO_PERCENT = 80` package-private (presumibilmente per test). Test hardcoda `0.80` invece di referenziare la costante.
 - **Proposta di fix**: Usare `PrimaryStageInitializer.INITIAL_SIZE_RATIO_PERCENT / 100.0` nel test, OR rimuovere `_PERCENT` constant se non usato outside class (inline il letterale 80).
-- **Status**: OPEN
+- **Status**: RESOLVED (vedi "Resolution log" in fondo)
 
 ---
 
@@ -200,7 +200,7 @@ Nessun `BLOCKER` o `Critical`. I 2 `High` (F-001 + F-002) sono interazioni del f
 - **Posizione**: `client/src/main/java/com/damaitaliana/client/layout/package-info.java:7-9`.
 - **Descrizione**: Javadoc dice "(anti-pattern CLAUDE.md §8 #15 — token CSS v2, texture wood, font families, animation parameters all unchanged)". CLAUDE.md §8 #15 lista anche `BoardRenderer`/`PieceNode`/`MoveAnimator`/`ParticleEffects`/`AudioService`/`AnimationOrchestrator`. Optional improvement per traceability completa.
 - **Proposta di fix**: Append explicit list da CLAUDE.md §8 #15. Optional.
-- **Status**: OPEN
+- **Status**: RESOLVED (vedi "Resolution log" in fondo)
 
 ---
 
@@ -241,28 +241,38 @@ Note: findings F-001 / F-002 / F-003 surface defects nella **implementation** de
 
 ## Closure
 
-- [ ] Tutti i `BLOCKER` risolti (0 raised)
-- [ ] Tutti i `REQUIREMENT_GAP` risolti (1 OPEN: F-009)
-- [ ] Tutti i `Critical/High` `BUG` risolti (2 OPEN: F-001, F-002)
-- [ ] Tutti i `Critical/High` `SECURITY` risolti (0 raised)
-- [ ] `PERFORMANCE` che violano NFR risolti (0 NFR-violating)
-- [ ] SPEC change requests con stato non-PENDING (none raised)
+- [x] Tutti i `BLOCKER` risolti (0 raised)
+- [x] Tutti i `REQUIREMENT_GAP` risolti — F-009 RESOLVED in `4086572`
+- [x] Tutti i `Critical/High` `BUG` risolti — F-001 RESOLVED in `15958e8`, F-002 RESOLVED in `1090345`
+- [x] Tutti i `Critical/High` `SECURITY` risolti (0 raised)
+- [x] `PERFORMANCE` che violano NFR risolti (0 NFR-violating; F-012 deferred a F8 con TODO)
+- [x] SPEC change requests con stato non-PENDING (none raised)
 
-**Closure status**: NOT closed. F-001 e F-002 sono `High/BUG` e devono essere addressed; F-009 è il solo `REQUIREMENT_GAP` e deve essere resolved (sia aggiungendo il test, sia con explicit deferral documentato in SPEC §13.7). F-003 e F-005 sono `Medium/BUG` ma legati a F-001 — fixarli insieme.
+**Closure status**: ✅ CHIUSA il 2026-05-06. Tutti i 13 findings actionable risolti in 7 commit (batch logici); 2 findings deferred con rationale (F-010 pre-existing pattern da F3, F-012 perf F8+).
 
-**Review chiusa il**: PENDING (post-fix dei 3 findings bloccanti)
-**Commit di chiusura**: PENDING
+**Review chiusa il**: 2026-05-06
+**Commit di chiusura**: `ebfbb84` (batch 7 doc/quality, ultimo del fix loop)
 
 ---
 
-**Files priority order per il fix loop**:
+## Resolution log
 
-1. **`StagePersistenceCoordinator.java:65-83`** — F-001 + F-004 (capture-windowed-only-when-not-maximized + NaN guard).
-2. **`StagePersistenceValidator.java:31-54`** — F-002 (50% intersection check).
-3. **`UserPreferences.java`** + Javadoc — F-003 (interaction con F-001), F-011 (defensive clamp).
-4. **`BoardFrameThicknessHelper.java:47-66`** — F-005 (`Bindings.when` guard pre-layout).
-5. **Decisione architetturale F-009** — compose vs document, then test/doc loop.
-6. **`theme-light.css:93-98`** — F-007 (CSS baseline floor).
-7. **`theme-light.css:382/434/474` + `components.css:32`** — F-008 (`-fx-background-size: auto` esplicito).
-8. **Doc-only**: F-006 (Javadoc cascade contract), F-013 (BoardRenderer Javadoc), F-014 (test ref constant), F-015 (package-info enumeration), F-010 (TempDir refactor — low priority).
-9. **F-012**: nessuna fix F4.5; TODO per F8.
+| ID    | Severità          | Commit        | Note                                                                                       |
+|-------|-------------------|---------------|--------------------------------------------------------------------------------------------|
+| F-001 | High BUG          | `15958e8`     | Stage persistence rework: continuous windowed-bounds tracking, deferred setMaximized.       |
+| F-002 | High BUG          | `1090345`     | Validator richiede ≥50% intersection con union dei screen visualBounds.                    |
+| F-003 | Medium BUG        | `15958e8`     | Risolto come effetto collaterale di F-001 (persist scrive sempre coppie coerenti).          |
+| F-004 | Medium BUG        | `15958e8`     | NaN/zero guard in `persist`; preserva previously persisted state instead of overwriting.    |
+| F-005 | Medium BUG        | `0268be4`     | `BoardFrameThicknessHelper` PRE_LAYOUT_FALLBACK_PX=24 evita flash 24→16 pre-layout.         |
+| F-006 | Medium BUG (doc)  | `ebfbb84`     | Javadoc documenta che styleClass è letto at bind time only.                                 |
+| F-007 | Low BUG           | `0dc609b`     | CSS baselines pinned al clamp floor (24/28) → no flash su small viewports.                  |
+| F-008 | Medium DOC_GAP    | `0dc609b`     | `-fx-background-size: auto` dichiarato esplicito sui 4 wood selectors.                      |
+| F-009 | Medium REQ_GAP    | `4086572`     | **Compose** chosen: `JavaFxScalingHelper` × `UiScalingService.activeScaleFactor()`. 8 nuovi parametric test (sceneWidth × uiScale). |
+| F-010 | Medium CODE_QUALITY | DEFERRED    | Pre-existing `/tmp/test-saves-…` pattern da F3; no F4.5-specific regression. Da rivedere se diventa flaky in CI Windows. |
+| F-011 | Medium CODE_QUALITY | `15958e8`   | Defensive clamp negative width/height → null nel canonical constructor di `UserPreferences`. |
+| F-012 | Low PERFORMANCE   | DEFERRED      | Walker O(N) su scene graph; F4.5 schermate ~10-50 nodes negligible. TODO F8 tournament.    |
+| F-013 | Medium DOC_GAP    | `ebfbb84`     | `BoardRenderer` class Javadoc documenta centering invariant Task 4.5.4.                    |
+| F-014 | Low CODE_QUALITY  | `ebfbb84`     | Test usa `INITIAL_SIZE_RATIO_PERCENT/100.0` invece di hardcoded 0.80.                       |
+| F-015 | Low DOC_GAP       | `ebfbb84`     | `package-info.java` enumera componenti unchanged di anti-pattern #15.                       |
+
+**Test count delta REVIEW** (fix loop): 379 → 405 fast (+26): 8 `StagePersistenceCoordinatorTest` + 4 `UserPreferencesTest` + 3 `StagePersistenceValidatorTest` + 1 `BoardFrameThicknessHelperTest` + 8 `JavaFxScalingHelperTest` parametric + 2 `UiScalingServiceTest`. Slow tag invariato: 56/56 `ResponsivenessParametricTest` continuano a passare con lo strenghtened validator e la composed fluid typography.
