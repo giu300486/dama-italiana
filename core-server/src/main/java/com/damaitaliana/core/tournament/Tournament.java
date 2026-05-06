@@ -15,9 +15,10 @@ import java.util.List;
  * relevant logic lands.
  *
  * <p>Note: this package depends on {@code com.damaitaliana.core.match} for {@link UserRef} and
- * {@link TimeControl}; the match package depends back on this one for {@link TournamentMatchRef}.
- * The bidirectional package dependency is documented and reviewable in REVIEW Fase 4 / Task 4.12
- * (ArchUnit).
+ * {@link TimeControl}. The reverse direction (match -> tournament) was decoupled in Task 4.12
+ * (Option F): {@code TournamentMatchRef} now lives in {@code com.damaitaliana.core.match} and
+ * stores the tournament id as a raw {@code UUID}, so the match package no longer depends on
+ * tournament — enforced by {@code CoreServerArchitectureTest}.
  */
 public sealed interface Tournament permits EliminationTournament, RoundRobinTournament {
 

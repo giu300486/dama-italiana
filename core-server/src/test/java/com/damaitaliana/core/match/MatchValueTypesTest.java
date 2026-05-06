@@ -124,4 +124,33 @@ class MatchValueTypesTest {
       }
     }
   }
+
+  @Nested
+  class TournamentMatchRefValidation {
+    @Test
+    void rejectsNullTournamentId() {
+      assertThatNullPointerException().isThrownBy(() -> new TournamentMatchRef(null, 0, 0));
+    }
+
+    @Test
+    void rejectsNegativeRoundNo() {
+      assertThatThrownBy(() -> new TournamentMatchRef(UUID.randomUUID(), -1, 0))
+          .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void rejectsNegativeMatchIndex() {
+      assertThatThrownBy(() -> new TournamentMatchRef(UUID.randomUUID(), 0, -1))
+          .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void acceptsZeroValues() {
+      UUID tid = UUID.randomUUID();
+      TournamentMatchRef ref = new TournamentMatchRef(tid, 0, 0);
+      assertThat(ref.roundNo()).isZero();
+      assertThat(ref.matchIndex()).isZero();
+      assertThat(ref.tournamentId()).isEqualTo(tid);
+    }
+  }
 }

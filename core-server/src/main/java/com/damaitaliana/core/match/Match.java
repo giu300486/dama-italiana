@@ -1,6 +1,5 @@
 package com.damaitaliana.core.match;
 
-import com.damaitaliana.core.tournament.TournamentMatchRef;
 import com.damaitaliana.shared.domain.Color;
 import com.damaitaliana.shared.domain.GameState;
 import java.time.Instant;
