@@ -485,6 +485,13 @@ Riferimento autoritativo: `SPEC.md` Appendice B.
   - Nuovo helper `JavaFxScalingHelper.bindFluidFontSize` in `client.layout` (sotto-package nuovo) — testabile via JUnit standard.
   - Test `ResponsivenessParametricTest @Tag("slow")` 7 combinazioni × 8 schermate = 56 assertion bundle in CI; manuale per ultrawide (no parametric automatico, market share residuo).
   - F11 / F4.6 (eventuale) potrà aggiungere "Performance mode" toggle se hardware molto lento (Intel HD 3000 era) mostra jank durante animazioni — fuori scope F4.5.
+- **Stato post-implementazione F4.5 (Task 4.5.10, 2026-05-06)**:
+  - Tasks chiusi: 4.5.1 → 4.5.10 (Task 4.5.6b skipped per Opzione B utente — aspect ratio handling ultrawide deferred a manual review post-fix; ultrawide screenshot Task 4.5.9 conferma board centrata, no defect critico).
+  - **2 helper realmente introdotti** in `client.layout`: `JavaFxScalingHelper` (fluid typography) + `BoardFrameThicknessHelper` (proportional frame padding); `BoardSizingHelper.computeBoardSide(...)` ipotizzato in PLAN §5.1 NON realizzato — la centratura del board è risolta in `BoardRenderer.layoutChildren` direttamente con `cellSize = min(w, h) / 8` + `xOffset/yOffset = (w/h - 8 × cellSize) / 2` (Task 4.5.4).
+  - **Side panel auto-hide < 1024 NON implementato**: `PrimaryStageInitializer` enforce `Stage.minWidth = 1024` quindi il viewport < 1024 è unreachable (CLAUDE.md "Don't add fallbacks for scenarios that can't happen"). Hook documentato nel commento FXML del side panel; se in futuro il min size cambia, l'auto-hide si aggiunge then.
+  - **`BackgroundImage` REPEAT mode** applicato a 4 selettori CSS (`.splash-root`, `.main-menu-root`, `.screen-root`, `.board-frame`); cell selectors `.board-cell-light/dark` mantengono `100% 100% no-repeat` (corretto per cell-sized backgrounds). `BorderImage` con nine-slice non utilizzato — `frame.jpg` è texture seamless, non un border ornament image.
+  - **DPI scaling 125/150/200%** verificata manualmente in TEST sotto-fase (Task 4.5.16) — single-JVM run automatico non può esercitare multipli scaling factors; il layout math è DPI-independent quindi la correttezza è garantita dal parametric test al 100% logical DPI.
+  - **Coverage**: client da 70 → 74 classi (+`PrimaryStageInitializer`, +`StagePersistenceValidator`, +`StagePersistenceCoordinator`, +`JavaFxScalingHelper`, +`BoardFrameThicknessHelper`, post merge); JaCoCo gate ≥ 60% line+branch invariato e met. Test count fast loop 321 (F4 baseline) → 379 (+58: +4 PrimaryStageInitializer, +7 BoardRendererLayout, +7 SidePanelLayout, +5 ScreenLayout, +15 JavaFxScalingHelper, +9 StagePersistenceValidator + 1 PreferencesService v2→v3 migration, +10 BoardFrameThicknessHelper); slow tag aggiunge +56 ResponsivenessParametricTest.
 
 ---
 
