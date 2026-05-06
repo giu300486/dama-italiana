@@ -100,6 +100,101 @@
       <plugin>
         <groupId>org.jacoco</groupId>
         <artifactId>jacoco-maven-plugin</artifactId>
+        <executions>
+          <!-- Coverage gate for core-server (NFR-M-01 ≥ 80%, A4.1, PLAN-fase-4 stop point §7.7).
+               haltOnFailure=true makes `mvn -pl core-server verify` fail when coverage regresses.
+               Exclusions: pure data carriers (record DTO event payloads, enum DTO, value-type
+               records) and the Spring config / exception class whose only logic is `throw`. The
+               event package records are validated structurally via MatchEventSealedTest +
+               EventSerializationTest construction smoke; their validation branches (every
+               Objects.requireNonNull) are exercised via MatchValueTypesTest where applicable.
+               Same exclusion pattern client/pom.xml uses for JavaFX-bound classes. -->
+          <execution>
+            <id>jacoco-report</id>
+            <phase>verify</phase>
+            <goals>
+              <goal>report</goal>
+            </goals>
+            <configuration>
+              <excludes>
+                <!-- Sealed MatchEvent record payloads (8 records + the sealed interface). -->
+                <exclude>**/match/event/*.class</exclude>
+                <!-- Match value-type records (UUID-backed ids, factory + validation). -->
+                <exclude>**/match/MatchId.class</exclude>
+                <exclude>**/match/UserRef.class</exclude>
+                <exclude>**/match/TimeControl.class</exclude>
+                <exclude>**/match/TournamentMatchRef.class</exclude>
+                <!-- Match enum DTO. -->
+                <exclude>**/match/TimeControlPreset.class</exclude>
+                <exclude>**/match/MatchStatus.class</exclude>
+                <exclude>**/match/MatchResult.class</exclude>
+                <exclude>**/match/EndReason.class</exclude>
+                <exclude>**/match/RejectionReason.class</exclude>
+                <!-- Tournament value-type records. -->
+                <exclude>**/tournament/TournamentId.class</exclude>
+                <exclude>**/tournament/TournamentSpec.class</exclude>
+                <exclude>**/tournament/EliminationTournament.class</exclude>
+                <exclude>**/tournament/RoundRobinTournament.class</exclude>
+                <!-- Tournament enum DTO. -->
+                <exclude>**/tournament/TournamentFormat.class</exclude>
+                <exclude>**/tournament/TournamentStatus.class</exclude>
+                <!-- Spring DI factory (no logic) + lookup exception (no branches). -->
+                <exclude>**/CoreServerConfiguration.class</exclude>
+                <exclude>**/match/MatchNotFoundException.class</exclude>
+                <!-- Spring event envelope (transparent wrapper, no branches). -->
+                <exclude>**/eventbus/MatchEventEnvelope.class</exclude>
+              </excludes>
+            </configuration>
+          </execution>
+          <execution>
+            <id>jacoco-check</id>
+            <phase>verify</phase>
+            <goals>
+              <goal>check</goal>
+            </goals>
+            <configuration>
+              <haltOnFailure>true</haltOnFailure>
+              <excludes>
+                <exclude>**/match/event/*.class</exclude>
+                <exclude>**/match/MatchId.class</exclude>
+                <exclude>**/match/UserRef.class</exclude>
+                <exclude>**/match/TimeControl.class</exclude>
+                <exclude>**/match/TournamentMatchRef.class</exclude>
+                <exclude>**/match/TimeControlPreset.class</exclude>
+                <exclude>**/match/MatchStatus.class</exclude>
+                <exclude>**/match/MatchResult.class</exclude>
+                <exclude>**/match/EndReason.class</exclude>
+                <exclude>**/match/RejectionReason.class</exclude>
+                <exclude>**/tournament/TournamentId.class</exclude>
+                <exclude>**/tournament/TournamentSpec.class</exclude>
+                <exclude>**/tournament/EliminationTournament.class</exclude>
+                <exclude>**/tournament/RoundRobinTournament.class</exclude>
+                <exclude>**/tournament/TournamentFormat.class</exclude>
+                <exclude>**/tournament/TournamentStatus.class</exclude>
+                <exclude>**/CoreServerConfiguration.class</exclude>
+                <exclude>**/match/MatchNotFoundException.class</exclude>
+                <exclude>**/eventbus/MatchEventEnvelope.class</exclude>
+              </excludes>
+              <rules>
+                <rule>
+                  <element>BUNDLE</element>
+                  <limits>
+                    <limit>
+                      <counter>LINE</counter>
+                      <value>COVEREDRATIO</value>
+                      <minimum>0.80</minimum>
+                    </limit>
+                    <limit>
+                      <counter>BRANCH</counter>
+                      <value>COVEREDRATIO</value>
+                      <minimum>0.80</minimum>
+                    </limit>
+                  </limits>
+                </rule>
+              </rules>
+            </configuration>
+          </execution>
+        </executions>
       </plugin>
       <plugin>
         <groupId>com.github.spotbugs</groupId>

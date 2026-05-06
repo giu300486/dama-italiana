@@ -11,17 +11,17 @@
 | Categoria       | Critical | High | Medium | Low | Totale | Resolved |
 |-----------------|---------:|-----:|-------:|----:|-------:|---------:|
 | BLOCKER         |        0 |    0 |      0 |   0 |      0 |        — |
-| REQUIREMENT_GAP |        0 |    1 |      1 |   0 |      2 |      0/2 |
+| REQUIREMENT_GAP |        0 |    1 |      1 |   0 |      2 |      2/2 |
 | BUG             |        0 |    0 |      0 |   0 |      0 |        — |
 | SECURITY        |        0 |    0 |      0 |   0 |      0 |        — |
 | PERFORMANCE     |        0 |    0 |      0 |   0 |      0 |        — |
 | CODE_QUALITY    |        0 |    0 |      0 |   0 |      0 |        — |
 | DOC_GAP         |        0 |    0 |      0 |   0 |      0 |        — |
-| **Totale**      |        0 |    1 |      1 |   0 |      2 |      0/2 |
+| **Totale**      |        0 |    1 |      1 |   0 |      2 |  **2/2** |
 
-**Stato complessivo (apertura)**: 0 BLOCKER. 2 REQUIREMENT_GAP (1 High + 1 Medium) entrambi addressabili in REVIEW closure con cambio `core-server/pom.xml` + 2 nuovi test class. Nessun BUG / SECURITY / PERFORMANCE / CODE_QUALITY / DOC_GAP rilevato — il codice IMPLEMENTA F4 è pulito su tutti gli altri assi (anti-pattern scan TODO/FIXME/println/printStackTrace = 0 hit; package-info presente in 8/8 sotto-package prod richiesti da A4.15; 5/5 ArchUnit rule verdi a build-time; SpotBugs 0 issues; Spotless OK; 150/150 test verdi; F-COM-04 sequence strict monotonic provato sotto contesa via `synchronized (log)` block + per-match lock in `MatchManager`).
+**Stato complessivo (post-closure)**: tutti e 2 i findings sono **RESOLVED**. F-001 chiuso con Opzione A (wire JaCoCo gate `haltOnFailure=true` + LINE/BRANCH 0.80 + esclusioni record DTO/enum/CoreServerConfiguration/MatchEventEnvelope/MatchNotFoundException, allineata a PLAN-fase-4 stop point §7.7) + parte di B (aggiunti `InMemoryTournamentRepositoryTest` 6 test + `InMemoryUserRepositoryTest` 7 test perché sono infrastructure che merita test indipendentemente dal gate). F-002 chiuso dagli stessi 2 nuovi test class. Nessun BUG / SECURITY / PERFORMANCE / CODE_QUALITY / DOC_GAP rilevato — il codice IMPLEMENTA F4 è pulito su tutti gli altri assi.
 
-`mvn -pl core-server verify -DexcludedGroups=slow,performance` BUILD SUCCESS al commit `096b636`: **150 test verdi**, 0 skipped, 38 classi analizzate da JaCoCo, SpotBugs 0 High, Spotless OK, ArchUnit 5/5 rule verdi. Coverage misurata: **lines 92.02% (461/501)**, **branches 78.36% (105/134)**. Il line gate ≥80% è soddisfatto a misura; il branch gate ≥80% **NON** è soddisfatto (78.36 < 80) — vedi finding F-001 sul gate non attivo.
+`mvn -pl core-server verify -DexcludedGroups=slow,performance` BUILD SUCCESS post-closure: **163 test verdi** (150 + 13 nuovi), 0 skipped, 11 classi analizzate da JaCoCo bundle (38 - 27 esclusioni), SpotBugs 0 High, Spotless OK, ArchUnit 5/5 rule verdi. Coverage post-esclusione+test: **lines 94.95% (301/317)**, **branches 88.64% (78/88)** — entrambi ben sopra il gate 80%. Gate ora ATTIVO (`haltOnFailure=true`).
 
 Regression `mvn clean verify` root con `slow`+`performance` (A4.18-A4.19) **DEFERRED** alla sotto-fase TEST Fase 4 come previsto dalla PLAN §5.3 (`RuleEngineCorpusTest` F1 48 posizioni + `AiTournamentSimulationTest` F2 gating ≥95/100 invariati).
 
@@ -38,14 +38,14 @@ Stress concorrenza `InMemoryRepositoryConcurrencyTest @Tag("slow")` (A4.12) **DE
 | 17.1.2   | Partita Internet (preview F4 — `MatchManager` API end-to-end senza UI/rete)  | ✅ COVERED  | `SoloMatchEndToEndTest` 3 metodi (random game terminale + replay reconstruction + bus/stomp broadcast); F6 incolla il trasporto reale sopra il `MatchManager` di F4 |
 | 17.1.10  | Autosave host LAN (preview F4 — `MatchRepository.appendEvent` + `eventsSince` replay) | ✅ COVERED  | `MatchRepositoryContractTest` 3 test su strict monotonic + suffix replay; `SoloMatchEndToEndTest#replayFromEventsReconstructsCurrentState` prova fold da `GameState.initial()`; F7 LAN host incollerà persistenza file-based |
 | 17.1.11  | Match LAN end-to-end (preview F4 — la stessa `MatchManager` API che F7 LAN host userà) | ✅ COVERED  | Stesso `SoloMatchEndToEndTest` + `BufferingStompPublisher` con topic `/topic/match/{id}` (SPEC §11.4) verificato |
-| 17.2.4   | Coverage ≥ 80% modulo `core-server`                                           | ⚠️ AT RISK | Lines 92.02% ≥ 80% ✅; branches 78.36% < 80% ❌. Vedi F-001 (gate non attivo + branches sotto soglia per via di `InMemoryTournamentRepository`/`InMemoryUserRepository` non testati e validation-branch di alcuni record DTO non esercitate) |
+| 17.2.4   | Coverage ≥ 80% modulo `core-server`                                           | ✅ COVERED  | Post-closure: gate attivo `haltOnFailure=true` con esclusioni record DTO/enum, lines 94.95% + branches 88.64% — vedi F-001 RESOLVED |
 | 17.2.5   | SAST SpotBugs senza warning High                                             | ✅           | 0 warning High al commit `096b636` |
 
 ### Acceptance criteria operativi della Fase 4 (PLAN-fase-4 §2.2)
 
 | ID    | Criterio                                                                                            | Status      | Note |
 |-------|-----------------------------------------------------------------------------------------------------|-------------|------|
-| A4.1  | `mvn -pl core-server verify` BUILD SUCCESS, JaCoCo gate ≥ 80% line + branch (NFR-M-01)              | ⚠️ PARTIAL  | BUILD SUCCESS ✅; JaCoCo gate **non attivo** in `core-server/pom.xml` (eredita default permissivo di parent `haltOnFailure=false`+`min=0.00`). Lines 92% PASSEREBBERO, branches 78.36% FALLIREBBERO. **F-001** |
+| A4.1  | `mvn -pl core-server verify` BUILD SUCCESS, JaCoCo gate ≥ 80% line + branch (NFR-M-01)              | ✅ COVERED  | BUILD SUCCESS post-closure; gate attivo `haltOnFailure=true` LINE/BRANCH 0.80; misura 94.95% line + 88.64% branch. **F-001 RESOLVED** |
 | A4.2  | Match end-to-end via API Java (autoritativo): partita random fino a stato terminale via `MatchManager` API; status FINISHED, MatchEnded ultimo evento | ✅           | `SoloMatchEndToEndTest#playsRandomGameUntilTerminal` (seed 42, MAX_PLIES 500 ceiling difensivo); asserisce `events.size() == plies+1`, ultimo è `MatchEnded`, sequence number monotonic da 0 |
 | A4.3  | Sequence number monotonico (FR-COM-04)                                                              | ✅           | `MatchRepositoryContractTest#appendEventRejectsNonMonotonicSequenceNo`, `firstEventMustBeSequenceZero`, `eventsSinceReturnsSuffixOfMatchingEvents`; `SoloMatchEndToEndTest` (assert `events.get(i).sequenceNo() == i`) |
 | A4.4  | Anti-cheat 5-illegal forfeit (FR-COM-01, SPEC §9.8.3, ADR-040)                                      | ✅           | `AntiCheatTest` 3 test: forfait WHITE su 5ª illegale, reset counter su mossa legale, per-player independence (Mockito-stubbed `RuleEngine` per interleaving illegali senza flippare turno) |
@@ -77,7 +77,7 @@ Stress concorrenza `InMemoryRepositoryConcurrencyTest @Tag("slow")` (A4.12) **DE
 
 | NFR ID   | Status      | Note |
 |----------|-------------|------|
-| NFR-M-01 | ⚠️ AT RISK | Lines 92.02% ✅ ≥ 80%; **branches 78.36% < 80% ❌**. Gate non attivo nel POM. **F-001** |
+| NFR-M-01 | ✅ COVERED | Post-closure: gate attivo `haltOnFailure=true` in `core-server/pom.xml` con LINE/BRANCH 0.80 + esclusioni record DTO/enum coerenti col precedente client/pom.xml. Misura: lines 94.95% + branches 88.64%. **F-001 RESOLVED** |
 | NFR-M-04 | ✅ COVERED  | Spotless Google Java Style (parent POM) — 77 file kept clean al commit `096b636` |
 
 ---
@@ -107,7 +107,8 @@ Stress concorrenza `InMemoryRepositoryConcurrencyTest @Tag("slow")` (A4.12) **DE
   - **Opzione B — wire gate senza esclusioni + nuovi test in F4** (più severa, richiede F-002 risolta + più test): aggiungere ~8 test totali — `InMemoryTournamentRepositoryTest` ~5 + `InMemoryUserRepositoryTest` ~5 + 2 test negativi su `MatchEnded.UNFINISHED` rejection + 1 test extra su `MatchManager` branch missed. Stima post-test branches: ~115/134 = 85.8% ✅ senza esclusioni. Più "test-driven" ma double-up con F-002 fix.
   - **Opzione C — abbassare temporaneamente la soglia branches a 75%, line resta 80%** (fallback): wire gate con LINE 0.80 + BRANCH 0.75; lascia margine documentato per F8/F9 quando il tournament guadagna logica reale. Rifiutato per default — devierebbe da PLAN §7.7 ("80% line+branch").
   - **Raccomandazione**: **A + parte di B**. Wire il gate (Opzione A) come da PLAN; aggiungere comunque tests per `InMemoryTournamentRepository` + `InMemoryUserRepository` come da F-002 perché sono infrastrutture che meritano test indipendentemente dal gate. Le esclusioni record sono giustificate (validazione strutturale + DTO trasporto, no logica) e coerenti col precedente di `client/pom.xml`.
-- **Status**: 🔴 **OPEN** — fix in REVIEW closure (richiede edit `core-server/pom.xml` + `mvn -pl core-server verify` per validare gate attivo).
+- **Decisione utente** (2026-05-06): "lascia a te la scelta" → applicata **A + parte di B**.
+- **Status**: ✅ **RESOLVED** al commit di chiusura della review (vedi sezione Closure). Fix applicato in `core-server/pom.xml`: `<execution>jacoco-check</execution>` con `<haltOnFailure>true</haltOnFailure>` + 19 `<exclude>` per record DTO + enum + value-type + `CoreServerConfiguration` + `MatchNotFoundException` + `MatchEventEnvelope`, rule BUNDLE LINE/BRANCH `minimum=0.80`. Stesso `<excludes>` block replicato sull'execution `jacoco-report` per coerenza HTML report. Misura post-fix: lines 94.95% (301/317) + branches 88.64% (78/88). **Gate attivo verificato**: `mvn -pl core-server verify` BUILD SUCCESS in 25.2s con `All coverage checks have been met` su 11 classi nel bundle (vs 38 pre-esclusione).
 
 ---
 
@@ -123,7 +124,10 @@ Stress concorrenza `InMemoryRepositoryConcurrencyTest @Tag("slow")` (A4.12) **DE
 - **Proposta di fix**: aggiungere 2 test class:
   - **`InMemoryTournamentRepositoryTest`** (~5 test): save+findById roundtrip, save overwrites, findByStatus empty, findByStatus filter multi-tournament (CREATED + IN_PROGRESS + FINISHED → query ognuna ritorna solo il match status), null-arg guards.
   - **`InMemoryUserRepositoryTest`** (~5 test): register populates both indices, `findById` ritorna user authenticated, `findById(ANONYMOUS_LAN_ID)` ritorna `Optional.empty()` (semantica SPEC §11.1), `findByUsername` per anonymous LAN users still works (solo username-side index), null-arg guards.
-- **Status**: 🔴 **OPEN** — fix in REVIEW closure (2 nuovi file di test, ~10 test totali).
+- **Status**: ✅ **RESOLVED** al commit di chiusura della review. **2 nuovi test class** aggiunti in `core-server/src/test/java/com/damaitaliana/core/repository/`:
+  - **`InMemoryTournamentRepositoryTest`** — **6 test**: save+findById roundtrip, save overwrites snapshot, findById empty per id sconosciuto, findByStatus filtra esattamente 3 status (CREATED/IN_PROGRESS/FINISHED) da repo multi-tournament, findByStatus empty su repo fresca per tutti e 3 gli status, findByStatus result è `List.copyOf` immutable. (Dropped null-arg test perché l'impl non ha guard espliciti — coverage delle branch è già completa via i 5 test funzionali.)
+  - **`InMemoryUserRepositoryTest`** — **7 test**: register popola entrambi gli indici per user authenticated, anonymous LAN user è indicizzato solo by-username (id-side ritorna empty per ANONYMOUS_LAN_ID = -1L per SPEC §11.1), findById ritorna empty per il sentinel ANONYMOUS_LAN_ID (anche con repo non vuota), findById empty per id authenticated sconosciuto, findByUsername empty per username sconosciuto, register sovrascrive snapshot precedente per stesso id, multi-user authenticated coexistono in entrambi gli indici.
+  - **Coverage post-fix** (entrambi gli adapter): `InMemoryTournamentRepository` 100% lines + 100% branches; `InMemoryUserRepository` 100% lines + 100% branches. Verificato a `mvn -pl core-server verify` post-closure: 163/163 test verdi (150 + 13 nuovi).
 
 ---
 
@@ -135,12 +139,13 @@ Stress concorrenza `InMemoryRepositoryConcurrencyTest @Tag("slow")` (A4.12) **DE
 
 ## Closure
 
-- [ ] Tutti i `BLOCKER` risolti (0 finding)
-- [ ] Tutti i `REQUIREMENT_GAP` risolti (0/2: F-001 OPEN, F-002 OPEN)
-- [ ] Tutti i `Critical/High` `BUG` risolti (0 finding)
-- [ ] Tutti i `Critical/High` `SECURITY` risolti (0 finding)
-- [ ] `PERFORMANCE` che violano NFR risolti (0 finding — NFR-P non si applica a F4, no UI/no AI search)
-- [ ] SPEC change requests con stato non-PENDING (0 CR)
+- [x] Tutti i `BLOCKER` risolti (0 finding)
+- [x] Tutti i `REQUIREMENT_GAP` risolti (2/2: F-001 RESOLVED, F-002 RESOLVED)
+- [x] Tutti i `Critical/High` `BUG` risolti (0 finding)
+- [x] Tutti i `Critical/High` `SECURITY` risolti (0 finding)
+- [x] `PERFORMANCE` che violano NFR risolti (0 finding — NFR-P non si applica a F4, no UI/no AI search)
+- [x] SPEC change requests con stato non-PENDING (0 CR)
 
-**Review aperta il**: 2026-05-06
-**Stop point §2.3.6**: presentare findings all'utente per decidere quale opzione di F-001 (A / B / C) applicare e confermare F-002 fix scope.
+**Review aperta il**: 2026-05-06 (commit `99a1535`)
+**Review chiusa il**: 2026-05-06
+**Commit di chiusura**: vedi sezione finale (commit immediatamente seguente a questa review post-update). Fix applicati: (1) `core-server/pom.xml` jacoco override `haltOnFailure=true` + 19 esclusioni + LINE/BRANCH 0.80 (F-001 Opzione A); (2) `InMemoryTournamentRepositoryTest` (6 test) + `InMemoryUserRepositoryTest` (7 test) (F-002). 163/163 test verdi, gate attivo, lines 94.95% + branches 88.64%, SpotBugs 0, Spotless OK.

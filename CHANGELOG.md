@@ -8,6 +8,16 @@ Il formato è basato su [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1
 
 ### Added
 
+- **REVIEW Fase 4** (chiusura sotto-fase REVIEW Fase 4, branch `feature/4-core-server-skeleton`):
+  - **1 file di review nuovo** (`reviews/REVIEW-fase-4.md`) + **1 file pom modificato** (`core-server/pom.xml` JaCoCo gate override) + **2 file di test nuovi** (`InMemoryTournamentRepositoryTest` 6 test, `InMemoryUserRepositoryTest` 7 test).
+  - **Apertura review** (commit `99a1535`): code-by-code di 56 file prod + 21 file test post-IMPLEMENTA Fase 4, mapping AC §17.1.2/§17.1.10/§17.1.11 + AC F4 A4.1..A4.19 + FR-COM-01/02/04 + NFR-M-01/04 al codice/test. **2 findings**: F-001 [REQUIREMENT_GAP, High] JaCoCo gate non attivo in `core-server/pom.xml` + branches 78.36% sotto soglia 80%; F-002 [REQUIREMENT_GAP, Medium] 2 in-memory adapter (Tournament + User) non testati direttamente.
+  - **Closure** (Opzione A + parte di B raccomandata):
+    - **F-001 RESOLVED**: `core-server/pom.xml` aggiunge override `jacoco-check` con `haltOnFailure=true` + LINE/BRANCH 0.80 + 19 esclusioni (record DTO event package + value-type records + enum DTO + `CoreServerConfiguration` + `MatchNotFoundException` + `MatchEventEnvelope`); stesso `<excludes>` block replicato sull'execution `jacoco-report` per HTML coerente. Misura post-fix: lines 94.95% (301/317) + branches 88.64% (78/88), entrambi ben sopra 80%.
+    - **F-002 RESOLVED**: 2 nuovi test class. **`InMemoryTournamentRepositoryTest`** 6 test (save+findById roundtrip, save overwrites, findById empty per unknown id, findByStatus filtra 3 status da repo multi-tournament, findByStatus empty su repo fresca, findByStatus result `List.copyOf` immutable). **`InMemoryUserRepositoryTest`** 7 test (register popola entrambi gli indici per user authenticated, anonymous LAN user solo by-username, findById empty per ANONYMOUS_LAN_ID anche con repo non vuota, findById empty per id sconosciuto, findByUsername empty per username sconosciuto, register sovrascrive snapshot, multi-user coexistono).
+  - **Closure check 6/6 spuntate**: 0 BLOCKER / 2 REQUIREMENT_GAP RESOLVED / 0 BUG / 0 SECURITY / 0 PERFORMANCE / 0 SPEC change requests. Nessun BUG/SECURITY/PERFORMANCE/CODE_QUALITY/DOC_GAP rilevato.
+  - `mvn -pl core-server verify -DexcludedGroups=slow,performance` BUILD SUCCESS post-closure in 25.2s, **163/163 test verdi** (150 + 13 nuovi), JaCoCo gate ATTIVO (`All coverage checks have been met` su 11 classi nel bundle post-esclusione vs 38 pre-esclusione), SpotBugs 0 issues, Spotless OK (79 file kept clean), ArchUnit 5/5 rule verdi.
+  - **A4.12 / A4.18 / A4.19 restano DEFERRED** alla sotto-fase TEST per design (PLAN-fase-4 §5.3): A4.12 `InMemoryRepositoryConcurrencyTest @Tag("slow")` 16 thread × 1000 match × 10000 mosse parallele; A4.18 regression `RuleEngineCorpusTest` F1 (48 posizioni) + `AiTournamentSimulationTest` F2 (gating ≥95/100); A4.19 `mvn clean verify` root con `slow,performance` inclusi.
+
 - **Task 4.13** — Documentation + ADR + CHANGELOG + TRACEABILITY (chiusura sotto-fase IMPLEMENTA Fase 4, branch `feature/4-core-server-skeleton`):
   - **Docs only** — nessun file di produzione o test toccato. 3 file documentali modificati + AI_CONTEXT.md.
   - **`ARCHITECTURE.md`** — 5 nuovi ADR in coda alla sezione "Decisioni successive (ADR-018+)":
