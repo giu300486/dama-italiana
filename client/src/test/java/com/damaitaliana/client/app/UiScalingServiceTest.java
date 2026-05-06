@@ -120,6 +120,42 @@ class UiScalingServiceTest {
     assertThat(UiScalingService.ALLOWED_SCALES).containsExactly(100, 125, 150);
   }
 
+  @Test
+  void activeScaleFactorReturnsSanitisedMultiplier() {
+    when(preferencesService.load()).thenReturn(prefsAtScale(125));
+    assertThat(service.activeScaleFactor()).isEqualTo(1.25);
+
+    when(preferencesService.load()).thenReturn(prefsAtScale(150));
+    assertThat(service.activeScaleFactor()).isEqualTo(1.5);
+
+    when(preferencesService.load()).thenReturn(prefsAtScale(100));
+    assertThat(service.activeScaleFactor()).isEqualTo(1.0);
+  }
+
+  @Test
+  void activeScaleFactorFallsBackTo100ForOutOfRangePercent() {
+    when(preferencesService.load()).thenReturn(prefsAtScale(200));
+    assertThat(service.activeScaleFactor()).isEqualTo(1.0);
+  }
+
+  private static UserPreferences prefsAtScale(int percent) {
+    return new UserPreferences(
+        UserPreferences.CURRENT_SCHEMA_VERSION,
+        Locale.ITALIAN,
+        "light",
+        percent,
+        false,
+        UserPreferences.DEFAULT_MUSIC_VOLUME_PERCENT,
+        UserPreferences.DEFAULT_SFX_VOLUME_PERCENT,
+        false,
+        false,
+        null,
+        null,
+        null,
+        null,
+        false);
+  }
+
   private static <T> T runOnFxThread(java.util.concurrent.Callable<T> task) throws Exception {
     AtomicReference<T> holder = new AtomicReference<>();
     AtomicReference<Throwable> failure = new AtomicReference<>();

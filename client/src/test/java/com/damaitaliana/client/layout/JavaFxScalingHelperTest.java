@@ -173,6 +173,49 @@ class JavaFxScalingHelperTest {
     assertThat(hero.getStyle()).contains("-fx-font-size: 48.00px"); // ceiling
   }
 
+  static java.util.stream.Stream<Arguments> compositionWithUiScale() {
+    // F4.5 REVIEW F-009 — display-fluid-lg clamp output × uiScaleFactor.
+    // 1024 → clamp 28; 1920 → cap 48; 3840 → cap 48.
+    return java.util.stream.Stream.of(
+        Arguments.of(1024.0, 1.00, 28.0),
+        Arguments.of(1024.0, 1.25, 35.0),
+        Arguments.of(1024.0, 1.50, 42.0),
+        Arguments.of(1920.0, 1.00, 48.0),
+        Arguments.of(1920.0, 1.25, 60.0),
+        Arguments.of(1920.0, 1.50, 72.0),
+        Arguments.of(3840.0, 1.00, 48.0),
+        Arguments.of(3840.0, 1.50, 72.0));
+  }
+
+  @ParameterizedTest(name = "display-fluid-lg @ sceneWidth={0} × uiScale={1} → {2}px")
+  @MethodSource("compositionWithUiScale")
+  void displayFluidLgComposesWithUiScale(double sceneWidth, double uiScaleFactor, double expectedPx)
+      throws Exception {
+    Assumptions.assumeTrue(fxToolkitReady, "JavaFX toolkit unavailable in this environment");
+
+    Label hero =
+        runOnFxThread(
+            () -> {
+              Label l = new Label("Dama Italiana");
+              l.getStyleClass().add(JavaFxScalingHelper.STYLE_CLASS_FLUID_LG);
+              return l;
+            });
+    runOnFxThread(
+        () -> {
+          JavaFxScalingHelper.bindFluidFontSize(
+              hero,
+              new javafx.beans.property.SimpleDoubleProperty(sceneWidth),
+              JavaFxScalingHelper.FLUID_LG_MIN_PX,
+              JavaFxScalingHelper.FLUID_LG_MAX_PX,
+              JavaFxScalingHelper.FLUID_LG_SCALE,
+              uiScaleFactor);
+          return null;
+        });
+
+    assertThat(hero.getStyle())
+        .contains(String.format(java.util.Locale.ROOT, "-fx-font-size: %.2fpx", expectedPx));
+  }
+
   @Test
   void applyFluidFontsIsIdempotentAndUnbindsBeforeRebinding() throws Exception {
     Assumptions.assumeTrue(fxToolkitReady, "JavaFX toolkit unavailable in this environment");
