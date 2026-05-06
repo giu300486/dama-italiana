@@ -46,7 +46,10 @@
                 <Insets top="16" right="16" bottom="16" left="16"/>
             </padding>
             <center>
-                <StackPane styleClass="board-frame">
+                <!-- F4.5 Task 4.5.8: padding bound at runtime by BoardFrameThicknessHelper to
+                     clamp(16, boardSide×0.035, 48); the static 24px below is the fallback when
+                     the controller isn't wired (FXML preview tools, headless tests). -->
+                <StackPane fx:id="boardFrame" styleClass="board-frame">
                     <padding>
                         <Insets top="24" right="24" bottom="24" left="24"/>
                     </padding>

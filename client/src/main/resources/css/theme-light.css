@@ -378,10 +378,14 @@
 
 /* ====== SPLASH SCREEN (Task 3.5.9) ====== */
 
-/* Polished wood backdrop using the frame texture (Task 3.5.1 CC0). */
+/* Polished wood backdrop using the frame texture (Task 3.5.1 CC0).
+ * F4.5 Task 4.5.8: tile mode (native 2048 × 2048 size, repeat both axes) instead of
+ * cover/stretch so the wood grain stays visually identical across viewports — at
+ * 1024 × 720 a single tile covers, at ultrawide 3440 / 4K it tiles seamlessly
+ * (Poly Haven CC0 textures are designed to repeat). */
 .splash-root {
     -fx-background-image: url("/assets/textures/frame.jpg");
-    -fx-background-size: cover;
+    -fx-background-repeat: repeat;
     -fx-background-position: center;
 }
 
@@ -430,10 +434,11 @@
 
 /* Subtle dark-wood backdrop behind the cards (board_dark.jpg also dresses
  * .board-cell-dark — re-using it gives the menu a coherent "this is a checkers
- * game" identity while staying visually distinct from the splash's frame.jpg). */
+ * game" identity while staying visually distinct from the splash's frame.jpg).
+ * F4.5 Task 4.5.8: tile mode (see .splash-root for rationale). */
 .main-menu-root {
     -fx-background-image: url("/assets/textures/board_dark.jpg");
-    -fx-background-size: cover;
+    -fx-background-repeat: repeat;
     -fx-background-position: center;
 }
 
@@ -470,10 +475,11 @@
 
 /* Generic wood backdrop applied to the root container of the form-screens
  * (sp-setup, load-screen, settings, rules). Re-uses board_dark.jpg already
- * employed by .board-cell-dark and .main-menu-root for visual coherence. */
+ * employed by .board-cell-dark and .main-menu-root for visual coherence.
+ * F4.5 Task 4.5.8: tile mode (see .splash-root for rationale). */
 .screen-root {
     -fx-background-image: url("/assets/textures/board_dark.jpg");
-    -fx-background-size: cover;
+    -fx-background-repeat: repeat;
     -fx-background-position: center;
 }
 
