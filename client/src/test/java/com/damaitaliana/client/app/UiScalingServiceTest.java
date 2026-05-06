@@ -96,6 +96,11 @@ class UiScalingServiceTest {
                 UserPreferences.DEFAULT_MUSIC_VOLUME_PERCENT,
                 UserPreferences.DEFAULT_SFX_VOLUME_PERCENT,
                 false,
+                false,
+                null,
+                null,
+                null,
+                null,
                 false));
 
     Region root = runOnFxThread(StackPane::new);

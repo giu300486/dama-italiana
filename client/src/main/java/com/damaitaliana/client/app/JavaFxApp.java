@@ -27,7 +27,7 @@ public class JavaFxApp extends Application {
     SceneRouter router = context.getBean(SceneRouter.class);
     router.initialize(primaryStage);
     router.show(SceneId.SPLASH);
-    context.getBean(PrimaryStageInitializer.class).initialize(primaryStage);
+    context.getBean(StagePersistenceCoordinator.class).initialize(primaryStage);
     primaryStage.setTitle("Dama Italiana");
     primaryStage.show();
 

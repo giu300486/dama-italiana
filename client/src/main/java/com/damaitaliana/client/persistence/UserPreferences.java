@@ -15,7 +15,14 @@ import java.util.Locale;
  * sfxVolumePercent}, {@code musicMuted}, {@code sfxMuted}. Defaults 30/70/false/false. v1 files are
  * migrated transparently by {@link PreferencesService#load()} (audio fields filled with defaults).
  *
- * @param schemaVersion always {@link #CURRENT_SCHEMA_VERSION} for files written by Fase 3.5.
+ * <p>v3 (Fase 4.5, PLAN-fase-4.5 Task 4.5.7b): adds Stage state persistence — {@code windowWidth},
+ * {@code windowHeight}, {@code windowX}, {@code windowY}, {@code windowMaximized}. The four
+ * geometry fields are nullable to model "no persisted state yet — use the computed 80% fallback"
+ * (e.g. fresh install or v2 → v3 migration). v2 files are migrated transparently with the geometry
+ * fields left null. The validator {@link com.damaitaliana.client.app.StagePersistenceValidator}
+ * decides whether the persisted state is safe to restore on the current display set.
+ *
+ * @param schemaVersion always {@link #CURRENT_SCHEMA_VERSION} for files written by Fase 4.5.
  * @param locale active UI language (default Italian, SPEC §13.6).
  * @param themeId active theme identifier; only {@code "light"} is selectable in Fase 3 (PLAN-fase-3
  *     §7.3 — dark toggle in Fase 11).
@@ -25,6 +32,13 @@ import java.util.Locale;
  * @param sfxVolumePercent gameplay SFX bus volume 0-100 (default 70, SPEC §13.4).
  * @param musicMuted user-toggled mute for the music bus (independent of volume).
  * @param sfxMuted user-toggled mute for the SFX bus.
+ * @param windowWidth last known Stage width in logical pixels, or {@code null} when no state has
+ *     been persisted yet.
+ * @param windowHeight last known Stage height in logical pixels, or {@code null}.
+ * @param windowX last known Stage top-left X in logical pixels (multi-monitor screen coordinates),
+ *     or {@code null}.
+ * @param windowY last known Stage top-left Y, or {@code null}.
+ * @param windowMaximized whether the Stage was maximised when last closed.
  */
 public record UserPreferences(
     int schemaVersion,
@@ -35,9 +49,14 @@ public record UserPreferences(
     int musicVolumePercent,
     int sfxVolumePercent,
     boolean musicMuted,
-    boolean sfxMuted) {
+    boolean sfxMuted,
+    Integer windowWidth,
+    Integer windowHeight,
+    Integer windowX,
+    Integer windowY,
+    boolean windowMaximized) {
 
-  public static final int CURRENT_SCHEMA_VERSION = 2;
+  public static final int CURRENT_SCHEMA_VERSION = 3;
   public static final int DEFAULT_MUSIC_VOLUME_PERCENT = 30;
   public static final int DEFAULT_SFX_VOLUME_PERCENT = 70;
 
@@ -47,12 +66,12 @@ public record UserPreferences(
     uiScalePercent = uiScalePercent > 0 ? uiScalePercent : 100;
     musicVolumePercent = clampVolume(musicVolumePercent);
     sfxVolumePercent = clampVolume(sfxVolumePercent);
+    // window* geometry fields stay as-is: null means "no persisted state".
   }
 
   /**
-   * Jackson factory used for deserialisation. Boxed {@code Integer}/{@code Boolean} for the audio
-   * fields so a missing key (v1 file) is detected as {@code null} and defaulted to the SPEC §13.4
-   * values rather than to the primitive {@code 0}/{@code false}.
+   * Jackson factory used for deserialisation. Boxed types for the audio and window fields so a
+   * missing key (older schema file) is detected as {@code null} and defaulted appropriately.
    */
   @JsonCreator
   static UserPreferences fromJson(
@@ -64,7 +83,12 @@ public record UserPreferences(
       @JsonProperty("musicVolumePercent") Integer musicVolumePercent,
       @JsonProperty("sfxVolumePercent") Integer sfxVolumePercent,
       @JsonProperty("musicMuted") Boolean musicMuted,
-      @JsonProperty("sfxMuted") Boolean sfxMuted) {
+      @JsonProperty("sfxMuted") Boolean sfxMuted,
+      @JsonProperty("windowWidth") Integer windowWidth,
+      @JsonProperty("windowHeight") Integer windowHeight,
+      @JsonProperty("windowX") Integer windowX,
+      @JsonProperty("windowY") Integer windowY,
+      @JsonProperty("windowMaximized") Boolean windowMaximized) {
     return new UserPreferences(
         schemaVersion,
         locale,
@@ -74,7 +98,12 @@ public record UserPreferences(
         musicVolumePercent != null ? musicVolumePercent : DEFAULT_MUSIC_VOLUME_PERCENT,
         sfxVolumePercent != null ? sfxVolumePercent : DEFAULT_SFX_VOLUME_PERCENT,
         musicMuted != null && musicMuted,
-        sfxMuted != null && sfxMuted);
+        sfxMuted != null && sfxMuted,
+        windowWidth,
+        windowHeight,
+        windowX,
+        windowY,
+        windowMaximized != null && windowMaximized);
   }
 
   public static UserPreferences defaults() {
@@ -87,6 +116,11 @@ public record UserPreferences(
         DEFAULT_MUSIC_VOLUME_PERCENT,
         DEFAULT_SFX_VOLUME_PERCENT,
         false,
+        false,
+        null,
+        null,
+        null,
+        null,
         false);
   }
 
@@ -100,7 +134,12 @@ public record UserPreferences(
         musicVolumePercent,
         sfxVolumePercent,
         musicMuted,
-        sfxMuted);
+        sfxMuted,
+        windowWidth,
+        windowHeight,
+        windowX,
+        windowY,
+        windowMaximized);
   }
 
   public UserPreferences withUiScalePercent(int newUiScalePercent) {
@@ -113,7 +152,12 @@ public record UserPreferences(
         musicVolumePercent,
         sfxVolumePercent,
         musicMuted,
-        sfxMuted);
+        sfxMuted,
+        windowWidth,
+        windowHeight,
+        windowX,
+        windowY,
+        windowMaximized);
   }
 
   public UserPreferences withThemeId(String newThemeId) {
@@ -126,7 +170,12 @@ public record UserPreferences(
         musicVolumePercent,
         sfxVolumePercent,
         musicMuted,
-        sfxMuted);
+        sfxMuted,
+        windowWidth,
+        windowHeight,
+        windowX,
+        windowY,
+        windowMaximized);
   }
 
   public UserPreferences withFirstLaunch(boolean newFirstLaunch) {
@@ -139,7 +188,12 @@ public record UserPreferences(
         musicVolumePercent,
         sfxVolumePercent,
         musicMuted,
-        sfxMuted);
+        sfxMuted,
+        windowWidth,
+        windowHeight,
+        windowX,
+        windowY,
+        windowMaximized);
   }
 
   public UserPreferences withMusicVolumePercent(int newMusicVolumePercent) {
@@ -152,7 +206,12 @@ public record UserPreferences(
         newMusicVolumePercent,
         sfxVolumePercent,
         musicMuted,
-        sfxMuted);
+        sfxMuted,
+        windowWidth,
+        windowHeight,
+        windowX,
+        windowY,
+        windowMaximized);
   }
 
   public UserPreferences withSfxVolumePercent(int newSfxVolumePercent) {
@@ -165,7 +224,12 @@ public record UserPreferences(
         musicVolumePercent,
         newSfxVolumePercent,
         musicMuted,
-        sfxMuted);
+        sfxMuted,
+        windowWidth,
+        windowHeight,
+        windowX,
+        windowY,
+        windowMaximized);
   }
 
   public UserPreferences withMusicMuted(boolean newMusicMuted) {
@@ -178,7 +242,12 @@ public record UserPreferences(
         musicVolumePercent,
         sfxVolumePercent,
         newMusicMuted,
-        sfxMuted);
+        sfxMuted,
+        windowWidth,
+        windowHeight,
+        windowX,
+        windowY,
+        windowMaximized);
   }
 
   public UserPreferences withSfxMuted(boolean newSfxMuted) {
@@ -191,7 +260,34 @@ public record UserPreferences(
         musicVolumePercent,
         sfxVolumePercent,
         musicMuted,
-        newSfxMuted);
+        newSfxMuted,
+        windowWidth,
+        windowHeight,
+        windowX,
+        windowY,
+        windowMaximized);
+  }
+
+  /**
+   * F4.5 Task 4.5.7b — sets the Stage state fields all together (geometry is captured atomically on
+   * close).
+   */
+  public UserPreferences withWindowState(int width, int height, int x, int y, boolean maximized) {
+    return new UserPreferences(
+        schemaVersion,
+        locale,
+        themeId,
+        uiScalePercent,
+        firstLaunch,
+        musicVolumePercent,
+        sfxVolumePercent,
+        musicMuted,
+        sfxMuted,
+        width,
+        height,
+        x,
+        y,
+        maximized);
   }
 
   /**
@@ -208,7 +304,12 @@ public record UserPreferences(
         musicVolumePercent,
         sfxVolumePercent,
         musicMuted,
-        sfxMuted);
+        sfxMuted,
+        windowWidth,
+        windowHeight,
+        windowX,
+        windowY,
+        windowMaximized);
   }
 
   private static int clampVolume(int v) {
