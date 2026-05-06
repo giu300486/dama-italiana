@@ -133,6 +133,34 @@ class BoardFrameThicknessHelperTest {
   }
 
   @Test
+  void bindFrameThicknessUsesPreLayoutFallbackUntilRendererIsSized() throws Exception {
+    Assumptions.assumeTrue(fxToolkitReady, "JavaFX toolkit unavailable in this environment");
+
+    BoardRenderer renderer = runOnFxThread(BoardRenderer::new);
+    StackPane frame = runOnFxThread(StackPane::new);
+
+    runOnFxThread(
+        () -> {
+          BoardFrameThicknessHelper.bindFrameThickness(frame, renderer);
+          // Renderer not yet sized → pre-layout fallback should kick in (24 px), not the
+          // clamp floor (16 px). This avoids a visible frame snap between controller init
+          // and first layout pulse (F4.5 REVIEW F-005).
+          return null;
+        });
+
+    assertThat(frame.getPadding().getTop())
+        .isCloseTo(BoardFrameThicknessHelper.PRE_LAYOUT_FALLBACK_PX, within(1e-6));
+
+    // After the renderer is sized, the regular clamp formula takes over.
+    runOnFxThread(
+        () -> {
+          renderer.resize(880.0, 880.0);
+          return null;
+        });
+    assertThat(frame.getPadding().getTop()).isCloseTo(30.8, within(1e-6));
+  }
+
+  @Test
   void bindFrameThicknessUsesMinOfWidthAndHeightSoUltrawideRendererStillSizesByBoardSide()
       throws Exception {
     Assumptions.assumeTrue(fxToolkitReady, "JavaFX toolkit unavailable in this environment");
