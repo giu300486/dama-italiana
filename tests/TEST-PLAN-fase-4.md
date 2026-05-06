@@ -87,8 +87,8 @@ Da SPEC NFR-M-01 e PLAN-fase-4 §5.2:
 |---|---|---|---|---|---|
 | E1 | `mvn -pl core-server verify -DexcludedGroups=slow,performance` | Ad ogni task IMPLEMENTA (4.1 → 4.13) | core-server unit + integration, fast tags | ✅ BUILD SUCCESS ad ogni task; conta finale post-IMPLEMENTA: **150 verdi** | `096b636` (Task 4.13 closure) |
 | E2 | `mvn -pl core-server verify -DexcludedGroups=slow,performance` | Pre-REVIEW closure | core-server fast (post fix F-001 + F-002) | ✅ BUILD SUCCESS in 25.2s, **163 verdi** (150 + 13 nuovi: 6 tournament repo + 7 user repo); JaCoCo gate ATTIVO `haltOnFailure=true`, 11 classi bundle post-esclusione, lines 94.95% + branches 88.64% | `5320428` (REVIEW closure) + `8f5c862` (backfill) |
-| E3 | `mvn -pl core-server test -Dgroups=slow -Dtest=InMemoryRepositoryConcurrencyTest` | Sotto-fase TEST (Task 4.13.T1) | A4.12 stress concorrenza standalone | ✅ BUILD SUCCESS in 6.7s, **3/3 test verdi** in 0.435s | _(commit di chiusura test plan)_ |
-| E4 | `mvn clean verify` (root, no `excludedGroups`) | Sotto-fase TEST closure | tutti i moduli + corpus F1 (53 pos) + gating IA F2 (≥95/100) + performance NFR + slow stress | ✅ BUILD SUCCESS — vedi §5.2 sotto | _(commit di chiusura test plan)_ |
+| E3 | `mvn -pl core-server test -Dgroups=slow -Dtest=InMemoryRepositoryConcurrencyTest` | Sotto-fase TEST (Task 4.13.T1) | A4.12 stress concorrenza standalone | ✅ BUILD SUCCESS in 6.7s, **3/3 test verdi** in 0.435s | `bdc3b82` |
+| E4 | `mvn clean verify` (root, no `excludedGroups`) | Sotto-fase TEST closure | tutti i moduli + corpus F1 (53 pos) + gating IA F2 (≥95/100) + performance NFR + slow stress | ✅ BUILD SUCCESS — vedi §5.2 sotto | `bdc3b82` |
 
 ### 5.1 Stress concorrenza A4.12 (E3) — eseguita 2026-05-06 11:59 CET
 
@@ -175,7 +175,7 @@ Lista cumulativa per task. Riferirsi a CHANGELOG `[Unreleased]` per dettagli gra
 - [x] Findings REVIEW Fase 4 (F-001 + F-002) entrambi RESOLVED prima dell'apertura sotto-fase TEST.
 
 **Test plan chiuso il**: 2026-05-06.
-**Commit di chiusura**: _(da popolare al commit di chiusura del test plan stesso)_.
+**Commit di chiusura**: `bdc3b82` (`test(core-server): close TEST Fase 4 — concurrency stress + regression root`).
 
 ---
 
