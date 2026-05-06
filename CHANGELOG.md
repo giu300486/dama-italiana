@@ -8,6 +8,11 @@ Il formato è basato su [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1
 
 ### Added
 
+- **F4.5 Task 4.5.3b** — Asset audit texture wood (PASS, sotto-fase IMPLEMENTA mini-fase F4.5, branch `feature/4.5-ui-responsiveness`):
+  - **Docs-only task**: nessun file prod/test/asset toccato. Audit `client/src/main/resources/assets/textures/` — 3 file totali, tutti **2048×2048**, esattamente alla soglia minima del PLAN (≥2048 per nitidezza a 4K, ≤4096 cap senior amendment §6 per HDD vecchio + 4 GB RAM cliente). `frame.jpg` 2048 ≥ 1024 PLAN minimum BorderImage.
+  - **Licensing CC0 1.0** (Poly Haven) già documentato in `CREDITS.md` linee 36-38: `board_dark.jpg` da `dark_wooden_planks`, `board_light.jpg` da `oak_wood_planks`, `frame.jpg` da `wood_table_worn` (foto Dimitrios Savva, processing Rico Cilliers). **Verdict audit: PASS** — nessuna replacement necessaria.
+  - **Note tecnica**: nessuna "header background" texture separata — `.main-menu-root` e `.screen-root` riusano `board_dark.jpg` (theme-light.css linee 419/459) per coerenza visiva. A 4K (3840×2160), board cell ~240px → 2048→240 ~8× downscale (super sharp); frame texture cover full frame → 2048→3840 ~1.9× upscale (accettabile per pattern wood organico dove minor blur è mascherato dal noise della texture).
+
 - **F4.5 Task 4.5.3** — Stage min/initial size + center policy (sotto-fase IMPLEMENTA mini-fase F4.5, branch `feature/4.5-ui-responsiveness`):
   - **`PrimaryStageInitializer`** (nuovo `@Component` in `com.damaitaliana.client.app`): setta `minWidth=1024`, `minHeight=720`, initial `width=max(MIN, primaryScreen.visualBounds.width * 0.80)` / `height=max(MIN, ...0.80)` da `Screen.getPrimary().getVisualBounds()` (esclude OS taskbar), centra il window su `(bounds.minX + (bounds.w - w)/2, bounds.minY + (bounds.h - h)/2)`. Esposto come bean per testabilità (FX-toolkit-required test pattern di ADR-018), invocato da `JavaFxApp.start` tra `router.show(SPLASH)` e `setTitle/show`.
   - **`JavaFxApp.start`** modificato per chiamare `context.getBean(PrimaryStageInitializer.class).initialize(primaryStage)`. Lifecycle invariato: Spring context esiste già (bootstrap da `ClientApplication.main`), Scene già installata sul Stage da `router.show(SPLASH)`.
