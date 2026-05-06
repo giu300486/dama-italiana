@@ -1,10 +1,10 @@
 # SPEC — Dama Italiana Multiplayer (Desktop)
 
 > **Documento di specifica per Spec-Driven Development con Claude Code**
-> Versione: 2.2 · Data: 2026-04-30 · Linguaggio: Italiano
+> Versione: 2.3 · Data: 2026-05-06 · Linguaggio: Italiano
 > Tipo progetto: Applicazione desktop Java + Server centrale Spring Boot
 >
-> Storico versioni: 2.0 (2026-04-26 — baseline post-Fase 0); 2.0 + CR-001 (2026-04-28 — repetition/40-mosse via reference incrementale, deferred F4); 2.1 (2026-04-30 — clarifiche post-REVIEW Fase 3: granularità undo/redo §4.1, deferral a11y i18n + daltonismo §13.5, deferral consci enumerati in Fase 11); **2.2 (2026-04-30 — pull-forward per demo cliente: §13.2 design system riscritto "videogame premium wood", §13.3 animazioni avanzate, §13.4 ambient music, nuova §16 Fase 3.5, modifica §16 Fase 11)**.
+> Storico versioni: 2.0 (2026-04-26 — baseline post-Fase 0); 2.0 + CR-001 (2026-04-28 — repetition/40-mosse via reference incrementale, deferred F4); 2.1 (2026-04-30 — clarifiche post-REVIEW Fase 3: granularità undo/redo §4.1, deferral a11y i18n + daltonismo §13.5, deferral consci enumerati in Fase 11); 2.2 (2026-04-30 — pull-forward per demo cliente: §13.2 design system riscritto "videogame premium wood", §13.3 animazioni avanzate, §13.4 ambient music, nuova §16 Fase 3.5, modifica §16 Fase 11); **2.3 (2026-05-06 — CR-F4.5-001: nuovo NFR-U-05 UI responsive desktop, nuova §13.7 layout responsive, AC §17.2.8, nuova §16 Fase 4.5 mini-fase intermedia post-demo cliente)**.
 
 ---
 
@@ -271,6 +271,7 @@ LAN supporta le **stesse modalità** di Internet (match singolo + tornei elimina
 | NFR-U-02 | Dark mode e light mode. |
 | NFR-U-03 | Accessibilità tastiera per tutte le azioni principali. |
 | NFR-U-04 | Contrasto WCAG AA. |
+| NFR-U-05 | UI client adattiva al gamut desktop standard: ridimensionamento finestra fluido, no clipping, no scrollbar inattese, scacchiera sempre quadrata e completamente visibile, su risoluzioni da 1280×720 a 4K (3840×2160) e su DPI scaling Windows 100/125/150/200%. Min window size 1024×720. Stage state (size/position/maximized) persistito in `~/.dama-italiana/config.json` schema v3. |
 | NFR-M-01 | Coverage test ≥ 80% sul motore di gioco (modulo `shared`). |
 | NFR-M-02 | Coverage test ≥ 60% su rete e UI. |
 | NFR-M-03 | API documentate via OpenAPI 3.1. |
@@ -1333,6 +1334,24 @@ Stile musicale: tranquillo, da concentrazione (no battle/heroic). Implementazion
 - ResourceBundle `messages_it.properties` / `messages_en.properties`.
 - Tutti i testi UI passano da `MessageSource` Spring.
 
+### 13.7 Layout responsive (da Fase 4.5)
+
+Il client adotta un layout **fluido** che si adatta al ridimensionamento della finestra senza clipping né scrollbar inattese. Strategie:
+
+- **`Stage` constraints**: `minWidth = 1024`, `minHeight = 720`. **Initial size**: 80% dell'area `Screen.getPrimary().getVisualBounds()`, centrato (clamp a min). Stage state (width / height / x / y / maximized) persistito in `~/.dama-italiana/config.json` schema v3 e ripristinato al launch successivo (fallback al computed 80% se invalid o monitor scollegato).
+- **`BoardView`**: contenitore `StackPane` + `Pane` figlio centrato. Lato della scacchiera = `min(viewport.width − sidePanelMin, viewport.height − headerFooterReserved) − frameThickness`. Cornice texture wood scala proporzionalmente (`BorderImage` con `Insets` proporzionali al `boardSide`). Le 64 celle e i pezzi sono posizionati con coordinate scalate `cellSize = boardSide / 8`. Bind su `widthProperty`/`heightProperty` per re-layout automatico.
+- **Side panel** (storia mosse + giocatori + tempi): `prefWidth = 320`, `minWidth = 240`, `maxWidth = 400`. Sotto viewport 1024px → auto-hide con toggle button overlay.
+- **Main menu / form screens**: `VBox`/`HBox` con `maxWidth` token (600/800px) + center alignment. Le card restano leggibili a 4K (non occupano l'intera larghezza) e usano tutta la viewport a 1280×720.
+- **Tipografia display fluida**: titoli "display" usano binding programmatico `clamp(min, viewportWidth × scaleFactor, max)`. Token base `font-size-display-md/lg` invariati. UI body invariata (token statici).
+- **Aspect ratio handling**: 16:9 / 16:10 layout default. **Ultrawide 21:9 / 32:9** → cluster (board + side panel) centrato con `maxWidth ≈ viewport × 0.70` o `1920px`, margini decorativi wood texture ai lati (no board che cresce indefinita).
+- **Texture background**: `BackgroundRepeat.REPEAT` (no stretch). Risoluzione asset wood ≥ 2048×2048 (no pixelation a 4K), ≤ 4096×4096 (caricamento veloce su HDD vecchio + RAM ≥ 4 GB).
+- **DPI awareness**: JavaFX 21 implicit; nessun pixel hardcoded nel codice; logical size sempre. Compatibile con Windows DPI scaling 100/125/150/200%.
+- **`UiScalingService`** (a11y 100/125/150 da §13.5): ortogonale al layout responsive. Lo scaling moltiplica le size effettive dei nodi; il layout responsive si adatta alla viewport effettiva post-scaling.
+
+Tutte le 8 schermate F3.5 (splash, main menu, sp setup, board, save dialog, load screen, settings, rules) seguono questa strategia. Visual regression baseline a 7 combinazioni canoniche (1024×720@100%, 1280×720@100%, 1366×768@125%, 1920×1080@100%, 1920×1080@150%, 2560×1440@100%, 3840×2160@200%) in `tests/visual-review/responsiveness-baseline-post-fix/`. Ultrawide 21:9 e 32:9 verificati via manual visual review (no parametric matrix — market share residuo).
+
+> **Anti-pattern preservato (CLAUDE.md §8 #15)**: F4.5 modifica solo layout/binding/CSS. Token CSS v2, texture, font-family, animation parameters di F3.5 restano **invariati**. Nessun re-skin.
+
 ---
 
 ## 14. Persistenza e dati
@@ -1463,6 +1482,23 @@ Fasi sequenziali. Ogni fase è autonomamente verificabile. Claude Code DEVE comp
 
 **Acceptance**: test di unità del core-server con repository in-memory; un match singolo funziona end-to-end via API Java.
 
+### Fase 4.5 — UI Responsiveness desktop
+
+> Mini-fase intermedia tra Fase 4 e Fase 5, **fix mirato post-demo cliente**: con MSI installato su PC del cliente (hardware ~2014-2015, Win 10 su HDD, display verosimilmente 1366×768), la parte bassa della scacchiera era tagliata e la finestra non si adattava al resize. Stesso modello F3.5 (mini-fase intermedia, pull-forward parziale di feature di adattività UI da F11). Non era prevista nella roadmap originale (v2.0/v2.1/v2.2).
+
+- Adattività delle 8 schermate F3.5 al gamut risoluzioni desktop standard (1024×720 floor → 4K).
+- `Stage` `min/initial size` enforced (computed 80% primary screen visualBounds, centrato), Stage state persistence in `~/.dama-italiana/config.json` schema v3.
+- `BoardView` adattivo (defect originale risolto): `StackPane` + `Pane` centrato, lato della scacchiera = `min(viewport.w − sidePanelMin, viewport.h − headerFooterReserved) − frameThickness`.
+- Side panel responsive con auto-hide toggle sotto viewport 1024px.
+- Tipografia display fluida (binding programmatico `clamp(min, viewportWidth × factor, max)`).
+- Texture wood `REPEAT` mode + cornice scalabile + asset audit ≥ 2048×2048 e ≤ 4096×4096.
+- Aspect ratio handling esplicito 16:9/16:10 default + 21:9/32:9 ultrawide (cluster centrato, margini decorativi).
+- ADR-043 documenta la strategia ("JavaFX `Region.bind` + min/pref/max + `BorderPane`/`StackPane`, no external framework").
+- **Anti-pattern #15 preservato**: design system F3.5 wood premium INVARIATO. Solo layout/binding/CSS responsive.
+- Test parametric `ResponsivenessParametricTest @Tag("slow")` 7 combinazioni schermata × DPI strategiche Win 10/11. Screenshot baseline pre/post-fix in `tests/visual-review/responsiveness-baseline-{pre,post}-fix/`.
+
+**Acceptance**: cliente conferma defect originale risolto + libero resize verificato su PC reale o VM con risoluzione cliente.
+
 ### Fase 5 — Server centrale skeleton
 
 - Bootstrap Spring Boot.
@@ -1572,6 +1608,7 @@ Fasi sequenziali. Ogni fase è autonomamente verificabile. Claude Code DEVE comp
 5. SAST (SpotBugs) senza warning High.
 6. Password hashate (verificabile DB).
 7. Dark mode e light mode entrambi WCAG AA.
+8. **UI responsive desktop**: il client si adatta fluido a tutte le risoluzioni desktop standard (1280×720 → 4K, min Stage 1024×720) e a window resize libero, senza clipping né scrollbar inattese; scacchiera sempre quadrata; Stage state persistito tra launch. Verificato via `ResponsivenessParametricTest @Tag("slow")` (7 combinazioni schermata × DPI scaling) + manual demo run.
 
 ---
 
