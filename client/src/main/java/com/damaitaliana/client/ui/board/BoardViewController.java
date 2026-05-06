@@ -7,6 +7,7 @@ import com.damaitaliana.client.controller.GameSession;
 import com.damaitaliana.client.controller.SinglePlayerController;
 import com.damaitaliana.client.controller.SinglePlayerGame;
 import com.damaitaliana.client.i18n.I18n;
+import com.damaitaliana.client.layout.BoardFrameThicknessHelper;
 import com.damaitaliana.client.persistence.AutosaveService;
 import com.damaitaliana.client.ui.save.SaveDialogController;
 import java.util.Objects;
@@ -21,6 +22,7 @@ import javafx.scene.control.MenuItem;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyCodeCombination;
 import javafx.scene.input.KeyCombination;
+import javafx.scene.layout.StackPane;
 import javafx.stage.Window;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.annotation.Scope;
@@ -57,6 +59,7 @@ public class BoardViewController {
   @FXML private MenuItem loadMenuItem;
   @FXML private MenuItem rulesMenuItem;
   @FXML private MenuItem terminateMenuItem;
+  @FXML private StackPane boardFrame;
   @FXML private BoardRenderer boardRenderer;
   @FXML private Label gameTitleLabel;
   @FXML private StatusPane statusPane;
@@ -98,6 +101,7 @@ public class BoardViewController {
     SinglePlayerGame game = currentGame.get();
     gameTitleLabel.setText(game.name());
     backButton.setText(i18n.t("common.button.back"));
+    BoardFrameThicknessHelper.bindFrameThickness(boardFrame, boardRenderer);
 
     StatusPaneViewModel statusViewModel = new StatusPaneViewModel(i18n);
     gameController = singlePlayerControllerProvider.getObject();

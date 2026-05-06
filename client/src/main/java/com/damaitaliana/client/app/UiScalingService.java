@@ -51,6 +51,18 @@ public class UiScalingService {
     applyTo(scene, percent);
   }
 
+  /**
+   * F4.5 REVIEW F-009 — returns the active UI scale as a multiplier (e.g. 1.5 for 150 %), with the
+   * same {@link #ALLOWED_SCALES} sanitisation as {@link #applyTo(Scene)}. Used by {@link
+   * SceneRouter} to compose the scale with {@link
+   * com.damaitaliana.client.layout.JavaFxScalingHelper#applyFluidFontsToScene(Scene, double)}.
+   */
+  public double activeScaleFactor() {
+    int percent = preferencesService.load().uiScalePercent();
+    int safe = ALLOWED_SCALES.contains(percent) ? percent : 100;
+    return safe / 100.0;
+  }
+
   /** Applies {@code percent} (one of {@link #ALLOWED_SCALES}; out-of-range falls back to 100). */
   public void applyTo(Scene scene, int percent) {
     if (scene == null || scene.getRoot() == null) {

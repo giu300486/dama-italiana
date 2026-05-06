@@ -23,13 +23,17 @@
             <padding>
                 <Insets bottom="16"/>
             </padding>
-            <Label fx:id="titleLabel" styleClass="label-display, label-display-md"/>
+            <Label fx:id="titleLabel" styleClass="label-display, label-display-md, display-fluid"/>
         </HBox>
     </top>
 
     <center>
-        <StackPane>
-            <TableView fx:id="slotsTable">
+        <!-- F4.5 Task 4.5.6: outer StackPane fills the BorderPane.center; inner TableView caps
+             at maxWidth=1100 so the table doesn't stretch beyond a readable width on ultrawide
+             / 4K (audit Task 4.5.2). Sum of column prefWidth = 780, so 1100 leaves headroom for
+             column drag-resizing without forcing horizontal scroll on default columns. -->
+        <StackPane fx:id="loadCenter">
+            <TableView fx:id="slotsTable" maxWidth="1100">
                 <columns>
                     <TableColumn fx:id="nameColumn" prefWidth="220"/>
                     <TableColumn fx:id="dateColumn" prefWidth="160"/>
