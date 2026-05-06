@@ -58,7 +58,16 @@
                 </StackPane>
             </center>
             <right>
-                <VBox spacing="12" prefWidth="280" styleClass="card-elevated">
+                <!-- F4.5 Task 4.5.5: side panel responsive width.
+                     pref=320 / min=240 / max=400 (PLAN-fase-4.5 §10.6 token spacing).
+                     Auto-hide for viewport < 1024 is unreachable in normal operation
+                     because PrimaryStageInitializer enforces Stage min 1024×720, so
+                     the panel is always visible. MoveHistoryView keeps VBox.vgrow=ALWAYS
+                     so the history list expands to fill the vertical space between the
+                     status pane and the back button. -->
+                <VBox fx:id="sidePanel" spacing="12"
+                      prefWidth="320" minWidth="240" maxWidth="400"
+                      styleClass="card-elevated">
                     <padding>
                         <Insets top="16" right="16" bottom="16" left="16"/>
                     </padding>
