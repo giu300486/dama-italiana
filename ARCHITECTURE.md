@@ -369,6 +369,100 @@ Riferimento autoritativo: `SPEC.md` Appendice B.
 
 ---
 
+### ADR-038 — `MatchEventBus` su Spring `ApplicationEventPublisher`
+
+- **Data**: 2026-05-05
+- **Stato**: Accepted (Fase 4)
+- **Contesto**: Fase 4 (PLAN §4.5) richiede un bus interno per propagare gli eventi `MatchEvent` (sealed: `MoveApplied` / `MoveRejected` / `DrawOffered` / `DrawAccepted` / `DrawDeclined` / `Resigned` / `MatchEnded` / `PlayerDisconnected` / `PlayerReconnected`) ai listener in-process — replay JPA-side in F6, broadcast STOMP nello stesso processo, audit/metriche future. Il bus DEVE essere transport-agnostic (CLAUDE.md §8.7-8.8: niente Spring Boot Web, niente Tomcat/Jetty in `core-server`); la cross-JVM distribution viaggia separatamente sullo `StompCompatiblePublisher` (vedi ADR-039), non sul bus interno.
+- **Decisione**: il bus è una thin facade Spring (`SpringMatchEventBus @Component implements MatchEventBus`) sopra `ApplicationEventPublisher` (auto-injected — la `ApplicationContext` stessa lo implementa). Ogni `publish(MatchEvent)` wrappa l'evento in un `MatchEventEnvelope extends ApplicationEvent` (`source = bus`, `payload = MatchEvent`) e delega a `publisher.publishEvent(envelope)`. Listener registrano `@EventListener void on(MatchEventEnvelope env)` e fanno pattern-match esaustivo su `env.payload()` — il sealed `MatchEvent` garantisce esaustività compile-time.
+- **Conseguenze**:
+  - Ordine FIFO per publisher thread: il default Spring multicaster è sincrono (`publish` ritorna solo dopo che tutti i listener hanno processato); per-match FIFO segue per costruzione perché `MatchManager` serializza le scritture per match con `synchronized (lockFor(matchId))`.
+  - `MatchEventEnvelope` ha `serialVersionUID = 1L` + `transient MatchEvent payload`: il `transient` documenta l'intent (l'envelope NON viaggia oltre il bus in-process; il wire layer F6/F7 serializza il payload via Jackson, non l'envelope) e silenzia SpotBugs `SE_BAD_FIELD`.
+  - Apre la strada a `@TransactionalEventListener` in F6 quando JPA arriverà (Spring lo supporta out-of-the-box).
+  - Zero deps nuove: Spring `spring-context` era già in `core-server` per la DI (SPEC §6 line 76).
+- **Alternative considerate**:
+  - LMAX Disruptor / RxJava `Subject`: overkill per workload single-LAN-host single-server di F4-F11; aggiunge una dep significativa.
+  - Listener pattern manuale (`List<MatchEventListener>` + iteration in `publish`): re-inventa Spring; perde gli hook transazionali futuri.
+  - Bus separato per match (`Map<MatchId, EventBus>`): premature partitioning — Spring multicaster è già abbastanza veloce per un singolo JVM e i test FIFO per-match passano filtrando per `matchId` lato listener.
+
+---
+
+### ADR-039 — `StompCompatiblePublisher` come port lato `core-server`, impl reale lato transport
+
+- **Data**: 2026-05-05
+- **Stato**: Accepted (Fase 4)
+- **Contesto**: Fase 4 deve broadcastare gli eventi `MatchEvent` su un canale topic-based (SPEC §11.4 prescrive `/topic/match/{id}`) ma `core-server` NON DEVE conoscere WebSocket / Tomcat / Jetty (CLAUDE.md §8.8). Il trasporto reale arriva in F6 (server, Spring Boot Web + Tomcat embedded) e F7 (client LAN host, Spring Boot Web + Jetty embedded). Serve un'astrazione che permetta a `MatchManager` di "broadcastare" senza sapere cos'è il trasporto.
+- **Decisione**: definito `StompCompatiblePublisher` interface single-method `void publishToTopic(String topic, Object payload)` in `com.damaitaliana.core.stomp` come **port**. Default impl `LoggingStompPublisher @Component` (SLF4J `LOGGER.info("[stomp] {} <- {}", topic, payload)`) per dev/test/standalone JVM senza trasporto. F6 e F7 introdurranno un `WebSocketStompPublisher @Component @Primary` (delegando a Spring `SimpMessagingTemplate`) che vincerà l'autowire quando entrambi i bean coesistono. Test scope: `BufferingStompPublisher` (in `core-server/src/test/java`, NON shippato) per asserzioni di test.
+- **Conseguenze**:
+  - `core-server` rispetta CLAUDE.md §8.8 — zero dipendenze da `org.springframework.web.socket..` o `org.springframework.boot.web..`. Enforcement a build-time via ArchUnit (ADR-042 / Task 4.12 rule 2 e 3).
+  - Il contratto specifica `NPE` su null args (fail-fast nei test) ma le impl reali F6/F7 NON DEVONO throw su transport failure: il broadcast è best-effort, l'autoritativo è già persistito via `MatchRepository.appendEvent`.
+  - SLF4J authorized esplicitamente da SPEC §6 line 330 (`Logging | SLF4J + Logback`); aggiunto `slf4j-api` come dep prod a `core-server/pom.xml` in Task 4.6 — non "nuova dep outside SPEC §6", è enabling di una scelta già approvata.
+  - PLAN-fase-4 §4.6 originalmente suggeriva `@ConditionalOnMissingBean` su `LoggingStompPublisher` — annotation in `spring-boot-autoconfigure`, viola §8.7-8.8. Soluzione adottata: plain `@Component`, F6/F7 marcheranno il loro publisher `@Primary`.
+- **Alternative considerate**:
+  - Far conoscere a `core-server` il `SimpMessagingTemplate` direttamente: viola §8.8.
+  - Usare il bus interno (ADR-038) anche per il broadcast cross-process: non distribuisce; richiederebbe un secondo listener "ponte" in F6/F7 — più giri di indirezione senza vantaggi rispetto al port.
+  - Niente STOMP, usare bare WebSocket: SPEC §11.4 prescrive STOMP per il routing topic-based; cambiare sarebbe una SPEC change request grossa.
+
+---
+
+### ADR-040 — Anti-cheat counter location: in-memory transient su `Match`, threshold 5
+
+- **Data**: 2026-05-05
+- **Stato**: Accepted (Fase 4)
+- **Contesto**: SPEC §9.8.3 + FR-COM-01: 5 mosse illegali consecutive da uno stesso giocatore → forfait automatico. La SPEC NON specifica dove vive il counter né cosa succede al recovery (riconnessione F6+).
+- **Decisione**: counter `EnumMap<Color, Integer> consecutiveIllegalMoves` su `Match` (Task 4.7), inizializzato `{WHITE: 0, BLACK: 0}` nel ctor. Read accessor pubblico `int consecutiveIllegalMoves(Color)`; mutator package-private `recordIllegalMove(Color)` (`merge(who, 1, Integer::sum)`) e `clearIllegalMoves(Color)` (`put(who, 0)`). Il counter è **in-memory transient** — non serializzato, non parte del wire shape `MatchEvent`, non persistito. `MatchManager.applyMove` lo bumpa in caso di `MoveRejected` con reason `NOT_YOUR_TURN` o `ILLEGAL_MOVE`, e lo resetta su `MoveApplied`. La constant `ILLEGAL_MOVES_FORFEIT_THRESHOLD = 5` è package-private in `MatchManager`. Quando il counter raggiunge 5, `MatchManager` emette `MatchEnded(opposite winner, FORFEIT_ANTI_CHEAT)` e `match.status(FINISHED)`. **`MATCH_NOT_ONGOING` rejection NON triggera anti-cheat** — un client stale che retry su un match terminato non è "cheating" nello stesso senso.
+- **Conseguenze**:
+  - **Recovery (F6+)**: alla riconnessione il counter parte da 0 (scelta benevola). Un giocatore che cheata, disconnette pre-5ª illegale, riconnette riparte fresco. Documentato come trade-off accettabile: lo SPEC dice "5 consecutive" e una ri-sessione legittimamente "rompe" la consecutività.
+  - **Persistere nel DB?** Rifiutato (vedi alternative). Se F6 deciderà diversamente, sarà cambio di contratto tracciato in REVIEW.
+  - **Per-player indipendenza**: il counter è per-color, non per-match-shared. WHITE può accumulare 4 illegali e BLACK 4 illegali in parallelo senza che il match termini — solo la 5ª della stessa parte triggera forfait. Coperto da `AntiCheatTest#eachPlayerHasItsOwnCounterAndOnlyTheOffenderForfeits` (Task 4.9).
+- **Alternative considerate**:
+  - Counter persistito su `matches.consecutive_illegal_moves_white/black` (F6 schema): porta lo stato attraverso le riconnessioni ma è policy più severa di quanto SPEC §9.8.3 richieda; introduce migration F6 senza guadagno concreto.
+  - Counter shared `int illegalMovesThisMatch` (non per-color): viola la semantica "stesso giocatore"; due giocatori dispettosi cumulerebbero senza distinzione.
+  - Threshold configurabile da SPEC: l'utente l'ha fissata a 5 nello SPEC §9.8.3, non motivo di parametrizzarlo in F4.
+
+---
+
+### ADR-041 — In-memory repository concurrency strategy
+
+- **Data**: 2026-05-05
+- **Stato**: Accepted (Fase 4)
+- **Contesto**: F4 richiede 3 adapter in-memory (`InMemoryMatchRepository`, `InMemoryTournamentRepository`, `InMemoryUserRepository`) come stand-in dei port persistenti che arriveranno in F6 (JPA/MySQL). Il workload F4 è single-threaded LAN-host single-process, ma i test stress (`InMemoryRepositoryConcurrencyTest @Tag("slow")` previsto in REVIEW Fase 4) e il riuso F7 LAN host con multi-client connessi richiedono safety sotto contesa. La validazione di `MatchRepository.appendEvent` è **strict monotonic** (FR-COM-04, SPEC §7.5: `event.sequenceNo() == currentSeq + 1`); questa check + l'append DEVONO essere atomici per non perdere update.
+- **Decisione**:
+  - Snapshot store: `ConcurrentHashMap<Id, Aggregate>` per ognuno dei 3 adapter (Match / Tournament / User).
+  - Event log: `ConcurrentHashMap<MatchId, List<MatchEvent>>` con `Collections.synchronizedList(new ArrayList<>())` per match. La list è acquisita con `computeIfAbsent`; **validation + append eseguiti sotto `synchronized (log) { ... }` block esplicito** così che strict monotonic check e append siano atomici sotto contesa.
+  - `currentSequenceNo`: ritorna `-1L` se match unknown o log vuoto, `(long) log.size() - 1L` altrimenti (sotto lock).
+  - `eventsSince(matchId, fromSeq)`: ritorna `List.of()` per match unknown, altrimenti sotto lock costruisce ArrayList col suffix dove `e.sequenceNo() > fromSeq` e ritorna `List.copyOf(suffix)` (immutabile).
+  - `MatchManager` aggiunge un secondo livello di lock per match (`ConcurrentHashMap<MatchId, Object> matchLocks`) attorno a ogni write op (`applyMove` / `resign` / `offerDraw` / `respondDraw`) per garantire che la check FR-COM-04 non fallisca anche sotto burst contesa concettualmente differente da quella interna del repo.
+- **Conseguenze**:
+  - In-memory adapter è "production-ready per LAN host" entro F4-F11; F6 introdurrà `JpaMatchRepository` con `@Lock(LockModeType.PESSIMISTIC_WRITE)` + transactional boundary che soppianterà questo strato per il server Internet ma riuserà il `MatchRepositoryContractTest` abstract scritto in F4 Task 4.3.
+  - Lock pessimistico più forte (es. fairness, ordered queue) NON necessario: il test stress single-LAN-host con 16 thread assicurerà che `synchronized` basti.
+  - Read op (`findById`, `findByStatus`, `findByPlayer`) sono lock-free, ritornano `List.copyOf(snapshots.values().filter(...))` per immutability — accettato il piccolo race in cui un read concomitante a un write può vedere lo stato pre-write o post-write (mai uno stato corrotto).
+- **Alternative considerate**:
+  - `AtomicLong` per il sequence number per match: aggiungerebbe un'altra struttura sincronizzata; `log.size()` sotto lock è già autoritativo.
+  - `ReentrantReadWriteLock`: read non sono frequenti abbastanza per giustificare la complessità; il lock di scrittura intrinseco di `synchronized` basta.
+  - Lock-free queue (`ConcurrentLinkedDeque`): non serializza la check+append atomic.
+
+---
+
+### ADR-042 — `TournamentMatchRef` package placement: Option F (match-side, UUID raw)
+
+- **Data**: 2026-05-06
+- **Stato**: Accepted (Fase 4)
+- **Contesto**: Task 4.12 introduce ArchUnit con la rule "match non dipende da tournament" (PLAN-fase-4 §4.12). Task 4.3 aveva intenzionalmente collocato `TournamentMatchRef` nel package `com.damaitaliana.core.tournament` con campo `TournamentId tournamentId`, generando una dep transitiva `match → tournament` via il field di `Match.tournamentRef`. La rule 5 fallirebbe alla prima esecuzione; documentato come "reviewable in REVIEW Fase 4 / Task 4.12" già in Task 4.3. La SPEC §8.3 elenca tutti i tipi side-by-side senza prescrivere il package layout.
+- **Decisione**: **Option F**. (a) `TournamentMatchRef` viene spostato da `com.damaitaliana.core.tournament` a `com.damaitaliana.core.match` — concettualmente è metadato match-side (back-pointer di un Match al torneo che lo ha schedulato; SPEC §8.3 colloca `Optional<TournamentMatchRef>` su Match). (b) Il campo `TournamentId tournamentId` viene cambiato in `UUID tournamentId` (raw) — pattern DDD ID-only per cross-aggregate references. Chi vuole il TournamentId tipato lo costruisce al lookup site: `new TournamentId(ref.tournamentId())`. La rule ArchUnit "match non dipende da tournament" ora passa pulita.
+- **Conseguenze**:
+  - **Layering pulito a 2 livelli enforced**: `match` indipendente da `tournament`; `tournament → match` ammessa (per `UserRef` + `TimeControl` — i value types vivono in match perché Match è il primo aggregate ad usarli; SPEC §8.3 implicito).
+  - **Refactor minimale (5 file)**: DELETE `tournament/TournamentMatchRef.java`, CREATE `match/TournamentMatchRef.java` con `UUID`, EDIT `Match.java` (rimosso import same-package), EDIT `Tournament.java` (Javadoc), MIGRATE `TournamentMatchRefValidation` 4 test da `TournamentValueTypesTest` a `MatchValueTypesTest` con `UUID.randomUUID()` invece di `TournamentId.random()`.
+  - **Trade-off accettati**: 1 linea extra al lookup site `new TournamentId(ref.tournamentId())` (0 occorrenze in F4, sarà F8+); 4 occorrenze test `new TournamentMatchRef(tid.value(), 0, 0)` invece di `new TournamentMatchRef(tid, 0, 0)`.
+  - **Wire serialization F6**: `UUID` round-trippa direttamente come stringa JSON, semplifica il `MatchEvent` Jackson Module senza custom converter per il wrapper TournamentId.
+- **Alternative considerate**:
+  - **Option A** (move TournamentMatchRef in match, mantenere campo TournamentId): NON risolve — TournamentId resta in tournament, dep transitiva persiste. Errore originale di analisi.
+  - **Option B'** (estrarre UserRef + TimeControl + TournamentId + TournamentMatchRef in nuovo package `core.common`): ~50 file churn (UserRef in 38 file, TimeControl in 20). Architetturalmente più pulito (3 livelli completi) ma sproporzionato per F4. Resta sul tavolo per F8/F9 quando il tournament cresce di scope reale.
+  - **Option C** (droppare la rule 5): le altre 4 rule (no JavaFX/Boot Web/Tomcat-Jetty/JPA) sono il vero valore del PLAN §4.12; rule 5 è "nice to have". Rifiutato perché la rule cattura un anti-pattern reale e Option F è low-cost.
+  - **ArchUnit `freezing`** (baseline di violazioni esistenti): aggiunge complessità per un caso isolato.
+
+---
+
 ## Vincoli architetturali invariabili
 
 Di seguito i vincoli che CLAUDE.md §8 impone come "anti-pattern" — qui esplicitati come positivi:
