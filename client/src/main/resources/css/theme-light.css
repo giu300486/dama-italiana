@@ -89,12 +89,18 @@
  * The baseline -fx-font-size below is the fallback when the helper has not bound
  * yet (FXML preview tools, headless tests without scene). The runtime binding
  * always wins in the cascade because inline style > class selector in JavaFX.
+ *
+ * F4.5 REVIEW F-007 — baselines pinned to the clamp floor (24 / 28) instead of
+ * arbitrary middle values. At small viewports (1024 × 720) the helper resolves
+ * to exactly the floor, so the fallback matches the worst-case computed value
+ * and there is no visible flash between FXML load and the first scene-width
+ * notification.
  */
 .display-fluid {
-    -fx-font-size: 28px;
+    -fx-font-size: 24px;
 }
 .display-fluid-lg {
-    -fx-font-size: 38px;
+    -fx-font-size: 28px;
 }
 
 /* ====== BUTTONS (default + 5 interactive states required by SPEC §13.2.2) ====== */
@@ -382,9 +388,13 @@
  * F4.5 Task 4.5.8: tile mode (native 2048 × 2048 size, repeat both axes) instead of
  * cover/stretch so the wood grain stays visually identical across viewports — at
  * 1024 × 720 a single tile covers, at ultrawide 3440 / 4K it tiles seamlessly
- * (Poly Haven CC0 textures are designed to repeat). */
+ * (Poly Haven CC0 textures are designed to repeat).
+ * F4.5 REVIEW F-008: -fx-background-size: auto is declared explicitly so a future
+ * editor accidentally reverting to "100% 100%" or "cover" would visibly fail; the
+ * tile pattern depends on the image's native pixel size. */
 .splash-root {
     -fx-background-image: url("/assets/textures/frame.jpg");
+    -fx-background-size: auto;
     -fx-background-repeat: repeat;
     -fx-background-position: center;
 }
@@ -435,9 +445,11 @@
 /* Subtle dark-wood backdrop behind the cards (board_dark.jpg also dresses
  * .board-cell-dark — re-using it gives the menu a coherent "this is a checkers
  * game" identity while staying visually distinct from the splash's frame.jpg).
- * F4.5 Task 4.5.8: tile mode (see .splash-root for rationale). */
+ * F4.5 Task 4.5.8: tile mode (see .splash-root for rationale).
+ * F4.5 REVIEW F-008: -fx-background-size: auto declared explicitly. */
 .main-menu-root {
     -fx-background-image: url("/assets/textures/board_dark.jpg");
+    -fx-background-size: auto;
     -fx-background-repeat: repeat;
     -fx-background-position: center;
 }
@@ -476,9 +488,11 @@
 /* Generic wood backdrop applied to the root container of the form-screens
  * (sp-setup, load-screen, settings, rules). Re-uses board_dark.jpg already
  * employed by .board-cell-dark and .main-menu-root for visual coherence.
- * F4.5 Task 4.5.8: tile mode (see .splash-root for rationale). */
+ * F4.5 Task 4.5.8: tile mode (see .splash-root for rationale).
+ * F4.5 REVIEW F-008: -fx-background-size: auto declared explicitly. */
 .screen-root {
     -fx-background-image: url("/assets/textures/board_dark.jpg");
+    -fx-background-size: auto;
     -fx-background-repeat: repeat;
     -fx-background-position: center;
 }

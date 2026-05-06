@@ -30,9 +30,13 @@
  * StackPane in board-view.fxml; padding bound proportionally to board side by
  * BoardFrameThicknessHelper (F4.5 Task 4.5.8) — clamp(16, boardSide × 0.035, 48).
  * Texture switched from cover/stretch to tile mode so the wood grain stays
- * uniform regardless of frame size. */
+ * uniform regardless of frame size.
+ * F4.5 REVIEW F-008: -fx-background-size: auto declared explicitly so the tile
+ * pattern depends on the image's native pixel size, not on whichever JavaFX
+ * default applies in the absence of the property. */
 .board-frame {
     -fx-background-image: url("/assets/textures/frame.jpg");
+    -fx-background-size: auto;
     -fx-background-repeat: repeat;
     -fx-background-position: center;
     -fx-background-radius: 8;
