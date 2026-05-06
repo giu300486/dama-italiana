@@ -50,7 +50,11 @@
                     <padding>
                         <Insets top="24" right="24" bottom="24" left="24"/>
                     </padding>
-                    <BoardRenderer fx:id="boardRenderer" minWidth="640" minHeight="640"/>
+                    <!-- F4.5 Task 4.5.4: minWidth/minHeight removed; the renderer now scales
+                         freely between 0 and the available area. The Stage min size (1024×720
+                         enforced by PrimaryStageInitializer) still guarantees a usable cellSize
+                         (~63px at floor) once side panel and chrome are subtracted. -->
+                    <BoardRenderer fx:id="boardRenderer"/>
                 </StackPane>
             </center>
             <right>

@@ -235,17 +235,24 @@ public class BoardRenderer extends Region {
   @Override
   protected void layoutChildren() {
     double cellSize = BoardLayoutMath.cellSize(getWidth(), getHeight());
+    double total = BOARD_SIZE * cellSize;
+    // F4.5 Task 4.5.4: center the 8×8 grid inside the renderer. When the available
+    // area is non-square (typical at ultrawide aspect ratios, or whenever the parent
+    // BorderPane allocates the renderer a slot wider than tall), the board sits in
+    // the middle so the wood frame surrounds it equally on all sides instead of
+    // leaving a wood-only strip on one side. Pre-F4.5 cells were anchored top-left.
+    double xOffset = (getWidth() - total) / 2.0;
+    double yOffset = (getHeight() - total) / 2.0;
     for (int file = 0; file < BOARD_SIZE; file++) {
       for (int rank = 0; rank < BOARD_SIZE; rank++) {
         cells[file][rank].resizeRelocate(
-            BoardLayoutMath.xFor(file, cellSize),
-            BoardLayoutMath.yFor(rank, cellSize),
+            xOffset + BoardLayoutMath.xFor(file, cellSize),
+            yOffset + BoardLayoutMath.yFor(rank, cellSize),
             cellSize,
             cellSize);
       }
     }
-    double total = BOARD_SIZE * cellSize;
-    particleLayer.resizeRelocate(0, 0, total, total);
+    particleLayer.resizeRelocate(xOffset, yOffset, total, total);
   }
 
   private void dispatchClick(Square square) {
