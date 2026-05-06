@@ -66,6 +66,15 @@ public final class JavaFxScalingHelper {
    * com.damaitaliana.client.app.SceneRouter SceneRouter} can call this on every navigation without
    * leaks.
    *
+   * <p><b>Contract — F4.5 REVIEW F-006</b>: the marker class is read at bind time only, via {@code
+   * Labeled.getStyleClass().contains(...)}. Mutating the {@code styleClass} list at runtime to add
+   * / remove the marker class on a label that has already been walked will <em>not</em> re-evaluate
+   * the binding; subsequent {@link
+   * com.damaitaliana.client.app.SceneRouter#show(com.damaitaliana.client.app.SceneId)
+   * SceneRouter#show} calls re-walk the new root, so the contract holds for all FXML-loaded labels
+   * but not for runtime style mutations on the same root. No production code currently mutates
+   * styleClass on display labels.
+   *
    * @param uiScaleFactor multiplier from {@link com.damaitaliana.client.app.UiScalingService} (1.0
    *     for 100 %, 1.25 for 125 %, 1.5 for 150 %). Pass 1.0 to disable composition.
    */

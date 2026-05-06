@@ -18,6 +18,12 @@ import javafx.scene.layout.Region;
  * Sized to fit its containing parent (square aspect, {@link #layoutChildren} sizes each cell to
  * {@code min(width, height) / 8}).
  *
+ * <p>F4.5 Task 4.5.4: the 8×8 grid is <em>centered</em> within the renderer's available area when
+ * the area is non-square, with offsets {@code (width - 8 × cellSize) / 2} and {@code (height - 8 ×
+ * cellSize) / 2} on the X and Y axes respectively. The wood frame surrounds the playing field
+ * equally on all sides regardless of the parent's aspect ratio (1366 × 768 laptop, ultrawide 21:9,
+ * 4K). The particle layer overlays exactly the centered grid area, not the full renderer area.
+ *
  * <p>The renderer maintains a {@link HighlightState} as the source of truth for highlights so
  * pure-Java unit tests can verify the bookkeeping without booting JavaFX; the JavaFX cell nodes are
  * kept in sync with the state on every mutator. Animation of the {@code .pulse-mandatory} class is

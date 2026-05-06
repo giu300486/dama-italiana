@@ -71,8 +71,10 @@ class PrimaryStageInitializerTest {
           return null;
         });
 
-    double expectedWidth = Math.max(PrimaryStageInitializer.MIN_WIDTH, bounds.getWidth() * 0.80);
-    double expectedHeight = Math.max(PrimaryStageInitializer.MIN_HEIGHT, bounds.getHeight() * 0.80);
+    double ratio = PrimaryStageInitializer.INITIAL_SIZE_RATIO_PERCENT / 100.0;
+    double expectedWidth = Math.max(PrimaryStageInitializer.MIN_WIDTH, bounds.getWidth() * ratio);
+    double expectedHeight =
+        Math.max(PrimaryStageInitializer.MIN_HEIGHT, bounds.getHeight() * ratio);
     assertThat(stage.getWidth()).isEqualTo(expectedWidth);
     assertThat(stage.getHeight()).isEqualTo(expectedHeight);
     assertThat(stage.getWidth()).isGreaterThanOrEqualTo(stage.getMinWidth());

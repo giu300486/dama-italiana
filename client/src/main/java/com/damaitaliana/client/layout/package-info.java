@@ -4,9 +4,11 @@
  *
  * <p>JavaFX 21 CSS does not natively support {@code clamp(min, vw, max)} sizing or proportional
  * paddings tied to a sibling region's bounds, so the responsive layer keeps the visual side of the
- * F3.5 design system intact (anti-pattern CLAUDE.md §8 #15 — token CSS v2, texture wood, font
- * families, animation parameters all unchanged) while adding pure-math utilities + scene-walking
- * binders that hook into JavaFX property bindings:
+ * F3.5 design system intact (anti-pattern CLAUDE.md §8 #15 — token CSS v2 palette / texture wood /
+ * Playfair + Inter font families / {@code MoveAnimator} / {@code ParticleEffects} / {@code
+ * AnimationOrchestrator} / {@code AudioService} / {@code BoardCellNode} visual / {@code PieceNode}
+ * 3D-look gradient + ring + gloss + crown all unchanged) while adding pure-math utilities +
+ * scene-walking binders that hook into JavaFX property bindings:
  *
  * <ul>
  *   <li>{@link com.damaitaliana.client.layout.JavaFxScalingHelper} — fluid display typography for
