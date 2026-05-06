@@ -148,4 +148,4 @@ Stress concorrenza `InMemoryRepositoryConcurrencyTest @Tag("slow")` (A4.12) **DE
 
 **Review aperta il**: 2026-05-06 (commit `99a1535`)
 **Review chiusa il**: 2026-05-06
-**Commit di chiusura**: vedi sezione finale (commit immediatamente seguente a questa review post-update). Fix applicati: (1) `core-server/pom.xml` jacoco override `haltOnFailure=true` + 19 esclusioni + LINE/BRANCH 0.80 (F-001 Opzione A); (2) `InMemoryTournamentRepositoryTest` (6 test) + `InMemoryUserRepositoryTest` (7 test) (F-002). 163/163 test verdi, gate attivo, lines 94.95% + branches 88.64%, SpotBugs 0, Spotless OK.
+**Commit di chiusura**: `5320428` (`fix(core-server): close REVIEW Fase 4 — wire JaCoCo gate + cover in-memory repos`). Fix applicati: (1) `core-server/pom.xml` jacoco override `haltOnFailure=true` + 19 esclusioni + LINE/BRANCH 0.80 (F-001 Opzione A); (2) `InMemoryTournamentRepositoryTest` (6 test) + `InMemoryUserRepositoryTest` (7 test) (F-002). 163/163 test verdi, gate attivo, lines 94.95% + branches 88.64%, SpotBugs 0, Spotless OK.
