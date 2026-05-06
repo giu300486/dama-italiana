@@ -8,6 +8,28 @@ Il formato è basato su [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1
 
 ### Added
 
+- **TEST sotto-fase Fase 4** (chiusura sotto-fase TEST Fase 4, branch `feature/4-core-server-skeleton`):
+  - **1 file di test nuovo** (`core-server/src/test/java/com/damaitaliana/core/repository/InMemoryRepositoryConcurrencyTest.java`, **3 test `@Tag("slow")`**) + **1 test plan nuovo** (`tests/TEST-PLAN-fase-4.md`, popolato §1-§7) + **TRACEABILITY** aggiornato (A4.12, A4.18, A4.19 promossi da `DEFERRED` a ✅ `COVERED`).
+  - **`InMemoryRepositoryConcurrencyTest`**:
+    - `manyMatchesCreatedConcurrentlyDoNotCorruptRepository` — 16 thread × 1000 `save()` parallel (work-stealing via `AtomicInteger.getAndIncrement` con gate); verifica `size = 1000`, ID univoci (`HashSet` count = 1000), ogni `findById` presente, `findByStatus(ONGOING)` ritorna 1000 senza `ConcurrentModificationException`, `findByPlayer(ALICE)` ritorna 1000.
+    - `manyAppendsOnDifferentMatchesPreserveMonotonicSequencePerMatch` — 64 match pre-creati, 16 thread × 10000 `appendEvent` parallel con `Map<MatchId, Object>` per-match caller-side lock (riproduzione esatta del pattern `MatchManager` produzione); verifica per ogni match log strict monotonic da 0 (`log.get(i).sequenceNo() == i`), somma totale eventi = 10000, `currentSequenceNo == size - 1` per ogni match.
+    - `manyAppendsOnSameMatchUnderCallerLockPreserveMonotonicSequence` — bonus contention test: 16 thread × 1000 `appendEvent` su singolo match con caller-side `Object lock`; verifica log size = 1000, sequence strict monotonic 0..999 — esercita `synchronized (log)` interno di `InMemoryMatchRepository.appendEvent` come seconda barriera (defense in depth).
+    - Helper `runConcurrently(threads, timeoutSeconds, worker, failures)` centralizza pattern `ExecutorService.newFixedThreadPool + CountDownLatch start gate + done gate + try/catch → failures list`. Worker partono tutti allo stesso momento (gate) per massimizzare contesa.
+  - **E3 Stress concorrenza A4.12** (`mvn -pl core-server test -Dgroups=slow -Dtest=InMemoryRepositoryConcurrencyTest`): ✅ BUILD SUCCESS in 6.7s, **3/3 test in 0.435s**, 0 failures, 0 CME, 0 dropped events. **A4.12 ✅ COVERED** (era DEFERRED in REVIEW closure).
+  - **E4 Regression finale** (`mvn clean verify` root, **inclusi** `slow,performance`): ✅ BUILD SUCCESS in **18:55 min**, **879 test verdi**:
+    - `shared` 16:49 min, **391 test** (387 default + 1 slow `AiTournamentSimulationTest#campionWinsAtLeast95OutOf100AgainstPrincipiante` + 3 performance `AiPerformanceTest @Tag("performance")` NFR-P-02): gating IA Campione ≥95/100 vs Principiante PASS, corpus regole `RuleEngineCorpusTest` 53 posizioni (48 corpus + 5 tactical F3.21) PASS — invariato vs F3.5 baseline.
+    - `core-server` 37.6s, **166 test** (163 fast post-REVIEW closure + 3 nuovi slow stress).
+    - `client` 1:10 min, **321 test** invariato vs F3.5 (F4 non tocca `client`).
+    - `server` 14.0s, **1 smoke test** invariato.
+    - SAST SpotBugs 0 High su tutti i moduli; Spotless 0 file da riformattare (160+ file Java kept clean); ArchUnit `CoreServerArchitectureTest` 5/5 rule verdi; JaCoCo gate `core-server` `haltOnFailure=true` ≥80% line+branch verde con esclusioni record DTO/enum (post F-001 RESOLVED).
+    - **A4.18 ✅ COVERED** (era DEFERRED): regression `RuleEngineCorpusTest` F1 + `AiTournamentSimulationTest` F2 invariati e verdi.
+    - **A4.19 ✅ COVERED** (era DEFERRED): `mvn clean verify` root con `slow`+`performance` BUILD SUCCESS su tutti i moduli.
+    - Nessuna regressione cross-module rispetto al baseline F3.5 — i moduli `shared`/`client`/`server` non sono stati toccati in F4 e si confermano invariati nei conteggi e tempi.
+  - **`tests/TEST-PLAN-fase-4.md`** popolato §1-§7 secondo CLAUDE.md §2.4 format (scope, strategia di test piramide classica, coverage target, corpus regole italiane invariato, esecuzioni pianificate E1-E4 con esiti, test code aggiunto/modificato per task, closure check 7/7).
+  - **TRACEABILITY** sezione "Acceptance criteria di Fase 4": A4.12 / A4.18 / A4.19 marcati ✅ COVERED con riferimento a `InMemoryRepositoryConcurrencyTest` (E3) e `mvn clean verify` root (E4 commit di chiusura).
+  - **Closure check 7/7 spuntate** (CLAUDE.md §2.4.6): coverage target raggiunti, TRACEABILITY aggiornato, test corpus regole invariato, `mvn clean verify` root BUILD SUCCESS, test plan §1-§7 popolato, nessun test `@Disabled`/`@Ignore`, REVIEW findings F-001 + F-002 entrambi RESOLVED prima dell'apertura TEST.
+  - **Sotto-fase TEST Fase 4 chiusa**: tutte e 4 le sotto-fasi PIANIFICA → IMPLEMENTA → REVIEW → TEST sono completate. Pronto per il merge `--no-ff` di `feature/4-core-server-skeleton` su `develop`, poi `develop → main` con tag `v0.4.0` (CLAUDE.md §4.4 GitFlow workflow).
+
 - **REVIEW Fase 4** (chiusura sotto-fase REVIEW Fase 4, branch `feature/4-core-server-skeleton`):
   - **1 file di review nuovo** (`reviews/REVIEW-fase-4.md`) + **1 file pom modificato** (`core-server/pom.xml` JaCoCo gate override) + **2 file di test nuovi** (`InMemoryTournamentRepositoryTest` 6 test, `InMemoryUserRepositoryTest` 7 test).
   - **Apertura review** (commit `99a1535`): code-by-code di 56 file prod + 21 file test post-IMPLEMENTA Fase 4, mapping AC §17.1.2/§17.1.10/§17.1.11 + AC F4 A4.1..A4.19 + FR-COM-01/02/04 + NFR-M-01/04 al codice/test. **2 findings**: F-001 [REQUIREMENT_GAP, High] JaCoCo gate non attivo in `core-server/pom.xml` + branches 78.36% sotto soglia 80%; F-002 [REQUIREMENT_GAP, Medium] 2 in-memory adapter (Tournament + User) non testati direttamente.
