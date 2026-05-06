@@ -1,0 +1,18 @@
+# F4.5 Task 4.5.9 — automated post-fix screenshot baseline.
+#
+# The full 56-PNG matrix (8 screens x 7 resolutions) is reproducible at any time via:
+#   mvn -pl client test -Dgroups=slow -Dtest=ResponsivenessParametricTest
+# Total uncompressed size is ~190 MB, so we do NOT track all artifacts in git.
+#
+# We commit only the smallest set of PNGs that anchors the visual diff against the
+# pre-fix baseline (Task 4.5.2): the customer-class defect at 1366x768 and the extreme
+# ultrawide at 3440x1440 — both on board-view, mirroring the two pre-fix samples so
+# reviewers can A/B compare directly. These two demonstrate that the bottom-clipping
+# defect reported by the customer is fixed and that ultrawide centering (Task 4.5.4)
+# turned a tiny top-left board into a centered, properly scaled one.
+#
+# Anything else generated in this directory by the test is local-only artefact.
+
+*.png
+!board-view_1366x768-laptop.png
+!board-view_3440x1440-ultrawide.png

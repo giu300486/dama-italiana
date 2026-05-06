@@ -47,6 +47,11 @@ class PreferencesServiceTest {
             45,
             85,
             true,
+            false,
+            1600,
+            900,
+            120,
+            80,
             false);
     service.save(prefs);
 
@@ -60,6 +65,11 @@ class PreferencesServiceTest {
     assertThat(loaded.sfxVolumePercent()).isEqualTo(85);
     assertThat(loaded.musicMuted()).isTrue();
     assertThat(loaded.sfxMuted()).isFalse();
+    assertThat(loaded.windowWidth()).isEqualTo(1600);
+    assertThat(loaded.windowHeight()).isEqualTo(900);
+    assertThat(loaded.windowX()).isEqualTo(120);
+    assertThat(loaded.windowY()).isEqualTo(80);
+    assertThat(loaded.windowMaximized()).isFalse();
   }
 
   @Test
@@ -139,6 +149,38 @@ class PreferencesServiceTest {
   }
 
   @Test
+  void migratesSchemaV2FileLeavingWindowFieldsNull() throws IOException {
+    String v2Json =
+        """
+        {
+          "schemaVersion": 2,
+          "locale": "it",
+          "themeId": "light",
+          "uiScalePercent": 100,
+          "firstLaunch": false,
+          "musicVolumePercent": 30,
+          "sfxVolumePercent": 70,
+          "musicMuted": false,
+          "sfxMuted": false
+        }
+        """;
+    Files.writeString(configFile, v2Json, StandardCharsets.UTF_8);
+
+    UserPreferences loaded = service.load();
+
+    assertThat(loaded.schemaVersion()).isEqualTo(UserPreferences.CURRENT_SCHEMA_VERSION);
+    assertThat(loaded.windowWidth()).isNull();
+    assertThat(loaded.windowHeight()).isNull();
+    assertThat(loaded.windowX()).isNull();
+    assertThat(loaded.windowY()).isNull();
+    assertThat(loaded.windowMaximized()).isFalse();
+    // Existing v2 fields preserved.
+    assertThat(loaded.locale()).isEqualTo(Locale.ITALIAN);
+    assertThat(loaded.musicVolumePercent()).isEqualTo(30);
+    assertThat(loaded.sfxVolumePercent()).isEqualTo(70);
+  }
+
+  @Test
   void migratesSchemaV1FileFillingAudioDefaults() throws IOException {
     String v1Json =
         """
@@ -162,5 +204,9 @@ class PreferencesServiceTest {
     assertThat(loaded.sfxVolumePercent()).isEqualTo(UserPreferences.DEFAULT_SFX_VOLUME_PERCENT);
     assertThat(loaded.musicMuted()).isFalse();
     assertThat(loaded.sfxMuted()).isFalse();
+    // v1 → v3: window fields stay null too.
+    assertThat(loaded.windowWidth()).isNull();
+    assertThat(loaded.windowHeight()).isNull();
+    assertThat(loaded.windowMaximized()).isFalse();
   }
 }

@@ -56,11 +56,14 @@ public class PreferencesService {
       if (version == UserPreferences.CURRENT_SCHEMA_VERSION) {
         return prefs;
       }
-      if (version == 1) {
+      if (version == 1 || version == 2) {
+        // v1 → v3: Jackson missing-key path filled audio defaults (SPEC §13.4) and window
+        //          fields stay null (no persisted Stage state — fallback to computed 80%).
+        // v2 → v3: only window fields stay null; audio already populated.
         log.info(
-            "Migrating config {} from schemaVersion 1 to {} (audio fields filled with SPEC §13.4"
-                + " defaults)",
+            "Migrating config {} from schemaVersion {} to {}",
             configFile,
+            version,
             UserPreferences.CURRENT_SCHEMA_VERSION);
         return prefs.withSchemaVersion(UserPreferences.CURRENT_SCHEMA_VERSION);
       }

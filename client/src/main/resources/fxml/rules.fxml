@@ -9,6 +9,7 @@
 <?import javafx.scene.layout.BorderPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
 
 <BorderPane xmlns:fx="http://javafx.com/fxml/1"
@@ -24,26 +25,32 @@
             <padding>
                 <Insets top="0" right="0" bottom="16" left="0"/>
             </padding>
-            <Label fx:id="titleLabel" styleClass="label-display, label-display-md"/>
+            <Label fx:id="titleLabel" styleClass="label-display, label-display-md, display-fluid"/>
             <Region HBox.hgrow="ALWAYS" maxWidth="Infinity"/>
             <Button fx:id="backButton" onAction="#onBack" styleClass="button-secondary"/>
         </HBox>
     </top>
 
     <center>
-        <SplitPane dividerPositions="0.28">
-            <items>
-                <ListView fx:id="sectionsList"/>
-                <ScrollPane fx:id="contentScroll" fitToWidth="true" styleClass="card-elevated">
-                    <content>
-                        <VBox fx:id="contentBox" spacing="16">
-                            <padding>
-                                <Insets top="16" right="16" bottom="16" left="16"/>
-                            </padding>
-                        </VBox>
-                    </content>
-                </ScrollPane>
-            </items>
-        </SplitPane>
+        <!-- F4.5 Task 4.5.6: outer StackPane centers the SplitPane horizontally; SplitPane caps
+             at maxWidth=1200 so the rules content doesn't stretch beyond a readable width on
+             ultrawide / 4K (audit Task 4.5.2 confirmed huge empty cream area on the right pane
+             at 3440×1440). -->
+        <StackPane fx:id="rulesCenter">
+            <SplitPane dividerPositions="0.28" maxWidth="1200">
+                <items>
+                    <ListView fx:id="sectionsList"/>
+                    <ScrollPane fx:id="contentScroll" fitToWidth="true" styleClass="card-elevated">
+                        <content>
+                            <VBox fx:id="contentBox" spacing="16">
+                                <padding>
+                                    <Insets top="16" right="16" bottom="16" left="16"/>
+                                </padding>
+                            </VBox>
+                        </content>
+                    </ScrollPane>
+                </items>
+            </SplitPane>
+        </StackPane>
     </center>
 </BorderPane>

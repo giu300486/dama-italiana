@@ -1,0 +1,16 @@
+# F4.5 Task 4.5.2 — automated baseline screenshot capture.
+#
+# The full 56-PNG matrix (8 screens x 7 resolutions) is reproducible at any time via:
+#   mvn -pl client test -Dgroups=slow -Dtest=BaselineScreenshotCapture
+# Total uncompressed size is ~190 MB, so we do NOT track all artifacts in git.
+#
+# We commit only the smallest set of PNGs that anchors the review of Task 4.5.9
+# (post-fix screenshots): the customer-class defect at 1366x768 and the extreme
+# ultrawide defect at 3440x1440 — both on board-view, which is the screen the
+# customer reported clipped.
+#
+# Anything else generated in this directory by the test is local-only artefact.
+
+*.png
+!board-view_1366x768-laptop.png
+!board-view_3440x1440-ultrawide.png

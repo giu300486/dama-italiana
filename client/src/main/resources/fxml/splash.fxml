@@ -11,7 +11,7 @@
            prefWidth="1024" prefHeight="768">
     <VBox alignment="CENTER" spacing="14">
         <Label fx:id="titleLabel" text="Dama Italiana"
-               styleClass="label-display, label-display-lg, splash-title"/>
+               styleClass="label-display, label-display-lg, splash-title, display-fluid-lg"/>
         <Label fx:id="subtitleLabel" styleClass="splash-subtitle"/>
         <ProgressBar fx:id="progressBar" prefWidth="320" progress="-1.0"
                      styleClass="splash-progress"/>

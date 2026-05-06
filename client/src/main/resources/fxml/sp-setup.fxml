@@ -24,8 +24,13 @@
         <ToggleGroup fx:id="colorGroup"/>
     </fx:define>
 
-    <VBox styleClass="card-elevated" alignment="TOP_LEFT" spacing="20" maxWidth="560">
-        <Label fx:id="titleLabel" styleClass="label-display, label-display-md"/>
+    <!-- F4.5 Task 4.5.6: maxHeight=-Infinity (USE_PREF_SIZE) caps the card at its content
+         height so the StackPane parent centers it both horizontally and vertically.
+         Without this the VBox grows to fill the StackPane height and content is anchored
+         top-left (audit at ultrawide 3440×1440 confirmed the vertical stretch). -->
+    <VBox fx:id="setupCard" styleClass="card-elevated" alignment="TOP_LEFT" spacing="20"
+          maxWidth="560" maxHeight="-Infinity">
+        <Label fx:id="titleLabel" styleClass="label-display, label-display-md, display-fluid"/>
 
         <VBox spacing="8">
             <Label fx:id="levelLabel" styleClass="label-secondary"/>

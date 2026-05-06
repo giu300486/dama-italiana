@@ -7,77 +7,84 @@
 <?import javafx.scene.layout.ColumnConstraints?>
 <?import javafx.scene.layout.GridPane?>
 <?import javafx.scene.layout.RowConstraints?>
+<?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
 <?import org.kordamp.ikonli.javafx.FontIcon?>
 
-<GridPane xmlns:fx="http://javafx.com/fxml/1"
-          fx:controller="com.damaitaliana.client.ui.menu.MainMenuController"
-          alignment="CENTER" hgap="16" vgap="16"
-          styleClass="main-menu-root">
+<!-- F4.5 Task 4.5.6: root is now a StackPane that carries the wood texture and centers
+     the menu grid. The grid itself caps at maxWidth=960 / maxHeight=USE_PREF_SIZE so the
+     5 cards stay at a readable size on ultrawide / 4K instead of stretching to fill the
+     viewport (audit Task 4.5.2 confirmed the stretch defect at 3440×1440 / 3840×2160). -->
+<StackPane xmlns:fx="http://javafx.com/fxml/1"
+           fx:controller="com.damaitaliana.client.ui.menu.MainMenuController"
+           styleClass="main-menu-root">
     <padding>
         <Insets top="32" right="32" bottom="32" left="32"/>
     </padding>
-    <columnConstraints>
-        <ColumnConstraints percentWidth="50"/>
-        <ColumnConstraints percentWidth="50"/>
-    </columnConstraints>
-    <rowConstraints>
-        <RowConstraints/>
-        <RowConstraints/>
-        <RowConstraints/>
-    </rowConstraints>
+    <GridPane fx:id="menuGrid" alignment="CENTER" hgap="16" vgap="16"
+              maxWidth="960" maxHeight="-Infinity">
+        <columnConstraints>
+            <ColumnConstraints percentWidth="50"/>
+            <ColumnConstraints percentWidth="50"/>
+        </columnConstraints>
+        <rowConstraints>
+            <RowConstraints/>
+            <RowConstraints/>
+            <RowConstraints/>
+        </rowConstraints>
 
-    <!-- Single Player -->
-    <VBox styleClass="card-elevated, main-menu-card" alignment="CENTER" spacing="12"
-          GridPane.columnIndex="0" GridPane.rowIndex="0">
-        <FontIcon iconLiteral="mdi2g-gamepad-variant" iconSize="48"/>
-        <Label fx:id="singlePlayerTitle" styleClass="main-menu-card-title"/>
-        <Label fx:id="singlePlayerSubtitle" styleClass="label-secondary" wrapText="true"/>
-        <Button fx:id="singlePlayerButton" onAction="#openSinglePlayer"/>
-    </VBox>
+        <!-- Single Player -->
+        <VBox styleClass="card-elevated, main-menu-card" alignment="CENTER" spacing="12"
+              GridPane.columnIndex="0" GridPane.rowIndex="0">
+            <FontIcon iconLiteral="mdi2g-gamepad-variant" iconSize="48"/>
+            <Label fx:id="singlePlayerTitle" styleClass="main-menu-card-title"/>
+            <Label fx:id="singlePlayerSubtitle" styleClass="label-secondary" wrapText="true"/>
+            <Button fx:id="singlePlayerButton" onAction="#openSinglePlayer"/>
+        </VBox>
 
-    <!-- LAN (disabled in Fase 3) -->
-    <VBox styleClass="card-elevated, main-menu-card" alignment="CENTER" spacing="12"
-          GridPane.columnIndex="1" GridPane.rowIndex="0">
-        <FontIcon iconLiteral="mdi2l-lan" iconSize="48"/>
-        <Label fx:id="lanTitle" styleClass="main-menu-card-title"/>
-        <Label fx:id="lanSubtitle" styleClass="label-secondary" wrapText="true"/>
-        <Button fx:id="lanButton" disable="true">
-            <tooltip>
-                <Tooltip fx:id="lanTooltip"/>
-            </tooltip>
-        </Button>
-    </VBox>
+        <!-- LAN (disabled in Fase 3) -->
+        <VBox styleClass="card-elevated, main-menu-card" alignment="CENTER" spacing="12"
+              GridPane.columnIndex="1" GridPane.rowIndex="0">
+            <FontIcon iconLiteral="mdi2l-lan" iconSize="48"/>
+            <Label fx:id="lanTitle" styleClass="main-menu-card-title"/>
+            <Label fx:id="lanSubtitle" styleClass="label-secondary" wrapText="true"/>
+            <Button fx:id="lanButton" disable="true">
+                <tooltip>
+                    <Tooltip fx:id="lanTooltip"/>
+                </tooltip>
+            </Button>
+        </VBox>
 
-    <!-- Online (disabled in Fase 3) -->
-    <VBox styleClass="card-elevated, main-menu-card" alignment="CENTER" spacing="12"
-          GridPane.columnIndex="0" GridPane.rowIndex="1">
-        <FontIcon iconLiteral="mdi2w-web" iconSize="48"/>
-        <Label fx:id="onlineTitle" styleClass="main-menu-card-title"/>
-        <Label fx:id="onlineSubtitle" styleClass="label-secondary" wrapText="true"/>
-        <Button fx:id="onlineButton" disable="true">
-            <tooltip>
-                <Tooltip fx:id="onlineTooltip"/>
-            </tooltip>
-        </Button>
-    </VBox>
+        <!-- Online (disabled in Fase 3) -->
+        <VBox styleClass="card-elevated, main-menu-card" alignment="CENTER" spacing="12"
+              GridPane.columnIndex="0" GridPane.rowIndex="1">
+            <FontIcon iconLiteral="mdi2w-web" iconSize="48"/>
+            <Label fx:id="onlineTitle" styleClass="main-menu-card-title"/>
+            <Label fx:id="onlineSubtitle" styleClass="label-secondary" wrapText="true"/>
+            <Button fx:id="onlineButton" disable="true">
+                <tooltip>
+                    <Tooltip fx:id="onlineTooltip"/>
+                </tooltip>
+            </Button>
+        </VBox>
 
-    <!-- Rules -->
-    <VBox styleClass="card-elevated, main-menu-card" alignment="CENTER" spacing="12"
-          GridPane.columnIndex="1" GridPane.rowIndex="1">
-        <FontIcon iconLiteral="mdi2b-book-open-page-variant" iconSize="48"/>
-        <Label fx:id="rulesTitle" styleClass="main-menu-card-title"/>
-        <Label fx:id="rulesSubtitle" styleClass="label-secondary" wrapText="true"/>
-        <Button fx:id="rulesButton" onAction="#openRules"/>
-    </VBox>
+        <!-- Rules -->
+        <VBox styleClass="card-elevated, main-menu-card" alignment="CENTER" spacing="12"
+              GridPane.columnIndex="1" GridPane.rowIndex="1">
+            <FontIcon iconLiteral="mdi2b-book-open-page-variant" iconSize="48"/>
+            <Label fx:id="rulesTitle" styleClass="main-menu-card-title"/>
+            <Label fx:id="rulesSubtitle" styleClass="label-secondary" wrapText="true"/>
+            <Button fx:id="rulesButton" onAction="#openRules"/>
+        </VBox>
 
-    <!-- Settings -->
-    <VBox styleClass="card-elevated, main-menu-card" alignment="CENTER" spacing="12"
-          GridPane.columnIndex="0" GridPane.rowIndex="2"
-          GridPane.columnSpan="2">
-        <FontIcon iconLiteral="mdi2c-cog" iconSize="48"/>
-        <Label fx:id="settingsTitle" styleClass="main-menu-card-title"/>
-        <Label fx:id="settingsSubtitle" styleClass="label-secondary" wrapText="true"/>
-        <Button fx:id="settingsButton" onAction="#openSettings"/>
-    </VBox>
-</GridPane>
+        <!-- Settings -->
+        <VBox styleClass="card-elevated, main-menu-card" alignment="CENTER" spacing="12"
+              GridPane.columnIndex="0" GridPane.rowIndex="2"
+              GridPane.columnSpan="2">
+            <FontIcon iconLiteral="mdi2c-cog" iconSize="48"/>
+            <Label fx:id="settingsTitle" styleClass="main-menu-card-title"/>
+            <Label fx:id="settingsSubtitle" styleClass="label-secondary" wrapText="true"/>
+            <Button fx:id="settingsButton" onAction="#openSettings"/>
+        </VBox>
+    </GridPane>
+</StackPane>
