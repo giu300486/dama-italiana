@@ -25,7 +25,7 @@
             <padding>
                 <Insets top="0" right="0" bottom="16" left="0"/>
             </padding>
-            <Label fx:id="titleLabel" styleClass="label-display, label-display-md"/>
+            <Label fx:id="titleLabel" styleClass="label-display, label-display-md, display-fluid"/>
             <Region HBox.hgrow="ALWAYS" maxWidth="Infinity"/>
             <Button fx:id="backButton" onAction="#onBack" styleClass="button-secondary"/>
         </HBox>

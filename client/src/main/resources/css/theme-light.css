@@ -81,6 +81,22 @@
     -fx-font-size: 48px; /* font-size-display-lg */
 }
 
+/*
+ * F4.5 Task 4.5.7 — fluid display labels. Additive marker classes; the actual
+ * font-size is bound at runtime to scene.widthProperty by JavaFxScalingHelper.
+ *  display-fluid:    clamp(24, sceneWidth × 0.018, 32)
+ *  display-fluid-lg: clamp(28, sceneWidth × 0.025, 48)
+ * The baseline -fx-font-size below is the fallback when the helper has not bound
+ * yet (FXML preview tools, headless tests without scene). The runtime binding
+ * always wins in the cascade because inline style > class selector in JavaFX.
+ */
+.display-fluid {
+    -fx-font-size: 28px;
+}
+.display-fluid-lg {
+    -fx-font-size: 38px;
+}
+
 /* ====== BUTTONS (default + 5 interactive states required by SPEC §13.2.2) ====== */
 
 /* Default button: neutral wood frame for secondary CTAs / menu items. */

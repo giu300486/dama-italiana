@@ -29,7 +29,7 @@
          height so the StackPane parent centers it both horizontally and vertically. -->
     <VBox fx:id="settingsCard" styleClass="card-elevated" alignment="TOP_LEFT" spacing="20"
           maxWidth="560" maxHeight="-Infinity">
-        <Label fx:id="titleLabel" styleClass="label-display, label-display-md"/>
+        <Label fx:id="titleLabel" styleClass="label-display, label-display-md, display-fluid"/>
 
         <VBox spacing="8">
             <Label fx:id="languageLabel" styleClass="label-secondary"/>

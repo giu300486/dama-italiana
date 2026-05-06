@@ -23,7 +23,7 @@
             <padding>
                 <Insets bottom="16"/>
             </padding>
-            <Label fx:id="titleLabel" styleClass="label-display, label-display-md"/>
+            <Label fx:id="titleLabel" styleClass="label-display, label-display-md, display-fluid"/>
         </HBox>
     </top>
 

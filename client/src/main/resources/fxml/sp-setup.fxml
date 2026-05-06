@@ -30,7 +30,7 @@
          top-left (audit at ultrawide 3440×1440 confirmed the vertical stretch). -->
     <VBox fx:id="setupCard" styleClass="card-elevated" alignment="TOP_LEFT" spacing="20"
           maxWidth="560" maxHeight="-Infinity">
-        <Label fx:id="titleLabel" styleClass="label-display, label-display-md"/>
+        <Label fx:id="titleLabel" styleClass="label-display, label-display-md, display-fluid"/>
 
         <VBox spacing="8">
             <Label fx:id="levelLabel" styleClass="label-secondary"/>

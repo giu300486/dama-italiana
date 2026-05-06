@@ -1,5 +1,6 @@
 package com.damaitaliana.client.app;
 
+import com.damaitaliana.client.layout.JavaFxScalingHelper;
 import java.io.IOException;
 import java.util.Objects;
 import javafx.fxml.FXMLLoader;
@@ -79,6 +80,10 @@ public class SceneRouter {
     }
     themeService.applyTheme(scene);
     uiScalingService.applyTo(scene);
+    // F4.5 Task 4.5.7: bind every Labeled carrying the display-fluid / display-fluid-lg
+    // marker class to scene.widthProperty for clamp(min, vw, max) font-size — JavaFX 21 CSS
+    // does not support clamp() natively (ADR-043).
+    JavaFxScalingHelper.applyFluidFontsToScene(scene);
   }
 
   /** Sets a one-shot flag the next scene can read via {@link #consumeAutosavePromptOnNext()}. */
