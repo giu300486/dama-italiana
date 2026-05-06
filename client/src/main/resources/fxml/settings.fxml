@@ -25,7 +25,10 @@
         <ToggleGroup fx:id="scalingGroup"/>
     </fx:define>
 
-    <VBox styleClass="card-elevated" alignment="TOP_LEFT" spacing="20" maxWidth="560">
+    <!-- F4.5 Task 4.5.6: maxHeight=-Infinity (USE_PREF_SIZE) caps the card at its content
+         height so the StackPane parent centers it both horizontally and vertically. -->
+    <VBox fx:id="settingsCard" styleClass="card-elevated" alignment="TOP_LEFT" spacing="20"
+          maxWidth="560" maxHeight="-Infinity">
         <Label fx:id="titleLabel" styleClass="label-display, label-display-md"/>
 
         <VBox spacing="8">
