@@ -461,6 +461,31 @@ Riferimento autoritativo: `SPEC.md` Appendice B.
   - **Option C** (droppare la rule 5): le altre 4 rule (no JavaFX/Boot Web/Tomcat-Jetty/JPA) sono il vero valore del PLAN §4.12; rule 5 è "nice to have". Rifiutato perché la rule cattura un anti-pattern reale e Option F è low-cost.
   - **ArchUnit `freezing`** (baseline di violazioni esistenti): aggiunge complessità per un caso isolato.
 
+### ADR-043 — Strategia layout responsive desktop (Fase 4.5)
+
+- **Contesto**: post-demo F3.5, il client mostra clipping della parte bassa della scacchiera su PC del cliente (hardware ~2014-2015, Win 10, display verosimilmente 1366×768) e non si adatta al window resize. Il design F3.5 era stato calibrato implicitamente su ~1080p verticali. CR-F4.5-001 (SPEC v2.3) introduce NFR-U-05 + §13.7 per coprire il gamut desktop standard 1024×720 → 4K + DPI scaling Windows 100/125/150/200%.
+- **Decisione**: layout responsive **basato esclusivamente su API JavaFX 21 standard**, nessun framework esterno. Stack:
+  1. **`Stage` constraints**: `setMinWidth(1024)` + `setMinHeight(720)`. Initial size = 80% di `Screen.getPrimary().getVisualBounds()`, centrato. Stage state (width/height/x/y/maximized) persistito in `~/.dama-italiana/config.json` schema v3 (estensione di v2 F3.5 con migrazione trasparente).
+  2. **`BoardView`**: refactor da layout fisso (presunto `GridPane` con cell size hardcoded) a `StackPane` root + `Pane` figlio centrato. Lato della scacchiera = `min(viewport.width − sidePanelMin, viewport.height − headerFooterReserved) − frameThickness`. Le 64 celle e i pezzi posizionati con coordinate scalate `cellSize = boardSide / 8`. Bind su `widthProperty`/`heightProperty` per re-layout automatico al resize.
+  3. **`BorderPane`** strutturale per ogni schermata: center = contenuto principale (BoardView, card form, ecc.), right = side panel (ove applicabile, con auto-hide < 1024px). Padding/spacing via token CSS già esistenti.
+  4. **Side panel adattivo**: `prefWidth = 320`, `minWidth = 240`, `maxWidth = 400`. Sotto viewport 1024px → auto-hide con toggle button overlay (nuovo controllo, posizionato nel header secondo design system F3.5).
+  5. **Tipografia display fluida**: binding programmatico `JavaFxScalingHelper.bindFluidFontSize(label, baseSize, scaleFactor)` per i ~10 sites di titoli "display" (Playfair Display). UI body invariata (token statici).
+  6. **Aspect ratio handling**: 16:9 / 16:10 default. Ultrawide 21:9 / 32:9: cluster centrato con `maxWidth ≈ viewport × 0.70` o `1920px`, margini decorativi wood texture ai lati (no board indefinitamente grande su super-ultrawide).
+  7. **`BackgroundImage`** con `BackgroundRepeat.REPEAT` (non STRETCH) per tutte le texture wood. Asset audit ≥ 2048×2048 e ≤ 4096×4096 (sweet spot tra nitidezza 4K e load time su HDD vecchio).
+  8. **DPI awareness**: nessun pixel hardcoded; logical size sempre. JavaFX 21 gestisce HiDPI implicitamente sotto Windows DPI scaling 100/125/150/200%.
+- **Scelte alternative valutate e scartate**:
+  - **MigLayout / FormsFX / ControlsFX**: framework esterni che semplificano constraint-based layout. Rifiutati perché aggiungono dipendenza non in SPEC §6 e il problema è risolvibile con JavaFX puro; coerente con il "no third-party UI framework" implicito di F3.5.
+  - **`ScrollPane` di fallback su tutto**: shortcut che maschera il problema (la board comunque non sarebbe quadrata e il cliente vedrebbe scrollbar inattese). Antipattern UX desktop.
+  - **CSS `clamp()` per font fluidi**: JavaFX CSS NON supporta `clamp()` nativo (è una limitation di JavaFX rispetto a CSS web). Necessario binding programmatico per i ~10 sites display.
+  - **Stage state persistence schema v4 (separato)**: rifiutato — estensione di v2 a v3 con migrazione trasparente è meno invasivo; v2 F3.5 ha già pattern di migrazione consolidato (`PreferencesService`).
+  - **Aspect ratio: lasciar crescere board indefinitamente su 32:9**: rifiutato — UX awkward, cluster centrato con margini decorativi è la convenzione PC games desktop.
+- **Conseguenze**:
+  - 8 schermate F3.5 (splash, main menu, sp setup, board, save dialog, load screen, settings, rules) ridisegnate **solo lato layout/binding/CSS responsive**. Token CSS v2, texture, font-family, animation params **invariati** (anti-pattern CLAUDE.md §8 #15).
+  - `BoardView` refactor è il core del fix (Task 4.5.4 PLAN-fase-4.5). `MoveAnimator`/`ParticleEffects`/`AnimationOrchestrator` continuano a funzionare invariati perché operano su coordinate Cell-based, non pixel hardcoded.
+  - Nuovo helper `JavaFxScalingHelper.bindFluidFontSize` in `client.layout` (sotto-package nuovo) — testabile via JUnit standard.
+  - Test `ResponsivenessParametricTest @Tag("slow")` 7 combinazioni × 8 schermate = 56 assertion bundle in CI; manuale per ultrawide (no parametric automatico, market share residuo).
+  - F11 / F4.6 (eventuale) potrà aggiungere "Performance mode" toggle se hardware molto lento (Intel HD 3000 era) mostra jank durante animazioni — fuori scope F4.5.
+
 ---
 
 ## Vincoli architetturali invariabili
