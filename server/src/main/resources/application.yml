@@ -1,31 +1,36 @@
-# Dama Italiana — server centrale
-# Profilo default: ambiente di sviluppo locale. La configurazione di produzione
-# arriva via env var (12-factor) e profilo dedicato (Fase 5+).
+# Dama Italiana - server centrale (Spring Boot)
+#
+# Configurazione COMUNE a tutti i profili. Profilo specifico OBBLIGATORIO via
+# SPRING_PROFILES_ACTIVE (env var) o -Dspring.profiles.active (system property).
+#
+# Profili supportati (vedi ARCHITECTURE.md ADR-044):
+#   - dev   : sviluppo locale, MySQL via Testcontainers Spring Boot dev mode
+#             (mvn -pl server spring-boot:test-run -> TestServerApplication).
+#   - test  : fast loop unit/slice/integration, H2 in-memory MySQL-compat.
+#             Attivato via @ActiveProfiles("test") nei test.
+#   - it    : integration test full-stack con Testcontainers MySQL @Tag("slow").
+#             Attivato via @ActiveProfiles("it") + AbstractMysqlIntegrationTest.
+#   - prod  : deploy reale, MySQL nativo installato sul server, secret via env var
+#             (JWT_SECRET, SPRING_DATASOURCE_*). Fail-fast su env var assente.
+#
+# La datasource e il JWT secret NON sono configurati qui: ogni profilo li dichiara
+# secondo la propria strategia (Testcontainers / H2 / env var).
 
 spring:
   application:
     name: dama-italiana-server
-  datasource:
-    # Default punta al MySQL locale dell'utente (porta standard 3306).
-    # Override via env var DB_URL/DB_USERNAME/DB_PASSWORD per altri ambienti.
-    # Il database `dama_italiana` deve esistere; lo schema è gestito da Flyway.
-    url: ${DB_URL:jdbc:mysql://localhost:3306/dama_italiana}
-    username: ${DB_USERNAME:dama}
-    # Nessun default: se manca DB_PASSWORD Spring fallisce con messaggio chiaro
-    # ("Could not resolve placeholder 'DB_PASSWORD'") invece di tentare la
-    # connessione con password vuota (errore meno diagnostico).
-    password: ${DB_PASSWORD}
   jpa:
     open-in-view: false
     hibernate:
       ddl-auto: validate
     properties:
       hibernate:
-        format_sql: true
+        format_sql: false
   flyway:
     enabled: true
     locations: classpath:db/migration
     baseline-on-migrate: true
+    fail-on-missing-locations: false
 
 server:
   port: ${SERVER_PORT:8080}
@@ -45,7 +50,14 @@ springdoc:
   swagger-ui:
     path: /swagger-ui
 
+dama:
+  jwt:
+    access-ttl-seconds: 900
+    refresh-ttl-seconds: 604800
+    # secret: dichiarato per profilo (dev=default+warning, test/it=hardcoded yaml,
+    # prod=env var fail-fast). Vedi ADR-045.
+
 logging:
   level:
     root: INFO
-    com.damaitaliana: DEBUG
+    com.damaitaliana: INFO

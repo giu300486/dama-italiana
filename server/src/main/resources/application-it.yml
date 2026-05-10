@@ -1,0 +1,21 @@
+# Profilo it - integration test full-stack con Testcontainers MySQL @Tag("slow").
+# Datasource overridato programmaticamente in AbstractMysqlIntegrationTest
+# (creato in Task 5.3) via @DynamicPropertySource. Stessa immagine MySQL del
+# profilo dev (mysql:8.0) per identita di stack tra dev runtime e integration test.
+
+spring:
+  jpa:
+    properties:
+      hibernate:
+        format_sql: false
+  flyway:
+    clean-disabled: false
+
+dama:
+  jwt:
+    # Hardcoded integration test secret >= 32 bytes (HS256 minimum).
+    secret: it-secret-not-for-prod-32bytes-padding-xxxx-padding-padding-xx
+
+logging:
+  level:
+    com.damaitaliana: INFO

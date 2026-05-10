@@ -138,6 +138,15 @@
       <artifactId>junit-jupiter</artifactId>
       <scope>test</scope>
     </dependency>
+    <!-- Spring Boot + Testcontainers integration: enables @ServiceConnection
+         for MySQLContainer in TestServerApplication (mvn spring-boot:test-run
+         dev mode, ADR-044) and @DynamicPropertySource patterns in @Tag("slow")
+         integration tests (ADR-048). -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-testcontainers</artifactId>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <build>

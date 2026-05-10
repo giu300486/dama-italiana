@@ -9,7 +9,7 @@ Applicazione desktop Java per giocare a **Dama Italiana** in tre modalità: cont
 
 ## Stato del progetto
 
-Fase corrente: **Fase 3 — Client UI single-player** (vedi [`plans/PLAN-fase-3.md`](plans/PLAN-fase-3.md)).
+Fase corrente: **Fase 5 — Server centrale skeleton** (vedi [`plans/PLAN-fase-5.md`](plans/PLAN-fase-5.md)).
 
 Stato runtime corrente: vedi [`AI_CONTEXT.md`](AI_CONTEXT.md).
 
@@ -21,7 +21,8 @@ Stato runtime corrente: vedi [`AI_CONTEXT.md`](AI_CONTEXT.md).
 |-----------|-----------------|---------------------------------------------------------------------------------------|
 | JDK       | 21 LTS          | Adoptium Temurin raccomandato                                                          |
 | Maven     | 3.9             | Verificato dal plugin `maven-enforcer`                                                 |
-| MySQL     | 8.0+            | Istanza locale o di rete; richiesta dal `server` (Internet) a partire dalla Fase 5    |
+| Docker    | 20.10+          | Richiesto **solo** per profilo `dev` del `server` (Testcontainers Spring Boot dev mode) e per i test `@Tag("slow")`. Non richiesto per fast loop o per profilo `prod` |
+| MySQL     | 8.0+            | Richiesto **solo** per il deploy `prod` del `server`. Lo sviluppo locale usa Testcontainers (Docker). Il client offline e LAN non richiedono MySQL |
 | Git       | 2.x             |                                                                                        |
 
 Per Windows è richiesto **Bash** (Git Bash o WSL) se si desidera replicare i comandi descritti qui letteralmente.
@@ -50,7 +51,9 @@ Dettagli architetturali: [`ARCHITECTURE.md`](ARCHITECTURE.md) e `SPEC.md` sezion
 | `mvn -pl shared verify`              | Verify modulo specifico                                            |
 | `mvn -pl core-server verify`         | Verify core-server                                                 |
 | `mvn -pl client javafx:run`          | Lancia il client desktop (da Fase 3)                               |
-| `mvn -pl server spring-boot:run`     | Lancia il server centrale (richiede MySQL attivo)                  |
+| `mvn -pl server spring-boot:test-run`| Lancia il server centrale in modalita dev con MySQL via Testcontainers (richiede Docker, da Fase 5) |
+| `mvn -pl server spring-boot:run`     | Lancia il server centrale puntando al MySQL nativo (richiede env var `SPRING_PROFILES_ACTIVE=prod` + DB e secret env vars) |
+| `mvn -pl server verify -DexcludedGroups=slow` | Fast loop test server: H2 in-memory, no Docker (da Fase 5)  |
 | `mvn spotless:apply`                 | Applica il formato Google Java Style                               |
 | `mvn spotless:check`                 | Verifica formato senza modificare                                  |
 | `mvn jacoco:report`                  | Genera report HTML coverage in `target/site/jacoco/`               |
@@ -60,31 +63,61 @@ Dettagli architetturali: [`ARCHITECTURE.md`](ARCHITECTURE.md) e `SPEC.md` sezion
 
 ## Setup ambiente di sviluppo
 
-### 1. Database MySQL locale
+### 1. Server: 4 profili Spring (da Fase 5)
 
-Il `server` (modulo central server, Internet) si connette a un'istanza MySQL già installata sulla macchina, gestita con MySQL Workbench / DBeaver. Il client offline (single-player) e LAN **non** richiedono MySQL.
+Il `server` (modulo central server, Internet) supporta 4 profili distinti — vedi [`ARCHITECTURE.md`](ARCHITECTURE.md) ADR-044. Il client offline (single-player) e LAN **non** richiedono il server.
 
-Setup una tantum:
+| Profilo | Quando | Datasource | Setup richiesto |
+|---|---|---|---|
+| `dev` | Sviluppo locale via `mvn -pl server spring-boot:test-run` | MySQL via Testcontainers (container effimero, immagine `mysql:8.0`) | **Solo Docker** in esecuzione |
+| `test` | Fast loop unit/slice test (`mvn -pl server verify -DexcludedGroups=slow`) | H2 in-memory MySQL-compat | Niente |
+| `it` | Integration test full-stack `@Tag("slow")` (`mvn clean verify`) | MySQL via Testcontainers | **Solo Docker** in esecuzione |
+| `prod` | Deploy reale | MySQL nativo installato sul server di deploy | MySQL 8.0+ + 4 env var (vedi sotto) |
+
+#### 1.a Sviluppo locale (`dev` profile)
+
+Prerequisito: **Docker Desktop in esecuzione** (Testcontainers gestisce il container MySQL programmaticamente, niente `docker-compose.yml` da gestire).
+
+```bash
+mvn -pl server spring-boot:test-run
+```
+
+Spring Boot:
+1. Avvia un container MySQL 8 effimero su porta random (loggata al boot come `MySQL container started ... port`).
+2. Inietta automaticamente l'URL/credentials del container nel context (via `@ServiceConnection`).
+3. Esegue le migration Flyway su schema vuoto.
+4. Avvia il server su `http://localhost:8080`.
+
+**Ispezione DB con MySQL Workbench**: leggere la porta dal log al boot, creare/aggiornare la connessione Workbench a `localhost:<porta>` con credenziali `test`/`test` e database `test`. La porta cambia ad ogni restart del server (container ricreato); la connessione Workbench va aggiornata una volta per sessione di sviluppo.
+
+> Il container e i dati vengono persi alla chiusura del processo Java. Per F5 (auth skeleton) i dati di test si rigenerano in 30 secondi via curl. Per F6+ (match persistiti) si valutera' eventuale strategia di persistenza dev (es. volume Docker named).
+
+#### 1.b Deploy production (`prod` profile)
+
+Setup MySQL nativo una tantum sul server di deploy:
 
 ```sql
 -- Da Workbench / DBeaver / mysql CLI, come utente con privilegi sufficienti:
 CREATE DATABASE dama_italiana CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-CREATE USER 'dama'@'localhost' IDENTIFIED BY 'una-password-robusta';
-GRANT ALL PRIVILEGES ON dama_italiana.* TO 'dama'@'localhost';
+CREATE USER 'dama'@'%' IDENTIFIED BY 'una-password-robusta';
+GRANT ALL PRIVILEGES ON dama_italiana.* TO 'dama'@'%';
 FLUSH PRIVILEGES;
 ```
 
-> Lo schema delle tabelle è gestito da **Flyway** (vedi `server/src/main/resources/db/migration/`). Le migrazioni gireranno automaticamente all'avvio del server a partire dalla Fase 5.
+> Lo schema delle tabelle e' gestito da **Flyway** (vedi `server/src/main/resources/db/migration/`).
 
-Configurazione applicativa via env var (sovrascrivono i default in `server/src/main/resources/application.yml`):
+Variabili d'ambiente OBBLIGATORIE (server fa fail-fast all'avvio se assenti):
 
 ```bash
-export DB_URL=jdbc:mysql://localhost:3306/dama_italiana
-export DB_USERNAME=dama
-export DB_PASSWORD=una-password-robusta
+export SPRING_PROFILES_ACTIVE=prod
+export SPRING_DATASOURCE_URL=jdbc:mysql://db.example:3306/dama_italiana
+export SPRING_DATASOURCE_USERNAME=dama
+export SPRING_DATASOURCE_PASSWORD=una-password-robusta
+export JWT_SECRET=$(openssl rand -base64 48)  # >= 32 byte (HS256 minimum)
+java -jar server/target/server-*.jar
 ```
 
-I default `application.yml` puntano già a `localhost:3306`, db `dama_italiana`, utente `dama`. Solo la password è obbligatoria via env (vincolo NFR-S — niente secret committati).
+> JWT secret: vedi [`ARCHITECTURE.md`](ARCHITECTURE.md) ADR-045 per la strategia di rotation (90gg + grace 24h).
 
 ### 2. Build
 
@@ -92,7 +125,7 @@ I default `application.yml` puntano già a `localhost:3306`, db `dama_italiana`,
 mvn clean verify
 ```
 
-Atteso: `BUILD SUCCESS` su parent + 4 moduli (`shared`, `core-server`, `client`, `server`). Tempo indicativo primo run: 1–2 minuti (download dipendenze).
+Atteso: `BUILD SUCCESS` su parent + 4 moduli (`shared`, `core-server`, `client`, `server`). Tempo indicativo primo run: 1-2 minuti (download dipendenze) + ~30s per i test Testcontainers MySQL (richiede Docker; per saltare in fast loop: `mvn -pl server verify -DexcludedGroups=slow`).
 
 ---
 

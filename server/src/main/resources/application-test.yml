@@ -1,0 +1,31 @@
+# Profilo test - H2 in-memory in modalita MySQL-compat (ADR-044, ADR-046).
+#
+# Fast loop: nessuna dipendenza Docker o MySQL nativo. Eseguito da
+#   mvn -pl server verify -DexcludedGroups=slow
+# Attivato dai test via @ActiveProfiles("test").
+#
+# H2 MySQL mode = supporto CHECK constraint + dialetto Hibernate compatibile,
+# riproduce il vincolo dello schema F5 V1 (users.role CHECK ... CR-F5-001).
+
+spring:
+  datasource:
+    url: jdbc:h2:mem:dama_italiana_test;MODE=MySQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: ""
+  jpa:
+    properties:
+      hibernate:
+        format_sql: false
+  flyway:
+    clean-disabled: false
+
+dama:
+  jwt:
+    # Hardcoded test secret >= 32 bytes (HS256 minimum). Riproducibile tra
+    # esecuzioni, NON da env var (nessun setup esterno richiesto per i test).
+    secret: test-secret-not-for-prod-32bytes-padding-xxxx-padding-padding
+
+logging:
+  level:
+    com.damaitaliana: INFO
