@@ -6,6 +6,14 @@ Il formato è basato su [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1
 
 ## [Unreleased]
 
+### Changed
+
+- **SPEC v2.4 — CR-F5-001** (2026-05-10, sotto-fase IMPLEMENTA Task 5.1.a, branch `feature/5-server-skeleton`):
+  - **`SPEC.md` §8.4** schema dati MySQL, tabella `users`: colonna `role` cambiata da `ENUM('USER','TOURNAMENT_ADMIN','SYSTEM_ADMIN')` a `VARCHAR(32) NOT NULL DEFAULT 'USER' CHECK (role IN ('USER','TOURNAMENT_ADMIN','SYSTEM_ADMIN'))`. Comportamento osservabile invariato — solo i 3 valori validi accettati a livello DB.
+  - **Razionale**: (1) portabilità H2/MySQL — il CHECK constraint è SQL standard supportato identico da entrambi (MySQL 8.0.16+ enforced, H2 nativo), mentre `ENUM` è proprietario MySQL e fa fallire il fast loop su H2 (profilo `test`); (2) Workbench-friendly — l'utente vede esplicitamente i 3 valori validi nel DDL e il vincolo è applicato anche su scritture manuali in MySQL Workbench (decisione operativa utente 2026-05-10: Workbench usato attivamente sia in lettura sia in scrittura su DB locale prod-equivalente).
+  - **`SPEC.md` frontmatter**: versione bump 2.3 → 2.4, data 2026-05-06 → 2026-05-10, voce 2.4 aggiunta a "Storico versioni".
+  - **Riferimento PLAN-fase-5.md §11**: CR-F5-001 documentata con diff completo + razionale + decisione utente APPROVED 2026-05-10 (decisione §9.3 strada α).
+
 ### Added
 
 - **F4.5 sotto-fase TEST** — TEST-PLAN-fase-4.5 + regression cross-module (chiusura sotto-fase TEST, branch `feature/4.5-ui-responsiveness`):

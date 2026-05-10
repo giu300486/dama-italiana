@@ -1,10 +1,10 @@
 # SPEC — Dama Italiana Multiplayer (Desktop)
 
 > **Documento di specifica per Spec-Driven Development con Claude Code**
-> Versione: 2.3 · Data: 2026-05-06 · Linguaggio: Italiano
+> Versione: 2.4 · Data: 2026-05-10 · Linguaggio: Italiano
 > Tipo progetto: Applicazione desktop Java + Server centrale Spring Boot
 >
-> Storico versioni: 2.0 (2026-04-26 — baseline post-Fase 0); 2.0 + CR-001 (2026-04-28 — repetition/40-mosse via reference incrementale, deferred F4); 2.1 (2026-04-30 — clarifiche post-REVIEW Fase 3: granularità undo/redo §4.1, deferral a11y i18n + daltonismo §13.5, deferral consci enumerati in Fase 11); 2.2 (2026-04-30 — pull-forward per demo cliente: §13.2 design system riscritto "videogame premium wood", §13.3 animazioni avanzate, §13.4 ambient music, nuova §16 Fase 3.5, modifica §16 Fase 11); **2.3 (2026-05-06 — CR-F4.5-001: nuovo NFR-U-05 UI responsive desktop, nuova §13.7 layout responsive, AC §17.2.8, nuova §16 Fase 4.5 mini-fase intermedia post-demo cliente)**.
+> Storico versioni: 2.0 (2026-04-26 — baseline post-Fase 0); 2.0 + CR-001 (2026-04-28 — repetition/40-mosse via reference incrementale, deferred F4); 2.1 (2026-04-30 — clarifiche post-REVIEW Fase 3: granularità undo/redo §4.1, deferral a11y i18n + daltonismo §13.5, deferral consci enumerati in Fase 11); 2.2 (2026-04-30 — pull-forward per demo cliente: §13.2 design system riscritto "videogame premium wood", §13.3 animazioni avanzate, §13.4 ambient music, nuova §16 Fase 3.5, modifica §16 Fase 11); 2.3 (2026-05-06 — CR-F4.5-001: nuovo NFR-U-05 UI responsive desktop, nuova §13.7 layout responsive, AC §17.2.8, nuova §16 Fase 4.5 mini-fase intermedia post-demo cliente); **2.4 (2026-05-10 — CR-F5-001: §8.4 schema `users.role` ENUM → VARCHAR(32) + CHECK constraint per portabilità H2/MySQL e Workbench-friendliness, comportamento osservabile invariato — solo i 3 valori `'USER'`, `'TOURNAMENT_ADMIN'`, `'SYSTEM_ADMIN'` accettati a livello DB)**.
 
 ---
 
@@ -647,7 +647,8 @@ users (
   username VARCHAR(50) UNIQUE NOT NULL,
   email VARCHAR(255) UNIQUE NOT NULL,
   password_hash VARCHAR(255) NOT NULL,
-  role ENUM('USER','TOURNAMENT_ADMIN','SYSTEM_ADMIN'),
+  role VARCHAR(32) NOT NULL DEFAULT 'USER'
+    CHECK (role IN ('USER','TOURNAMENT_ADMIN','SYSTEM_ADMIN')),  -- CR-F5-001 (v2.4)
   created_at TIMESTAMP,
   last_login_at TIMESTAMP
 );
