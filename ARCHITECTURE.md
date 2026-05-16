@@ -513,6 +513,7 @@ Riferimento autoritativo: `SPEC.md` Appendice B.
   - TLS 1.3 (NFR-S-03) gestito da reverse proxy (nginx/Traefik) davanti a Spring Boot — **fuori scope F5 codice**, soddisfatto via deploy doc.
   - Rotazione JWT secret ogni 90gg + grace 24h (SPEC §15.2): **fuori scope F5** (concern ops/deploy via env var rotation, non Spring config).
   - Test `MultiProfileBootTest` (Task 5.2) asserisce che ciascuno dei 4 profili carica un context Spring valido (eccetto verifica fail-fast `prod` senza env var).
+- **Stato post-implementazione F5 (retro 2026-05-16)**: la decisione 9.4 originale (Testcontainers per `dev` e `it`) è stata **superseded da ADR-049**. I profili `dev` e `it` puntano ora a MySQL nativo locale (`localhost:3306`) con DB dedicati (`dama_italiana_dev`, `dama_italiana_it`); il comando dev è `mvn -pl server spring-boot:run -Dspring-boot.run.profiles=dev` (non più `spring-boot:test-run`). La struttura a 4 profili resta valida; cambia solo la sorgente del datasource per `dev`/`it`. ADR-018 (Docker Compose rimosso) **resta valido e rafforzato**: ora Docker non è più prerequisito di alcun layer del modulo `server` (eccetto eventuale containerizzazione `prod` futura come deploy concern).
 
 ---
 
@@ -622,6 +623,57 @@ Riferimento autoritativo: `SPEC.md` Appendice B.
   - JaCoCo gate `haltOnFailure=true` su `server` ≥ 70% line+branch (configurato in pom).
   - Profilo `dev` Testcontainers Spring Boot dev mode (ADR-044) condivide il setup `@ServiceConnection MySQLContainer` con profilo `it` — **identità di stack tra dev runtime e integration test**: se un E2E auth flow funziona in `it` test, funziona in `dev` runtime.
   - SAST SpotBugs 0 High esteso a `server` (NFR-M-04, già richiesto via parent pom).
+- **Stato post-implementazione F5 (retro 2026-05-16)**: il punto 4 della decisione ("Full integration MySQL via Testcontainers `@Tag("slow")`") è stato **superseded da ADR-049**. Sostanza invariata (test slow su MySQL reale, escluso da fast loop), cambia il substrate: `AbstractMysqlIntegrationTest` punta a `localhost:3306/dama_italiana_it` invece che a un container effimero. Isolamento stato garantito via `flyway.clean()` in `@BeforeEach`. Identità di stack `dev`↔`it` preservata (ora entrambi MySQL nativo) — anzi rafforzata da parità prod (stesso stack di runtime in `prod`). Comandi Maven invariati (`-DexcludedGroups=slow` per fast loop, `verify` per full).
+
+---
+
+### ADR-049 — MySQL nativo locale per profili `dev` e `it` (Fase 5 ricalibrata)
+
+- **Data**: 2026-05-16
+- **Stato**: Accepted (supersedes parts of ADR-044 §dev/it + ADR-048 §full integration MySQL)
+- **Contesto**: PLAN-fase-5 v1.1 §9.4 aveva scelto Testcontainers Spring Boot dev mode per i profili `dev` e `it`, motivato da "zero setup MySQL nativo" e "identità tra dev e it". Avviando la sotto-fase IMPLEMENTA di F5 (Task 5.3 closure, 2026-05-10) è emerso che Docker Desktop non è praticabile sulla macchina dev utente (vincoli disco) e che l'utente ha già un'istanza MySQL 8 nativa attiva con MySQL Workbench in uso quotidiano. Rivalutando la trade-off in apertura sessione 2026-05-16, l'utente ha esplicitamente richiesto di "replicare già adesso quello che sarà la macchina di produzione" — i.e. usare lo stesso stack di prod (MySQL nativo) anche in dev e it, eliminando Testcontainers completamente dal modulo `server`.
+- **Decisione**:
+  1. **Profilo `dev`**: datasource MySQL nativo `jdbc:mysql://localhost:3306/dama_italiana_dev` (default; override via env var `SPRING_DATASOURCE_URL`). Username `dama` / password `dama` di default, override `SPRING_DATASOURCE_USERNAME` / `SPRING_DATASOURCE_PASSWORD`. Comando dev: `mvn -pl server spring-boot:run -Dspring-boot.run.profiles=dev`.
+  2. **Profilo `it`**: stessa strategia, DB dedicato `dama_italiana_it` per isolamento dai dati di sviluppo. `spring.flyway.clean-disabled=false`. Isolamento test-run via `flyway.clean()` + `flyway.migrate()` invocato da `AbstractMysqlIntegrationTest` (`@BeforeEach` o `@BeforeAll`).
+  3. **Profilo `test`**: H2 in-memory MySQL-compat (invariato).
+  4. **Profilo `prod`**: MySQL nativo via env var no-default fail-fast (invariato).
+  5. **Rimozione Testcontainers** dal modulo `server`: cancellate da `server/pom.xml` le dipendenze `org.springframework.boot:spring-boot-testcontainers`, `org.testcontainers:mysql`, `org.testcontainers:junit-jupiter`. Il driver `com.mysql:mysql-connector-j` (runtime) e Flyway restano.
+  6. **`TestServerApplication` cancellato**: non più necessario. Il comando dev standard è `mvn -pl server spring-boot:run -Dspring-boot.run.profiles=dev`.
+  7. **Setup user-side una tantum** (documentato in README): da MySQL Workbench / CLI:
+     ```sql
+     CREATE DATABASE dama_italiana_dev CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+     CREATE DATABASE dama_italiana_it  CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+     CREATE USER 'dama'@'localhost' IDENTIFIED BY 'dama';
+     GRANT ALL PRIVILEGES ON dama_italiana_dev.* TO 'dama'@'localhost';
+     GRANT ALL PRIVILEGES ON dama_italiana_it.*  TO 'dama'@'localhost';
+     FLUSH PRIVILEGES;
+     ```
+     Lo schema delle tabelle è gestito da Flyway (V1__init).
+- **Alternative valutate e scartate** (ricalibrate post §9.4):
+  - **Mantenere Testcontainers (status quo ADR-044 §9.4)**: costoso in disco/risorse Docker Desktop sulla macchina dev utente; complica onboarding di future macchine dev; **non riproduce parità prod** (prod usa MySQL nativo, non container effimero).
+  - **`dev` Testcontainers + `it` MySQL nativo (o viceversa)**: rifiutato per incoerenza tra ambienti; complica DX (due paradigmi per cose simili).
+  - **Hybrid `it-local` profile + flag env var `IT_USE_LOCAL_MYSQL`**: complessità aggiuntiva non giustificata per single-developer pre-release.
+  - **Single DB condiviso `dama_italiana` per dev+it+prod-mirror**: scartato — `it` deve `flyway.clean()` per isolamento test-run, che cancellerebbe dati di sviluppo manuale in dev. Due DB separati `_dev` e `_it` (+ `prod` reale per deploy) sono il pattern standard.
+  - **Containerizzare l'app `prod` via Spring Boot Buildpacks** (SPEC §6.5): fuori scope di questa decisione (deploy concern); non confliggee con ADR-049 (riguarda only DB layer dev/it).
+- **Conseguenze**:
+  - `application-dev.yml` rescritto con `spring.datasource.url=${SPRING_DATASOURCE_URL:jdbc:mysql://localhost:3306/dama_italiana_dev}` + username/password default `dama` overridabili.
+  - `application-it.yml` rescritto analogo su `dama_italiana_it` + `clean-disabled=false`.
+  - `application.yml` common: rimosso il commento Testcontainers; aggiornato riferimento ADR-044 + ADR-049.
+  - `AbstractMysqlIntegrationTest` refattorizzato: rimossi `@Testcontainers`, `@Container`, `MySQLContainer` field, `@ServiceConnection`. Aggiunto `@BeforeEach flyway.clean(); flyway.migrate()` per reset stato. `@SpringBootTest @ActiveProfiles("it") @Tag("slow")` invariati.
+  - `FlywayMigrationMysqlIntegrationTest`: invariato (estende Abstract refattorizzato; le asserzioni di schema funzionano identiche su MySQL nativo).
+  - `TestServerApplication.java`: cancellato dal repo.
+  - `README.md` §"Setup ambiente di sviluppo" rescritto: rimosso "Solo Docker", aggiunto setup MySQL nativo una tantum (script SQL) + 4 env var default sensati + comando dev `spring-boot:run -Dspring-boot.run.profiles=dev`. Tabella prerequisites: Docker downgrade a "non richiesto" per `server` da F5+ (resta opzione futura per containerizzare prod deploy).
+  - `Prerequisites` README: `MySQL 8.0+` diventa prerequisito per profilo `dev`/`it` (oltre che `prod`) — coerente con SPEC §6.5 che lista MySQL come DB Internet. Docker rimosso.
+  - **Parità prod-equivalent**: lo stack dev/it/prod usa lo stesso DBMS (MySQL 8 nativo), stesso driver JDBC, stessa migration Flyway, stesso dialetto Hibernate. Solo i nomi DB cambiano per isolamento ambiente.
+  - **Workbench experience**: porta fissa 3306, connessione stabile (no aggiornamento porta random ad ogni boot come con Testcontainers). Ispezione DB sempre disponibile.
+  - **Tempo startup**: `dev` startup ~3s (vs ~10-30s primo Testcontainers run); `it` test run ~2-5s/class (vs ~10s/class container start).
+  - **CI futura (ADR-019 riattivata)**: il CI runner dovrà installare MySQL nativo (es. `services: mysql:8.0` in GitHub Actions YAML) anziché usare Testcontainers. Trade-off accettato — è comunque pattern CI standard.
+  - **Rischio cross-contamination test paralleli**: due esecuzioni concorrenti di `mvn verify` sul modulo `server` accedrebbero allo stesso `dama_italiana_it` causando false fail. **Mitigazione**: convenzione single-runner (documentata in README). Per single-developer non è un problema; quando si scalerà al CI, il job sarà sequenziale per definizione.
+  - **ADR-018** (Docker Compose rimosso 2026-04-26): **rafforzato** — Docker non è più prerequisito di alcun layer F5+ del modulo `server`.
+  - **ADR-044** §9.4 (decisione Testcontainers): **superseded** per i profili `dev` e `it`. Struttura 4 profili resta invariata.
+  - **ADR-046** (Flyway baseline): **invariato** — V1 schema e CHECK constraint funzionano identici su MySQL nativo, anzi è il target nativo.
+  - **ADR-048** §test pyramid layer 4 (Full integration MySQL via Testcontainers): **superseded** — substrate cambia (MySQL nativo locale), sostanza invariata (`@Tag("slow")`, esclusione fast loop, target test E2E auth flow su MySQL reale).
+- **Riferimenti**: PLAN-fase-5.md v1.2 §9.4-bis (decisione retroattiva), Task 5.3.bis (retrofit codice/config/docs).
 
 ---
 

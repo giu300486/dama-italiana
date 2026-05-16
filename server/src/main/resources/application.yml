@@ -3,18 +3,18 @@
 # Configurazione COMUNE a tutti i profili. Profilo specifico OBBLIGATORIO via
 # SPRING_PROFILES_ACTIVE (env var) o -Dspring.profiles.active (system property).
 #
-# Profili supportati (vedi ARCHITECTURE.md ADR-044):
-#   - dev   : sviluppo locale, MySQL via Testcontainers Spring Boot dev mode
-#             (mvn -pl server spring-boot:test-run -> TestServerApplication).
+# Profili supportati (vedi ARCHITECTURE.md ADR-044 + ADR-049):
+#   - dev   : sviluppo locale, MySQL nativo localhost:3306/dama_italiana_dev.
+#             Comando: mvn -pl server spring-boot:run -Dspring-boot.run.profiles=dev.
 #   - test  : fast loop unit/slice/integration, H2 in-memory MySQL-compat.
 #             Attivato via @ActiveProfiles("test") nei test.
-#   - it    : integration test full-stack con Testcontainers MySQL @Tag("slow").
-#             Attivato via @ActiveProfiles("it") + AbstractMysqlIntegrationTest.
+#   - it    : integration test full-stack con MySQL nativo localhost:3306/dama_italiana_it
+#             (@Tag("slow")). Attivato via @ActiveProfiles("it") + AbstractMysqlIntegrationTest.
 #   - prod  : deploy reale, MySQL nativo installato sul server, secret via env var
 #             (JWT_SECRET, SPRING_DATASOURCE_*). Fail-fast su env var assente.
 #
 # La datasource e il JWT secret NON sono configurati qui: ogni profilo li dichiara
-# secondo la propria strategia (Testcontainers / H2 / env var).
+# secondo la propria strategia (MySQL nativo locale per dev/it/prod, H2 per test).
 
 spring:
   application:

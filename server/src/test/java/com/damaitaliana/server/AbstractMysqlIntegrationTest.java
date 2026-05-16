@@ -1,33 +1,41 @@
 package com.damaitaliana.server;
 
+import org.flywaydb.core.Flyway;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.test.context.ActiveProfiles;
-import org.testcontainers.containers.MySQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
 /**
  * Base class for full integration tests that need a real MySQL 8 instance.
  *
- * <p>Spins up a {@link MySQLContainer} via Testcontainers and wires it into the Spring context via
- * {@link ServiceConnection} (no manual {@code @DynamicPropertySource} needed). The container is
- * started on test class init and stopped after all methods.
+ * <p>Connects to the locally installed MySQL server ({@code localhost:3306}, database {@code
+ * dama_italiana_it}) — see ARCHITECTURE.md ADR-049. The connection details come from {@code
+ * application-it.yml} (overridable via {@code SPRING_DATASOURCE_*} env vars).
+ *
+ * <p>Schema isolation between test classes is enforced by running {@link Flyway#clean()} + {@link
+ * Flyway#migrate()} before every test method. Each test method therefore starts with an empty
+ * schema reset to Flyway V1 state.
  *
  * <p>Tagged {@code slow}: excluded from the fast loop {@code mvn -pl server verify
- * -DexcludedGroups=slow}; included in {@code mvn clean verify} root regression. Requires Docker to
- * be running locally.
+ * -DexcludedGroups=slow}; included in {@code mvn -pl server verify} and {@code mvn clean verify}.
+ * Requires the local MySQL server running with the schemas + app user created by {@code
+ * scripts/db/setup-local-mysql.sql}.
  *
- * <p>Subclasses inherit the active {@code it} profile (see {@code application-it.yml}) and the
- * container; they only need to declare their own test methods.
+ * <p>Subclasses inherit the active {@code it} profile and the schema reset; they only declare their
+ * own test methods.
  */
 @SpringBootTest
 @ActiveProfiles("it")
-@Testcontainers
 @Tag("slow")
 public abstract class AbstractMysqlIntegrationTest {
 
-  @Container @ServiceConnection
-  protected static final MySQLContainer<?> MYSQL = new MySQLContainer<>("mysql:8.0");
+  @Autowired private Flyway flyway;
+
+  @BeforeEach
+  void resetSchema() {
+    flyway.clean();
+    flyway.migrate();
+  }
 }

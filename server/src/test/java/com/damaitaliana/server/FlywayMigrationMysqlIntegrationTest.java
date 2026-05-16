@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 /**
@@ -49,6 +49,11 @@ class FlywayMigrationMysqlIntegrationTest extends AbstractMysqlIntegrationTest {
         "$2a$12$placeholderHashOnlyForSchemaTestingNotForActualAuth..",
         "USER");
 
+    // Spring's default SQLErrorCodeSQLExceptionTranslator does NOT map MySQL 8 error code 3819
+    // (CHECK constraint violation, introduced in MySQL 8.0.16) to DataIntegrityViolationException
+    // — it surfaces as UncategorizedSQLException. The H2 counterpart maps correctly. We assert on
+    // the common parent DataAccessException + the message mentioning the constraint name so the
+    // test stays portable across both substrates while still proving the CHECK is enforced.
     assertThatThrownBy(
             () ->
                 jdbc.update(
@@ -58,7 +63,8 @@ class FlywayMigrationMysqlIntegrationTest extends AbstractMysqlIntegrationTest {
                     "eve-mysql@example.com",
                     "$2a$12$placeholderHashOnlyForSchemaTestingNotForActualAuth..",
                     "ADMIN"))
-        .isInstanceOf(DataIntegrityViolationException.class);
+        .isInstanceOf(DataAccessException.class)
+        .hasMessageContaining("chk_users_role");
   }
 
   private Set<String> columnsOf(String tableName) {

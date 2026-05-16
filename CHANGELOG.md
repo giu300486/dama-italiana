@@ -6,7 +6,14 @@ Il formato è basato su [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1
 
 ## [Unreleased]
 
+### Added
+
+- **F5 Task 5.3.bis — retrofit Testcontainers → MySQL nativo locale** (2026-05-16). Modulo `server` ora punta a MySQL nativo `localhost:3306` per profili `dev` (`dama_italiana_dev`) e `it` (`dama_italiana_it`). Nuovi script: `scripts/db/setup-local-mysql.sql` (idempotente, crea DB + utente `dama`@`localhost`) + `scripts/db/teardown-local-mysql.sql` (reversibile). `AbstractMysqlIntegrationTest` refattorizzato per isolamento via `flyway.clean()+migrate()` in `@BeforeEach`. `TestServerApplication.java` cancellato. 3 dep Testcontainers rimosse da `server/pom.xml`. README §1 + tabella Prerequisites aggiornate (Docker downgrade a "non richiesto F5+"). Build: 9/9 test verdi (7 fast loop H2 + 2 slow MySQL nativo, prima esecuzione). Finding tecnico minore: `FlywayMigrationMysqlIntegrationTest` ha richiesto rilassamento di `DataIntegrityViolationException` → `DataAccessException` per gap di Spring `SQLErrorCodeSQLExceptionTranslator` che non mappa MySQL 8 error code 3819 (CHECK violation, introdotto in 8.0.16). Comportamento DB invariato (CHECK correttamente enforced).
+
 ### Changed
+
+- **`plans/PLAN-fase-5.md` v1.2 amendment** (2026-05-16, APPROVED): decisione utente 9.4 originaria (Testcontainers Spring Boot dev mode per profili `dev` e `it`) **SUPERSEDED** da 9.4-bis — MySQL nativo locale per `dev` e `it`. Razionale: parità prod-equivalent già da F5, eliminazione prerequisito Docker, stabilità Workbench experience. Task 5.3.bis di retrofit eseguito; vedi sezione Added.
+- **`ARCHITECTURE.md` ADR-049 added** (2026-05-16): "MySQL nativo locale per profili `dev` e `it` (Fase 5 ricalibrata)". Supersedes parts di ADR-044 §dev/it + ADR-048 §full-integration-MySQL. Conseguenze: Docker non più prerequisito di alcun layer F5+ del modulo `server`; ADR-018 (Docker Compose rimosso) rafforzato; identità stack `dev`↔`it`↔`prod` (tutti MySQL nativo). Note "Stato post-implementazione F5 (retro 2026-05-16)" aggiunte anche a ADR-044 e ADR-048 con pointer a ADR-049.
 
 - **SPEC v2.4 — CR-F5-001** (2026-05-10, sotto-fase IMPLEMENTA Task 5.1.a, branch `feature/5-server-skeleton`):
   - **`SPEC.md` §8.4** schema dati MySQL, tabella `users`: colonna `role` cambiata da `ENUM('USER','TOURNAMENT_ADMIN','SYSTEM_ADMIN')` a `VARCHAR(32) NOT NULL DEFAULT 'USER' CHECK (role IN ('USER','TOURNAMENT_ADMIN','SYSTEM_ADMIN'))`. Comportamento osservabile invariato — solo i 3 valori validi accettati a livello DB.

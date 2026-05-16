@@ -128,25 +128,11 @@
       <artifactId>h2</artifactId>
       <scope>test</scope>
     </dependency>
-    <dependency>
-      <groupId>org.testcontainers</groupId>
-      <artifactId>mysql</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.testcontainers</groupId>
-      <artifactId>junit-jupiter</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <!-- Spring Boot + Testcontainers integration: enables @ServiceConnection
-         for MySQLContainer in TestServerApplication (mvn spring-boot:test-run
-         dev mode, ADR-044) and @DynamicPropertySource patterns in @Tag("slow")
-         integration tests (ADR-048). -->
-    <dependency>
-      <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-testcontainers</artifactId>
-      <scope>test</scope>
-    </dependency>
+    <!-- Testcontainers deps removed by ADR-049 (2026-05-16): dev and it profiles
+         now point to the local native MySQL (localhost:3306/dama_italiana_{dev,it}).
+         Integration test isolation is achieved via flyway.clean()+migrate() in
+         AbstractMysqlIntegrationTest@BeforeEach. See scripts/db/setup-local-mysql.sql
+         for the one-time DB+user setup. -->
   </dependencies>
 
   <build>

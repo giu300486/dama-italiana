@@ -1,21 +1,29 @@
-# Profilo dev - Testcontainers Spring Boot dev mode (ADR-044).
+# Profilo dev - MySQL nativo locale (ADR-049).
 #
-# Datasource MySQL: NON configurato qui. Forniato da TestServerApplication tramite
-# @Bean @ServiceConnection MySQLContainer<>("mysql:8.0") quando si avvia con
-#   mvn -pl server spring-boot:test-run
-# Spring Boot legge l'URL/porta dinamica del container e li inietta nel context.
+# Datasource: punta al MySQL 8 installato sulla macchina dev, DB 'dama_italiana_dev'.
+# Setup una tantum: scripts/db/setup-local-mysql.sql (crea DB + utente 'dama'@'localhost'
+# con password 'dama'). Vedi README.md §1.a.
 #
-# Container effimero: ricreato ad ogni avvio del processo. Per ispezione in MySQL
-# Workbench: vedere il log al boot per "MySQL container started ... port", aggiornare
-# la connessione Workbench una volta per sessione di sviluppo.
+# Comando dev: mvn -pl server spring-boot:run -Dspring-boot.run.profiles=dev
+#
+# Override credenziali via env var SPRING_DATASOURCE_USERNAME / SPRING_DATASOURCE_PASSWORD
+# se l'utente locale 'dama' ha credenziali diverse dal default. URL completo overridabile
+# via SPRING_DATASOURCE_URL.
+#
+# I dati persistono tra restart del server (DB locale, non effimero).
 
 spring:
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:mysql://localhost:3306/dama_italiana_dev?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=UTC}
+    username: ${SPRING_DATASOURCE_USERNAME:dama}
+    password: ${SPRING_DATASOURCE_PASSWORD:dama}
+    driver-class-name: com.mysql.cj.jdbc.Driver
   jpa:
     properties:
       hibernate:
         format_sql: true
   flyway:
-    clean-disabled: false  # consente flyway:clean su DB ephemeral
+    clean-disabled: false  # consente flyway:clean su DB dev
 
 dama:
   jwt:

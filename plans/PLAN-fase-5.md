@@ -2,9 +2,9 @@
 
 - **Riferimento roadmap**: SPEC §16 — "Fase 5 — Server centrale skeleton" (Bootstrap Spring Boot, Schema DB + Flyway V1, Auth registrazione/login/JWT, endpoint `/users/me`, test integrazione Testcontainers + MySQL, OpenAPI 3.1).
 - **SPEC version**: 2.3 (post CR-F4.5-001). Questo PLAN propone **CR-F5-001** (vedi §11) che andrà approvata in Task 5.1 prima di scrivere `V1__init.sql`.
-- **Data piano**: 2026-05-06 (v1.0 DRAFT) → 2026-05-10 (v1.1 APPROVED post §9 chiarimenti).
+- **Data piano**: 2026-05-06 (v1.0 DRAFT) → 2026-05-10 (v1.1 APPROVED post §9 chiarimenti) → 2026-05-16 (**v1.2 AMENDMENT**, decisione 9.4 superseded da 9.4-bis: MySQL nativo locale per `dev`+`it`, Testcontainers rimosso).
 - **Autore**: Claude Code.
-- **Stato**: **APPROVED v1.1** — utente ha confermato il 2026-05-10 le 4 decisioni aperte di §9. Sotto-fase PIANIFICA chiusa, in apertura Task 5.1 IMPLEMENTA (con stop point CR-F5-001).
+- **Stato**: **AMENDMENT v1.2 PENDING USER APPROVAL** — il PLAN v1.1 era APPROVED e le sotto-fasi IMPLEMENTA 5.1/5.2/5.3 sono già chiuse (commit `3207b94`, `6640781`, `5d1fa06`). L'amendment v1.2 introduce ADR-049 + Task 5.3.bis di retrofit prima di Task 5.4. Stop point CLAUDE.md §2.1 attivo: nessun codice toccato finché v1.2 non riceve approvazione esplicita.
 - **Branch**: `feature/5-server-skeleton` (staccato da `develop` HEAD `5ef6e8c` post-tag `v0.4.5`).
 - **Tag finale previsto**: `v0.5.0`.
 - **Predecessor closure**: F4.5 (`v0.4.5`) chiusa al 100% — utente ha confermato il **2026-05-06** che il software installato sul PC del cliente "funziona perfettamente"; A4.5.16 (manual demo run cliente) è **PASSED**, A4.5.11/A4.5.12 (DPI matrix + resize-jank) restano *deferred to manual* in TEST-PLAN-fase-4.5 §6 ma il cliente reale è OK quindi non bloccanti per F5.
@@ -12,7 +12,9 @@
   - **9.1** JWT secret: `dev`=default hardcoded + warning, `test`/`it`=hardcoded yaml, `prod`=fail-fast env var. Documentato in **ADR-045**, NO SPEC CR (interpretazione di buona fede di SPEC §15.2).
   - **9.2** BCrypt cost 12 ovunque (dev, test, it, prod).
   - **9.3** `users.role` = `VARCHAR(32) + CHECK constraint` (NON ENUM MySQL puro). Richiede **CR-F5-001** a SPEC §8.4 — applicata in Task 5.1.
-  - **9.4** Profilo `dev` usa **Testcontainers Spring Boot dev mode** (Docker effimero, MySQL ricreato ad ogni `mvn spring-boot:test-run`). Profilo `it` usa Testcontainers `@SpringBootTest` slow tag. Profilo `test` resta H2. Profilo `prod` MySQL nativo installato sul server (no Docker). **No `docker-compose.yml` necessario** — Testcontainers gestisce il ciclo di vita del container.
+  - **9.4** ~~Profilo `dev` usa **Testcontainers Spring Boot dev mode**~~ → **SUPERSEDED da 9.4-bis (v1.2 amendment, 2026-05-16)**. Vedi §9.4-bis sotto.
+- **v1.2 amendment** (2026-05-16, decisione retroattiva dell'utente in apertura sessione post chiusura Task 5.3):
+  - **9.4-bis** Profili `dev` e `it` puntano a **MySQL nativo locale** `localhost:3306` (DB `dama_italiana_dev` e `dama_italiana_it`). Testcontainers rimosso completamente dal modulo `server`. Comando dev: `mvn -pl server spring-boot:run -Dspring-boot.run.profiles=dev`. Razionale utente: replicare già da F5 lo stack di produzione (MySQL nativo) eliminando il prerequisito Docker. Documentato in **ADR-049** che supersedes parts di ADR-044 §dev/it + ADR-048 §full-integration-MySQL. NO SPEC CR (SPEC non vincola HOW dev accede a MySQL; SPEC §6.5 già lista MySQL 8 come DB). **Task 5.3.bis** (nuovo, vedi §4) esegue il retrofit di codice/config/docs già committati in Task 5.2 e 5.3 prima di proseguire con Task 5.4.
 
 ---
 
@@ -40,11 +42,11 @@ Al termine della fase un utente DEVE poter:
 ### 1.2 Note operative
 
 - Il cliente del modulo `server` non è ancora `client` (l'integrazione client→server è F6). F5 si verifica esclusivamente via curl, integration test e Swagger UI.
-- **Profilo `dev` con Testcontainers Spring Boot dev mode** (decisione utente §9.4 — 2026-05-10): l'avvio di sviluppo è `mvn -pl server spring-boot:test-run` con una `TestServerApplication` che applica `@ServiceConnection` su `MySQLContainer` (immagine `mysql:8.0`). Ad ogni avvio Docker crea un container effimero, Spring Boot ne legge l'URL/porta dinamica e li inietta nel context. Per ispezionare in MySQL Workbench: il container espone una porta random sul host (loggata al boot — es. `MySQL container started on port 53217`); la connessione Workbench si crea una volta puntando a `localhost:53217` user `test`/pass `test`, e va aggiornata ad ogni boot. **Pro**: zero setup MySQL nativo; DB sempre clean-state; identità tra dev e it (stessa immagine MySQL). **Con**: dati persi ad ogni restart (per F5 non rilevante — non c'è ancora una UI client che inserisce dati persistenti; tutti i dati di test si rigenerano via curl in 30 secondi).
-- **Profilo `prod`**: MySQL installato nativamente sul server di deploy (no Docker, no Testcontainers). Configurazione via env var `SPRING_DATASOURCE_URL`, `SPRING_DATASOURCE_USERNAME`, `SPRING_DATASOURCE_PASSWORD`.
-- **Profilo `test` (fast loop)**: H2 in-memory; nessun MySQL, nessun Docker richiesto. Garantisce `mvn -pl server verify -DexcludedGroups=slow` rapido.
-- **Profilo `it` (slow integration)**: Testcontainers MySQL come `dev`, `@Tag("slow")` per escludere dal fast loop. Eseguito da `mvn clean verify` root.
-- **Niente `docker-compose.yml`**: Testcontainers gestisce il container programmaticamente. ADR-018 (Docker Compose rimosso) **resta valido e rafforzato** in F5.
+- **Profilo `dev` con MySQL nativo locale** (decisione utente §9.4-bis — 2026-05-16, v1.2 amendment, ADR-049): l'avvio di sviluppo è `mvn -pl server spring-boot:run -Dspring-boot.run.profiles=dev`. Datasource default `jdbc:mysql://localhost:3306/dama_italiana_dev`, username `dama` / password `dama` (overridabili via env var `SPRING_DATASOURCE_URL`/`USERNAME`/`PASSWORD`). Setup user-side una tantum via Workbench: `CREATE DATABASE dama_italiana_dev` + `CREATE USER 'dama'@'localhost'` + `GRANT ALL`. **Pro**: parità prod-equivalent (stesso stack MySQL nativo di prod); ispezione DB stabile via Workbench su porta fissa 3306; nessun prerequisito Docker. **Con**: setup MySQL nativo una tantum richiesto (mitigato da script SQL nel README).
+- **Profilo `prod`**: MySQL installato nativamente sul server di deploy. Configurazione via env var `SPRING_DATASOURCE_URL`, `SPRING_DATASOURCE_USERNAME`, `SPRING_DATASOURCE_PASSWORD`, fail-fast se assenti.
+- **Profilo `test` (fast loop)**: H2 in-memory MySQL-compat; nessun MySQL, nessun Docker richiesto. Garantisce `mvn -pl server verify -DexcludedGroups=slow` rapido.
+- **Profilo `it` (slow integration)**: MySQL nativo locale come `dev` ma su DB dedicato `dama_italiana_it`. Isolamento test-run via `flyway.clean() + flyway.migrate()` in `AbstractMysqlIntegrationTest`. `@Tag("slow")` per escludere dal fast loop. Eseguito da `mvn clean verify` root.
+- **Niente Testcontainers, niente Docker** nel modulo `server` da F5+ (ADR-049). ADR-018 (Docker Compose rimosso) **resta valido e rafforzato**: Docker non è più prerequisito di alcun layer del server.
 
 ---
 
@@ -52,17 +54,17 @@ Al termine della fase un utente DEVE poter:
 
 ### 2.1 Acceptance globale F5
 
-> Il maintainer avvia `mvn -pl server spring-boot:run` con `SPRING_PROFILES_ACTIVE=dev` e `JWT_SECRET=<32+byte>`, MySQL 8 raggiungibile su `localhost:3306` (via `docker-compose up -d`). Esegue la sequenza curl di §1 (register → login → me → refresh → logout) e ottiene risposte 200/201 con payload conformi a OpenAPI. Riavvia il server: l'utente registrato persiste in DB, il refresh token usato per il logout NON funziona più, le credenziali permettono ancora un nuovo login. La build root `mvn clean verify` passa pulita includendo i nuovi test integrazione Testcontainers + MySQL.
+> Il maintainer avvia `mvn -pl server spring-boot:run -Dspring-boot.run.profiles=dev`, con MySQL nativo 8 raggiungibile su `localhost:3306` (DB `dama_italiana_dev` pre-creato — vedi README §1.a). Esegue la sequenza curl di §1 (register → login → me → refresh → logout) e ottiene risposte 200/201 con payload conformi a OpenAPI. Riavvia il server: l'utente registrato persiste in DB (stato preservato — niente container effimero), il refresh token usato per il logout NON funziona più, le credenziali permettono ancora un nuovo login. La build root `mvn clean verify` passa pulita includendo i nuovi test integrazione MySQL nativo (`@Tag("slow")`, DB `dama_italiana_it` pre-creato).
 
 ### 2.2 Criteri operativi (A5.x)
 
 | ID | Criterio | Verifica |
 |---|---|---|
 | **A5.1** | `mvn -pl server verify -DexcludedGroups=slow` BUILD SUCCESS (fast loop) | output Maven |
-| **A5.2** | `mvn clean verify` (root, slow inclusi, Testcontainers MySQL on) BUILD SUCCESS | output Maven |
+| **A5.2** | `mvn clean verify` (root, slow inclusi, MySQL nativo localhost:3306 on) BUILD SUCCESS | output Maven |
 | **A5.3** | Coverage JaCoCo `server` ≥ 70% line+branch (NFR-M-02 + delta server) | `target/site/jacoco/jacoco.csv` |
 | **A5.4** | SpotBugs 0 High su `server`, Spotless OK | output Maven |
-| **A5.5** | **`ServerApplication` Spring Boot bootstrap funzionante**: classe `@SpringBootApplication`, profilo `dev` carica MySQL via env, profilo `test` carica H2 in-memory, profilo `it` (integration) usa Testcontainers MySQL | `ServerApplicationContextLoadsTest` |
+| **A5.5** | **`ServerApplication` Spring Boot bootstrap funzionante**: classe `@SpringBootApplication`, profilo `dev` carica MySQL nativo `localhost:3306/dama_italiana_dev`, profilo `test` carica H2 in-memory, profilo `it` carica MySQL nativo `localhost:3306/dama_italiana_it` (ADR-049) | `ServerApplicationContextLoadsTest` |
 | **A5.6** | **Flyway V1 init schema**: `db/migration/V1__init_users_and_refresh_tokens.sql` crea tabelle `users` (id, username UNIQUE, email UNIQUE, password_hash, **role VARCHAR(32) NOT NULL DEFAULT 'USER' CHECK (role IN ('USER','TOURNAMENT_ADMIN','SYSTEM_ADMIN'))**, created_at, last_login_at) + `refresh_tokens` (id, user_id FK, token_hash UNIQUE, expires_at, revoked_at NULL, created_at). Migration applicata sia su H2 (test profile) sia su MySQL (it/dev profile) senza warning di compatibilità — il CHECK constraint è SQL standard, supportato da entrambi (MySQL 8.0.16+ via `enforced`, H2 nativo). Decisione 9.3 strada α — vedi CR-F5-001 §11. | Flyway info + `FlywayMigrationIntegrationTest` |
 | **A5.7** | **`POST /v1/auth/register`**: input `{username, email, password}` → 201 con `{user: {id, username, email, role, createdAt}, accessToken, refreshToken}`. Validation: username 3-50 chars `[a-zA-Z0-9_-]`, email RFC 5322, password ≥ 8 chars (almeno 1 lettera + 1 cifra). Conflict 409 se username/email già esistente. Password salvata BCrypt cost 12 (NFR-S-01) | `AuthRegisterIntegrationTest` |
 | **A5.8** | **`POST /v1/auth/login`**: input `{username, password}` → 200 con `{accessToken (15min, NFR-S-02), refreshToken (7gg, NFR-S-02), tokenType: "Bearer", expiresIn: 900}`. 401 se credenziali invalide. `last_login_at` aggiornato al login OK. Risposta 401 NON rivela se username o password è errato | `AuthLoginIntegrationTest` |
@@ -79,7 +81,7 @@ Al termine della fase un utente DEVE poter:
 | **A5.19** | **Health check**: `/actuator/health` ritorna `{status: UP, components: {db: {status: UP}, ...}}`. Endpoint pubblico (no auth) per liveness/readiness probe Kubernetes-ready | curl + `HealthIntegrationTest` |
 | **A5.20** | **TRACEABILITY**: nuove righe per FR-INT-01/02/03 (registrazione, login, refresh — vedi §3.1), NFR-S-01/02/04, NFR-O-01/02/03, NFR-M-03. Sezione "Acceptance criteria di Fase 5" con A5.1..A5.21 | inspection `tests/TRACEABILITY.md` |
 | **A5.21** | **Nessun TODO/FIXME pending** introdotto in `server/src/main/java/` da F5 (eccetto eventuali `// TODO F6:` espliciti, motivati e tracciati in `AI_CONTEXT.md`) | grep |
-| **A5.22** | **Manual smoke run end-to-end**: maintainer esegue la sequenza curl di §1 con MySQL Docker locale, conferma tutti gli step in `TEST-PLAN-fase-5.md §6` (sign-off table) | log riempito |
+| **A5.22** | **Manual smoke run end-to-end**: maintainer esegue la sequenza curl di §1 con MySQL nativo locale (`dama_italiana_dev` pre-creato), conferma tutti gli step in `TEST-PLAN-fase-5.md §6` (sign-off table) | log riempito |
 
 ---
 
@@ -171,6 +173,8 @@ Ordine sequenziale; dipendenze lineari salvo dove esplicitato. **Stima**: 14 tas
 **Moduli toccati**: `server` (prod + test + resources) + `README.md` (sezione dev setup).
 **Dipendenze**: 5.1.
 
+> **Stato post-implementazione (commit `6640781`, 2026-05-10)**: task chiuso secondo PLAN v1.1. File creati: `ServerApplication.java`, `TestServerApplication.java`, `ServerApplicationContextLoadsTest.java`, 5 yaml (`application{,-dev,-test,-it,-prod}.yml`), `pom.xml` con dep `spring-boot-testcontainers`. **Retrofit pianificato in Task 5.3.bis (v1.2)**: cancellare `TestServerApplication.java`; rescrivere `application-dev.yml` e `application-it.yml` per MySQL nativo; rimuovere dep `spring-boot-testcontainers` + `testcontainers/mysql` + `testcontainers/junit-jupiter` da `server/pom.xml`. Vedi ADR-049.
+
 ### Task 5.3 — Flyway V1 schema (users + refresh_tokens) + integration test
 
 - `server/src/main/resources/db/migration/V1__init_users_and_refresh_tokens.sql`:
@@ -201,10 +205,64 @@ Ordine sequenziale; dipendenze lineari salvo dove esplicitato. **Stima**: 14 tas
   ```
   > Note: `role` = `VARCHAR(32)` + `CHECK constraint` SQL standard (decisione utente §9.3 strada α + CR-F5-001). Funziona identico su MySQL 8.0.16+ (CHECK enforced) e su H2. Workbench-friendly: l'utente vede esplicitamente i 3 valori validi nel DDL e non può inserire altri valori a mano. Documentato in ADR-046.
 - `FlywayMigrationIntegrationTest` (`@SpringBootTest` + profilo `test` H2): asserisce che le 2 tabelle esistono con le colonne attese dopo bootstrap.
-- `FlywayMigrationMysqlIntegrationTest` (`@SpringBootTest` + Testcontainers MySQL, `@Tag("slow")`): stessa asserzione su MySQL reale.
+- `FlywayMigrationMysqlIntegrationTest` (`@SpringBootTest` + profilo `it` MySQL nativo locale, `@Tag("slow")`): stessa asserzione su MySQL reale.
 
 **Moduli toccati**: `server` (resources + test).
 **Dipendenze**: 5.2.
+
+> **Stato post-implementazione (commit `5d1fa06`, 2026-05-10)**: task chiuso secondo PLAN v1.1. File creati: `V1__init_users_and_refresh_tokens.sql`, `AbstractMysqlIntegrationTest.java` (con Testcontainers `@Container @ServiceConnection MySQLContainer<>("mysql:8.0")`), `FlywayMigrationIntegrationTest.java` (H2, 6/6 verdi), `FlywayMigrationMysqlIntegrationTest.java` (slow, non eseguito per assenza Docker daemon). Fast loop verde. **Retrofit pianificato in Task 5.3.bis (v1.2)**: refattorizzare `AbstractMysqlIntegrationTest` per puntare al MySQL nativo (`application-it.yml` già configurato), rimuovere `@Testcontainers`/`@Container`/`MySQLContainer`, aggiungere `flyway.clean() + flyway.migrate()` in `@BeforeEach` per isolamento stato. `FlywayMigrationMysqlIntegrationTest` resta invariato. Test slow eseguito per la prima volta dopo retrofit e setup user-side dei DB locali. Vedi ADR-049.
+
+### Task 5.3.bis — Retrofit Testcontainers → MySQL nativo locale (v1.2 amendment)
+
+**Razionale**: applicare ADR-049 (decisione utente 9.4-bis del 2026-05-16) al codice/config già committato nei Task 5.2 e 5.3 prima di proseguire con Task 5.4. Mantiene lineare la storia di `feature/5-server-skeleton` (un singolo commit retro che applica la nuova baseline) ed evita che Task 5.4+ erediti il pattern Testcontainers ormai superseded.
+
+**Pre-requisito setup DB** (una tantum, su MySQL nativo già installato `localhost:3306`):
+
+- **Script committati nel repo**:
+  - `scripts/db/setup-local-mysql.sql` — idempotente (`CREATE DATABASE IF NOT EXISTS`, `CREATE USER IF NOT EXISTS`, `GRANT`, `FLUSH PRIVILEGES`) — crea i DB `dama_italiana_dev` + `dama_italiana_it` + utente `dama`@`localhost` con password `dama` (override via variabili SQL `@db_dev`, `@db_it`, `@app_user`, `@app_password`).
+  - `scripts/db/teardown-local-mysql.sql` — reversibile (`DROP DATABASE IF EXISTS`, `DROP USER IF EXISTS`) per ricreare lo stato pulito quando serve.
+- **Esecuzione**: Claude esegue lo script direttamente via `mysql.exe` (path `C:\Program Files\MySQL\MySQL Server 8.0\bin\mysql.exe`) con credenziali admin fornite dall'utente in una tantum (es. `root` + password). L'utente verifica il risultato in MySQL Workbench (DB `dama_italiana_dev` e `dama_italiana_it` visibili in tree-view, utente `dama` in Users and Privileges).
+- **Modalità future** (post Task 5.3.bis): qualsiasi utente che cloni il repo potrà eseguire lo script manualmente con `mysql -u root -p < scripts/db/setup-local-mysql.sql` (documentato in README §1.a).
+
+> Username/password app default `dama`/`dama` per minimizzare frizioni single-developer. Override via variabili SQL inline (`mysql --execute "SET @app_password='altropwd'; SOURCE setup-local-mysql.sql;"`) o tramite env var Spring (`SPRING_DATASOURCE_PASSWORD`) ai test/run-time.
+
+**Lavoro Task 5.3.bis** (5 categorie):
+
+0. **Script DB setup/teardown** (committati nel repo):
+   - **Creare** `scripts/db/setup-local-mysql.sql` (idempotente, `IF NOT EXISTS` + `FLUSH PRIVILEGES`).
+   - **Creare** `scripts/db/teardown-local-mysql.sql` (reversibile, `DROP ... IF EXISTS`).
+   - **Eseguire** `setup-local-mysql.sql` via `mysql.exe -u <admin> -p < scripts/db/setup-local-mysql.sql` (credenziali admin fornite dall'utente).
+   - **Verifica** post-esecuzione: `mysql -u dama -p<dama-pwd> -e "SHOW DATABASES;"` deve listare `dama_italiana_dev` e `dama_italiana_it`; utente Workbench-visible.
+
+1. **Codice test**:
+   - **Refactor** `server/src/test/java/com/damaitaliana/server/AbstractMysqlIntegrationTest.java`: rimuovere `@Testcontainers`, `@Container @ServiceConnection static MySQLContainer<>("mysql:8.0")` field; aggiungere `@Autowired Flyway flyway` + `@BeforeEach void resetSchema() { flyway.clean(); flyway.migrate(); }` per isolamento test-run. Annotazioni residue: `@SpringBootTest`, `@ActiveProfiles("it")`, `@Tag("slow")`. Javadoc aggiornato.
+   - **Cancellare** `server/src/test/java/com/damaitaliana/server/TestServerApplication.java` (non più necessario).
+   - `FlywayMigrationMysqlIntegrationTest.java` resta invariato (estende Abstract refattorizzato).
+   - `ServerApplicationContextLoadsTest.java` resta invariato (usa profilo `test` H2).
+   - `FlywayMigrationIntegrationTest.java` resta invariato (H2 fast loop).
+
+2. **Configurazione**:
+   - **Rescrivere** `server/src/main/resources/application-dev.yml`: datasource `jdbc:mysql://localhost:3306/dama_italiana_dev` (default, override via `SPRING_DATASOURCE_URL`), username/password default `dama`/`dama` overridabili, `spring.flyway.clean-disabled=false`. JWT secret default invariato (decisione 9.1).
+   - **Rescrivere** `server/src/main/resources/application-it.yml`: datasource analogo su `dama_italiana_it`, `spring.flyway.clean-disabled=false` (necessario per `@BeforeEach` clean). JWT secret hardcoded invariato.
+   - **Aggiornare** `server/src/main/resources/application.yml`: rimuovere commenti su Testcontainers; aggiornare riferimento ADR-044 + ADR-049.
+
+3. **Build**:
+   - **Modificare** `server/pom.xml`: rimuovere 3 dep test-scope: `org.springframework.boot:spring-boot-testcontainers`, `org.testcontainers:mysql`, `org.testcontainers:junit-jupiter`. Driver `com.mysql:mysql-connector-j` runtime resta. Flyway dep restano.
+
+4. **Documentation**:
+   - **Rescrivere** sezione README.md "Setup ambiente di sviluppo" §1 e §1.a: rimuovere riferimento Testcontainers + Docker prerequisito; aggiungere prerequisite SQL setup + comando dev `mvn -pl server spring-boot:run -Dspring-boot.run.profiles=dev`.
+   - **Aggiornare** tabella Prerequisiti README: Docker da "richiesto" a "non richiesto da F5+ per server" (resta come opzione futura).
+   - **Aggiornare** sezione "Comandi standard" README: riga `spring-boot:test-run` rimossa o riadattata.
+
+**Closure Task 5.3.bis**:
+- DB locali `dama_italiana_dev` + `dama_italiana_it` creati con successo + utente `dama`@`localhost` configurato (verifica via Workbench).
+- `mvn -pl server verify -DexcludedGroups=slow` BUILD SUCCESS (fast loop H2 invariato).
+- `mvn -pl server verify` (slow inclusi) BUILD SUCCESS: `FlywayMigrationMysqlIntegrationTest` verde su MySQL nativo locale (prima esecuzione).
+- 1 commit `refactor(server): retrofit Testcontainers → MySQL nativo locale (ADR-049, PLAN-fase-5 v1.2)` o split in 2 commit (`feat(scripts): add MySQL local setup/teardown scripts` + `refactor(server): remove Testcontainers, point dev+it to local MySQL`) se l'utente preferisce.
+- `AI_CONTEXT.md` aggiornato: sotto-fase IMPLEMENTA continua, Task 5.3.bis chiuso, prossimo Task 5.4.
+
+**Moduli toccati**: `scripts/db/` (nuovo) + `server` (test + resources + pom) + `README.md`.
+**Dipendenze**: 5.3 (refattorizza file da esso creati) + credenziali admin MySQL fornite dall'utente per esecuzione setup script.
 
 ### Task 5.4 — `User` entity + repository + service + DTO + validation
 
@@ -360,7 +418,7 @@ Composizione (CLAUDE.md §2.4.1):
 | **Unit** (~40%) | JUnit 5 + Mockito + AssertJ | `JwtService`, `RateLimiter`, `UserMapper`, validators, exception mapping |
 | **Slice integration** (~30%) | `@WebMvcTest` (controller), `@DataJpaTest` (repository) con H2 | Singolo layer isolato |
 | **Full integration H2** (~25%) | `@SpringBootTest webEnvironment=RANDOM_PORT` + H2 | E2E auth flow su context completo, fast loop |
-| **Full integration MySQL** (~5%) | `@SpringBootTest` + Testcontainers MySQL 8 + `@Tag("slow")` | E2E auth flow su MySQL reale (compatibility, Flyway migration) |
+| **Full integration MySQL** (~5%) | `@SpringBootTest` + MySQL nativo locale `dama_italiana_it` + `@Tag("slow")` (ADR-049) | E2E auth flow su MySQL reale (compatibility, Flyway migration) |
 
 ### 5.1 Coverage target
 
@@ -370,20 +428,20 @@ Composizione (CLAUDE.md §2.4.1):
 
 JaCoCo gate `haltOnFailure=true` su `server` come per `client`.
 
-### 5.2 Test Containers MySQL
+### 5.2 Integration MySQL nativo locale (v1.2 amendment, ADR-049)
 
-- `AbstractMysqlIntegrationTest` base class: `@Testcontainers @Container static MySQLContainer<?>` su immagine `mysql:8.0`, `@DynamicPropertySource` per inject `spring.datasource.{url,username,password}`.
+- `AbstractMysqlIntegrationTest` base class: `@SpringBootTest @ActiveProfiles("it") @Tag("slow")`. **Niente `@Testcontainers`, niente `@Container`**. Datasource configurato da `application-it.yml` (default `jdbc:mysql://localhost:3306/dama_italiana_it`). Isolamento test-run via `@Autowired Flyway` + `@BeforeEach { flyway.clean(); flyway.migrate(); }`.
 - Tag `slow` per escludere dal fast loop locale.
-- `mvn -pl server verify -DexcludedGroups=slow` rimane veloce (no Docker pull).
-- `mvn clean verify` (root, slow inclusi) richiede Docker locale running.
+- `mvn -pl server verify -DexcludedGroups=slow` rimane veloce (H2 in-memory, no MySQL nativo richiesto).
+- `mvn clean verify` (root, slow inclusi) richiede MySQL nativo localhost:3306 con DB `dama_italiana_it` + utente `dama` pre-configurati (setup user-side una tantum, vedi Task 5.3.bis).
 
 ### 5.3 Smoke e2e manuale (TEST-PLAN-fase-5.md §6)
 
 Sequenza curl documentata di §1 con sign-off table per il maintainer:
-- Step 1: `docker-compose up -d`
-- Step 2: `mvn -pl server spring-boot:run`
-- Step 3-8: 6 curl call
-- Step 9: restart server, verify persistence
+- Step 0 (una tantum): setup DB `dama_italiana_dev` + utente `dama` via Workbench (vedi Task 5.3.bis + README).
+- Step 1: `mvn -pl server spring-boot:run -Dspring-boot.run.profiles=dev`
+- Step 2-7: 6 curl call (register → login → me → refresh → logout + verify).
+- Step 8: restart server, verify persistence (utente in `dama_italiana_dev` resta, refresh token revocato non funziona).
 
 ---
 
@@ -393,7 +451,7 @@ Sequenza curl documentata di §1 con sign-off table per il maintainer:
 |---|---|---|---|---|
 | R1 | Discrepancy H2 vs MySQL su Flyway SQL | Media | Alta (test passano in fast loop, falliscono in CI/prod) | Test Flyway esplicito con MySQL container (Task 5.3); SQL standard ANSI when possible |
 | R2 | BCrypt cost 12 rallenta test (~250ms/hash × N) | Alta | Media (suite time +20s) | Profilo `test` può overridare a cost 4 via `@TestConfiguration` se necessario; documentato nel commit |
-| R3 | Testcontainers richiede Docker disponibile localmente | Alta (è il design) | Media (blocca dev runtime + test slow) | Documentato in README come prerequisito #1; profilo `test` (H2) garantisce fast loop senza Docker (nessun blocco per maintainer al volo); fast loop `mvn -pl server verify -DexcludedGroups=slow` non richiede Docker |
+| R3 | ~~Testcontainers richiede Docker~~ → **superseded da v1.2**. **Nuovo R3**: MySQL nativo richiesto come prerequisito dev/it (ADR-049) | Alta (è il design) | Bassa | Script SQL fornito in README per setup una tantum (≤ 60s di lavoro user); profilo `test` (H2) garantisce fast loop senza MySQL nativo; Docker non più richiesto. Vincolo cross-contamination test paralleli mitigato da convenzione single-runner (single-developer ok) |
 | R4 | JWT secret default in `dev` accidentalmente usato in `prod` | Bassa (profili distinti) | Alta (catastrofico: token leakable) | (a) warning log al boot in `dev` molto visibile; (b) `prod` fail-fast se env var assente — impossibile partire prod senza secret valido; (c) test `JwtBootValidationTest` che asserisce fail-fast in profilo `prod` simulato |
 | R5 | Rate limiter in-memory perde stato a restart | Bassa | Bassa (accettato in v1, ADR-047) | Documentato; futura migrazione Redis |
 | R6 | OpenAPI generation espone endpoint senza protezione → leak schema | Bassa | Bassa (schema OpenAPI è di per sé info pubblica per API client) | Endpoint `/v3/api-docs` whitelist esplicita ma documentata; in produzione si può chiudere via env var |
@@ -457,13 +515,23 @@ Tutte le 4 decisioni aperte sono state confermate dall'utente. Tracciato qui per
 - **Implementazione**: `V1__init_users_and_refresh_tokens.sql` con `CONSTRAINT chk_users_role CHECK (role IN (...))`.
 - **SPEC CR**: aperta come **CR-F5-001**, applicata in Task 5.1.a con stop point.
 
-### 9.4 Infrastruttura MySQL dev — **RESOLVED: Testcontainers Spring Boot dev mode**
+### 9.4 Infrastruttura MySQL dev — ~~**RESOLVED: Testcontainers**~~ → **SUPERSEDED da 9.4-bis (v1.2)**
 
-- **Risolta**: 2026-05-10.
-- **Decisione**: profilo `dev` usa Testcontainers via `mvn spring-boot:test-run` con `TestServerApplication` + `@ServiceConnection MySQLContainer`. Profilo `it` stesso pattern con `@Tag("slow")`. Profilo `test` H2. Profilo `prod` MySQL nativo installato sul server (no Docker).
-- **Razionale**: zero setup MySQL nativo per dev; identità tra dev e it (stessa immagine `mysql:8.0`); ADR-018 (Docker Compose rimosso) resta valido.
-- **Implementazione**: documentata in Task 5.2 + ADR-044.
-- **NO SPEC CR**: SPEC non vincola HOW dev accede a MySQL.
+- **Risolta originariamente**: 2026-05-10.
+- **Decisione originaria**: profilo `dev` usa Testcontainers via `mvn spring-boot:test-run` con `TestServerApplication` + `@ServiceConnection MySQLContainer`. Profilo `it` stesso pattern con `@Tag("slow")`. Profilo `test` H2. Profilo `prod` MySQL nativo installato sul server (no Docker).
+- **Stato (v1.2)**: **SUPERSEDED** il 2026-05-16. Implementata fedelmente nei Task 5.2 e 5.3 (commit `6640781`, `5d1fa06`); poi rivalutata all'apertura sessione successiva per vincoli risorse Docker Desktop + richiesta esplicita utente di parità prod. Vedi §9.4-bis.
+
+### 9.4-bis Infrastruttura MySQL dev — **RESOLVED v1.2: MySQL nativo locale per dev+it (ADR-049)**
+
+- **Risolta**: 2026-05-16.
+- **Decisione**: profili `dev` e `it` puntano a MySQL nativo locale `localhost:3306` (DB `dama_italiana_dev` e `dama_italiana_it` rispettivamente, utente `dama`@`localhost` default). Comando dev: `mvn -pl server spring-boot:run -Dspring-boot.run.profiles=dev`. Testcontainers rimosso completamente dal modulo `server`. Profilo `test` H2 in-memory (invariato). Profilo `prod` MySQL nativo env var (invariato).
+- **Razionale utente**:
+  1. **Parità prod-equivalent già da F5**: dev/it/prod usano stesso stack (MySQL nativo, stesso driver JDBC, stessa migration Flyway, stesso dialect Hibernate). Solo i nomi DB cambiano per isolamento ambiente.
+  2. **Eliminazione prerequisito Docker**: Docker Desktop non praticabile sulla macchina dev utente (vincoli risorse disco).
+  3. **MySQL nativo + Workbench già installati e in uso quotidiano** dall'utente: zero setup aggiuntivo lato stack, solo creazione 2 DB + 1 utente via script SQL.
+  4. **Workbench experience stabile**: porta fissa 3306, ispezione DB sempre disponibile (vs porta random ad ogni boot Testcontainers).
+- **Implementazione**: nuovo **Task 5.3.bis** (vedi §4) esegue il retrofit del codice/config già committato nei Task 5.2 e 5.3 + crea 2 nuovi script SQL (`scripts/db/setup-local-mysql.sql`, `scripts/db/teardown-local-mysql.sql`). Documentata in **ADR-049** (supersedes parts di ADR-044 §dev/it + ADR-048 §full-integration-MySQL).
+- **NO SPEC CR**: SPEC §6.5 già lista MySQL 8 come DB Internet; SPEC non vincola HOW dev/it accedano a MySQL. ADR-018 (Docker Compose rimosso) **rafforzato** — Docker non è più prerequisito di alcun layer F5+ del modulo `server`.
 
 ---
 
@@ -507,6 +575,8 @@ Tutte le 4 decisioni aperte sono state confermate dall'utente. Tracciato qui per
 - **Annotazione `CHANGELOG.md`**: voce sotto `[Unreleased]` come "**SPEC v2.4** — CR-F5-001 ...".
 
 > Nessuna altra CR in F5. La decisione 9.1 (JWT default in dev) è stata documentata come ADR-045 senza modifiche a SPEC §15.2 (interpretazione di buona fede dello "spirito" della clausola — il default `dev-only-*` non è un secret di produzione e il warning runtime esplicita la cosa).
+>
+> **v1.2 amendment (2026-05-16)**: la decisione 9.4-bis (MySQL nativo locale per dev+it, ADR-049) NON richiede CR a SPEC. SPEC §6.5 già vincola MySQL 8 come DB Internet; SPEC non vincola HOW dev/it accedano a MySQL. Documentazione: ADR-049 in `ARCHITECTURE.md`, voce dedicata in `CHANGELOG.md [Unreleased]`.
 
 ---
 
