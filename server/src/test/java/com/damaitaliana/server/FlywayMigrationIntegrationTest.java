@@ -48,11 +48,16 @@ class FlywayMigrationIntegrationTest {
 
   @Test
   void usersRoleCheckConstraintAcceptsAllThreeValidValues() {
-    insertUser("user-alice", "alice@example.com", "USER");
-    insertUser("user-bob", "bob@example.com", "TOURNAMENT_ADMIN");
-    insertUser("user-carol", "carol@example.com", "SYSTEM_ADMIN");
+    insertUser("flymig-user-alice", "flymig-alice@example.com", "USER");
+    insertUser("flymig-user-bob", "flymig-bob@example.com", "TOURNAMENT_ADMIN");
+    insertUser("flymig-user-carol", "flymig-carol@example.com", "SYSTEM_ADMIN");
 
-    Long count = jdbc.queryForObject("SELECT COUNT(*) FROM users", Long.class);
+    // Scoped count to the rows this test just inserted -- the shared in-memory H2 instance
+    // may contain rows committed by other @SpringBootTest classes that ran before this one
+    // (see AI_CONTEXT note: H2 cross-class state pollution, deferred to REVIEW F5).
+    Long count =
+        jdbc.queryForObject(
+            "SELECT COUNT(*) FROM users WHERE username LIKE 'flymig-%'", Long.class);
     assertThat(count).isEqualTo(3L);
   }
 
