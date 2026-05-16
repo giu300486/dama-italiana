@@ -2,6 +2,7 @@ package com.damaitaliana.server;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
 
 /**
  * Bootstrap entry point for the central Internet-facing server.
@@ -17,6 +18,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
  * </ul>
  */
 @SpringBootApplication
+@ConfigurationPropertiesScan
 public class ServerApplication {
 
   public static void main(String[] args) {
