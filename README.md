@@ -127,6 +127,8 @@ mvn -pl server spring-boot:run -Dspring-boot.run.profiles=dev
 
 > Tutto persistente: a differenza di un container effimero, i dati di sviluppo restano tra un restart e l'altro del server. Per resettare manualmente: o `DROP DATABASE dama_italiana_dev; CREATE DATABASE dama_italiana_dev;` via Workbench, oppure `flyway:clean` da Maven (esegue clean automatico).
 
+> **Approfondimento Flyway**: se vuoi capire a fondo come funziona la migration tool che gestisce lo schema, leggi [`docs/flyway-in-our-context.md`](docs/flyway-in-our-context.md) — guida tecnica completa con descrizione generale, lifecycle per profilo, dissezione della V1, regole d'oro nel progetto, errori comuni + recovery.
+
 #### 1.b Deploy production (`prod` profile)
 
 Setup MySQL nativo una tantum sul server di deploy:
