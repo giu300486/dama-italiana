@@ -1,5 +1,8 @@
 package com.damaitaliana.server.entity;
 
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+
 /**
  * Authorization role of a user.
  *
@@ -13,5 +16,13 @@ package com.damaitaliana.server.entity;
 public enum Role {
   USER,
   TOURNAMENT_ADMIN,
-  SYSTEM_ADMIN
+  SYSTEM_ADMIN;
+
+  /**
+   * Returns the Spring Security authority for this role. The {@code ROLE_} prefix follows the
+   * Spring convention that lets {@code hasRole("USER")} match {@code ROLE_USER} authorities.
+   */
+  public GrantedAuthority toAuthority() {
+    return new SimpleGrantedAuthority("ROLE_" + name());
+  }
 }
