@@ -11,6 +11,7 @@ import io.jsonwebtoken.security.Keys;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Date;
+import java.util.UUID;
 import javax.crypto.SecretKey;
 import org.springframework.stereotype.Service;
 
@@ -86,7 +87,12 @@ public class JwtService {
 
   private String issue(UserEntity user, JwtClaims.TokenType type, int ttlSeconds) {
     Instant now = Instant.now();
+    // A random jti makes every token globally unique even when issued in the same second
+    // for the same subject (iat/exp are NumericDate, so they truncate to second precision).
+    // Without it, a refresh-token rotation within one second would mint the same JWT bytes
+    // twice and collide on the UNIQUE(token_hash) constraint in `refresh_tokens`.
     return Jwts.builder()
+        .id(UUID.randomUUID().toString())
         .subject(String.valueOf(user.getId()))
         .claim("username", user.getUsername())
         .claim("role", user.getRole().name())
