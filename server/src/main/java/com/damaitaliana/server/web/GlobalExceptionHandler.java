@@ -1,5 +1,7 @@
 package com.damaitaliana.server.web;
 
+import com.damaitaliana.server.auth.JwtVerificationException;
+import com.damaitaliana.server.auth.RefreshTokenInvalidException;
 import com.damaitaliana.server.exception.UserAlreadyExistsException;
 import jakarta.servlet.http.HttpServletRequest;
 import java.net.URI;
@@ -17,11 +19,17 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
  * Centralised mapping from application exceptions to RFC 7807 {@code application/problem+json}
  * responses.
  *
- * <p>This class lands in Task 5.8 with just the three handlers the {@code AuthController} needs to
- * fulfill its contract: {@link UserAlreadyExistsException} → 409, {@link BadCredentialsException} →
- * 401, {@link MethodArgumentNotValidException} → 400. Task 5.12 extends it with handlers for {@code
- * JwtVerificationException} / {@code RefreshTokenInvalidException} / {@code
- * RateLimitExceededException} and a catch-all for unexpected failures.
+ * <p>This class lands in Task 5.8 with the three handlers the {@code AuthController} register/login
+ * contract needs: {@link UserAlreadyExistsException} → 409, {@link BadCredentialsException} → 401,
+ * {@link MethodArgumentNotValidException} → 400. Task 5.9 adds {@link JwtVerificationException} →
+ * 401 and {@link RefreshTokenInvalidException} → 401, the two stateful token failures the {@code
+ * /refresh} and {@code /logout} endpoints raise past the security filter. Task 5.12 extends it
+ * further with {@code RateLimitExceededException}, {@code EntityNotFoundException} and a catch-all
+ * for unexpected failures.
+ *
+ * <p>Both token handlers return the same generic detail: "missing in DB" versus "already revoked"
+ * versus "wrong type" must not be observable from the outside (it would let an attacker confirm a
+ * stolen token was genuinely issued, or probe which validation step a forged token tripped).
  *
  * <p>The conflict response carries a deliberately generic detail ("Username or email already
  * registered") rather than naming the specific field that collided — that would let an attacker
@@ -41,6 +49,11 @@ public class GlobalExceptionHandler {
   public ProblemDetail handleBadCredentials(
       BadCredentialsException ex, HttpServletRequest request) {
     return problem(HttpStatus.UNAUTHORIZED, "Unauthorized", ex.getMessage(), request);
+  }
+
+  @ExceptionHandler({JwtVerificationException.class, RefreshTokenInvalidException.class})
+  public ProblemDetail handleInvalidToken(RuntimeException ex, HttpServletRequest request) {
+    return problem(HttpStatus.UNAUTHORIZED, "Unauthorized", "Invalid or expired token", request);
   }
 
   @ExceptionHandler(MethodArgumentNotValidException.class)
