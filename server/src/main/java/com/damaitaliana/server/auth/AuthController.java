@@ -2,12 +2,19 @@ package com.damaitaliana.server.auth;
 
 import com.damaitaliana.server.auth.RefreshTokenService.RotatedTokens;
 import com.damaitaliana.server.config.JwtProperties;
+import com.damaitaliana.server.config.OpenApiConfig;
 import com.damaitaliana.server.dto.AuthResponse;
 import com.damaitaliana.server.dto.LoginRequest;
 import com.damaitaliana.server.dto.RegisterRequest;
 import com.damaitaliana.server.entity.UserEntity;
 import com.damaitaliana.server.mapper.UserMapper;
 import com.damaitaliana.server.service.UserService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -40,6 +47,7 @@ import org.springframework.web.bind.annotation.RestController;
  */
 @RestController
 @RequestMapping("/v1/auth")
+@Tag(name = "auth", description = "Registration, login, JWT refresh rotation and logout")
 public class AuthController {
 
   private static final String INVALID_CREDENTIALS = "Invalid username or password";
@@ -66,12 +74,36 @@ public class AuthController {
 
   @PostMapping("/register")
   @ResponseStatus(HttpStatus.CREATED)
+  @Operation(
+      summary = "Register a new account",
+      description = "Creates a user and returns an access + refresh token pair.")
+  @ApiResponses({
+    @ApiResponse(responseCode = "201", description = "Account created, tokens issued"),
+    @ApiResponse(responseCode = "400", description = "Validation failed", content = @Content),
+    @ApiResponse(
+        responseCode = "409",
+        description = "Username or email already registered",
+        content = @Content)
+  })
   public AuthResponse register(@Valid @RequestBody RegisterRequest request) {
     UserEntity user = userService.register(request);
     return buildAuthResponse(user);
   }
 
   @PostMapping("/login")
+  @Operation(
+      summary = "Log in with username and password",
+      description =
+          "Returns an access + refresh token pair. The same 401 is returned whether the"
+              + " username is unknown or the password is wrong (no account enumeration).")
+  @ApiResponses({
+    @ApiResponse(responseCode = "200", description = "Authenticated, tokens issued"),
+    @ApiResponse(responseCode = "400", description = "Validation failed", content = @Content),
+    @ApiResponse(
+        responseCode = "401",
+        description = "Invalid username or password",
+        content = @Content)
+  })
   public AuthResponse login(@Valid @RequestBody LoginRequest request) {
     UserEntity user =
         userService
@@ -92,6 +124,19 @@ public class AuthController {
    * revoked, so replaying it afterwards yields 401.
    */
   @PostMapping("/refresh")
+  @Operation(
+      summary = "Rotate a refresh token",
+      description =
+          "Send the refresh token as 'Authorization: Bearer <refreshToken>'. Returns a new"
+              + " access + refresh pair; the presented token is single-use and becomes invalid.")
+  @SecurityRequirement(name = OpenApiConfig.BEARER_SCHEME)
+  @ApiResponses({
+    @ApiResponse(responseCode = "200", description = "New token pair issued"),
+    @ApiResponse(
+        responseCode = "401",
+        description = "Refresh token invalid, expired, revoked or of the wrong type",
+        content = @Content)
+  })
   public AuthResponse refresh(
       @RequestHeader(name = HttpHeaders.AUTHORIZATION, required = false)
           String authorizationHeader) {
@@ -112,6 +157,19 @@ public class AuthController {
    */
   @PostMapping("/logout")
   @ResponseStatus(HttpStatus.NO_CONTENT)
+  @Operation(
+      summary = "Revoke a refresh token",
+      description =
+          "Send the refresh token as 'Authorization: Bearer <refreshToken>'. Revoking an"
+              + " already-revoked or unknown token yields 401 (not an idempotent no-op).")
+  @SecurityRequirement(name = OpenApiConfig.BEARER_SCHEME)
+  @ApiResponses({
+    @ApiResponse(responseCode = "204", description = "Token revoked"),
+    @ApiResponse(
+        responseCode = "401",
+        description = "Refresh token already revoked or unknown",
+        content = @Content)
+  })
   public void logout(
       @RequestHeader(name = HttpHeaders.AUTHORIZATION, required = false)
           String authorizationHeader) {
