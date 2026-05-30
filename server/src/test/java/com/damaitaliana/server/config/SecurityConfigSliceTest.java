@@ -15,6 +15,7 @@ import com.damaitaliana.server.auth.JwtAuthenticationFilter;
 import com.damaitaliana.server.auth.JwtClaims;
 import com.damaitaliana.server.auth.JwtService;
 import com.damaitaliana.server.auth.JwtVerificationException;
+import com.damaitaliana.server.auth.RateLimitFilter;
 import com.damaitaliana.server.entity.Role;
 import com.damaitaliana.server.user.UserController;
 import java.time.Instant;
@@ -41,7 +42,7 @@ import org.springframework.web.bind.annotation.RestController;
     excludeFilters =
         @Filter(
             type = FilterType.ASSIGNABLE_TYPE,
-            classes = {AuthController.class, UserController.class}))
+            classes = {AuthController.class, UserController.class, RateLimitFilter.class}))
 @Import({
   SecurityConfig.class,
   JwtAuthenticationFilter.class,

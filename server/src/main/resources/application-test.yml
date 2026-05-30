@@ -25,6 +25,12 @@ dama:
     # Hardcoded test secret >= 32 bytes (HS256 minimum). Riproducibile tra
     # esecuzioni, NON da env var (nessun setup esterno richiesto per i test).
     secret: test-secret-not-for-prod-32bytes-padding-xxxx-padding-padding
+  ratelimit:
+    # Disabilitato nel fast loop: i test auth integration (register/login/refresh/
+    # logout/me) sparano molte richieste dallo stesso loopback address tra i loro
+    # metodi e scatterebbero il limite. RateLimitIntegrationTest lo riabilita
+    # esplicitamente con finestre brevi via @SpringBootTest(properties=...).
+    enabled: false
 
 logging:
   level:

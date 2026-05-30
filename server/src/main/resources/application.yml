@@ -56,6 +56,14 @@ dama:
     refresh-ttl-seconds: 604800
     # secret: dichiarato per profilo (dev=default+warning, test/it=hardcoded yaml,
     # prod=env var fail-fast). Vedi ADR-045.
+  ratelimit:
+    # Rate limit per-IP sugli endpoint auth non autenticati (NFR-S-04 parte 1, ADR-047).
+    # Default attivo in dev/it/prod; il profilo test lo disabilita (application-test.yml).
+    enabled: true
+    login-max-attempts: 5
+    login-window-seconds: 60
+    register-max-attempts: 3
+    register-window-seconds: 3600
 
 logging:
   level:
