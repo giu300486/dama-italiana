@@ -16,6 +16,7 @@ import com.damaitaliana.server.auth.JwtClaims;
 import com.damaitaliana.server.auth.JwtService;
 import com.damaitaliana.server.auth.JwtVerificationException;
 import com.damaitaliana.server.entity.Role;
+import com.damaitaliana.server.user.UserController;
 import java.time.Instant;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,7 +38,10 @@ import org.springframework.web.bind.annotation.RestController;
  * application/problem+json}.
  */
 @WebMvcTest(
-    excludeFilters = @Filter(type = FilterType.ASSIGNABLE_TYPE, classes = AuthController.class))
+    excludeFilters =
+        @Filter(
+            type = FilterType.ASSIGNABLE_TYPE,
+            classes = {AuthController.class, UserController.class}))
 @Import({
   SecurityConfig.class,
   JwtAuthenticationFilter.class,

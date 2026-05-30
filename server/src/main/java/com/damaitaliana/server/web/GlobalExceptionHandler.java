@@ -3,6 +3,7 @@ package com.damaitaliana.server.web;
 import com.damaitaliana.server.auth.JwtVerificationException;
 import com.damaitaliana.server.auth.RefreshTokenInvalidException;
 import com.damaitaliana.server.exception.UserAlreadyExistsException;
+import jakarta.persistence.EntityNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
 import java.net.URI;
 import java.util.List;
@@ -23,9 +24,10 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
  * contract needs: {@link UserAlreadyExistsException} → 409, {@link BadCredentialsException} → 401,
  * {@link MethodArgumentNotValidException} → 400. Task 5.9 adds {@link JwtVerificationException} →
  * 401 and {@link RefreshTokenInvalidException} → 401, the two stateful token failures the {@code
- * /refresh} and {@code /logout} endpoints raise past the security filter. Task 5.12 extends it
- * further with {@code RateLimitExceededException}, {@code EntityNotFoundException} and a catch-all
- * for unexpected failures.
+ * /refresh} and {@code /logout} endpoints raise past the security filter. Task 5.10 adds {@link
+ * EntityNotFoundException} → 404, the residual "valid token, user gone" case {@code GET
+ * /v1/users/me} can hit. Task 5.12 extends it further with {@code RateLimitExceededException} and a
+ * catch-all for unexpected failures.
  *
  * <p>Both token handlers return the same generic detail: "missing in DB" versus "already revoked"
  * versus "wrong type" must not be observable from the outside (it would let an attacker confirm a
@@ -54,6 +56,12 @@ public class GlobalExceptionHandler {
   @ExceptionHandler({JwtVerificationException.class, RefreshTokenInvalidException.class})
   public ProblemDetail handleInvalidToken(RuntimeException ex, HttpServletRequest request) {
     return problem(HttpStatus.UNAUTHORIZED, "Unauthorized", "Invalid or expired token", request);
+  }
+
+  @ExceptionHandler(EntityNotFoundException.class)
+  public ProblemDetail handleEntityNotFound(
+      EntityNotFoundException ex, HttpServletRequest request) {
+    return problem(HttpStatus.NOT_FOUND, "Not Found", "Resource not found", request);
   }
 
   @ExceptionHandler(MethodArgumentNotValidException.class)
