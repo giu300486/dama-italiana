@@ -254,3 +254,9 @@ Questo per evitare drift silenzioso del workflow stesso.
 ---
 
 **FINE DOCUMENTO**
+
+<!-- aw:begin -->
+## aw workflow
+This project uses the aw workflow (plugin `aw`). At session start a message "aw: context restored" should appear.
+If it did not, the plugin is not active: before doing anything, read `.aw/RESUME.md` (if present) and the dossiers in `.aw/work/`, show the user the open workstreams and wait for a choice. Tell the user the aw plugin seems inactive.
+<!-- aw:end -->
