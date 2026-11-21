@@ -23,7 +23,11 @@ sources: [server/src/test/java/com/damaitaliana/server/config/SecurityConfigSlic
 - **Niente Docker/Testcontainers nel server** (ADR-049): dev e it usano MySQL nativo. CLAUDE.md §5 elenca ancora
   `docker-compose up/down`, superati da ADR-018: non usarli.
 - **Sandbox di Claude:** i test `@SpringBootTest(RANDOM_PORT)` falliscono con "Unable to establish loopback
-  connection" se lanciati dalla sandbox dei comandi; lanciarli senza sandbox o dal terminale dell'utente prima
-  di dichiarare la build verde o rossa.
+  connection" se lanciati dalla sandbox dei comandi, e (verificato il 2026-11-22) anche da Bash o PowerShell con
+  `dangerouslyDisableSandbox`. Lanciarli dal pannello Terminale (`run_in_terminal`) o dal terminale dell'utente
+  prima di dichiarare la build verde o rossa.
+- **Metriche nei test:** `@SpringBootTest` disattiva l'export delle metriche, quindi `/actuator/prometheus` dà
+  404 nei test; serve `@AutoConfigureObservability(tracing = false)` sulla classe (`MetricsIntegrationTest`).
+  In produzione l'endpoint è esposto normalmente.
 - **Controller UI Spring nel client:** un solo costruttore (o `@Autowired` su quello di produzione) e almeno un
   test che risolve il bean dal context reale; i test con `new` + mock non vedono gli errori di wiring.
