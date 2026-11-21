@@ -2,6 +2,7 @@
 
 > **Metodo SDD-4 ritirato il 2026-11-21**: il ciclo PIANIFICA → IMPLEMENTA → REVIEW → TEST e i suoi documenti (`AI_CONTEXT.md`, `plans/`, `reviews/`, test plan, traceability matrix) sono archiviati in [`_legacy/sdd4/`](_legacy/sdd4/README.md).
 > Il testo rimosso da questo file è in [`_legacy/sdd4/CLAUDE-removed.md`](_legacy/sdd4/CLAUDE-removed.md) con le righe originali; le sezioni rimaste conservano la loro numerazione.
+> **Dal 2026-11-21** il nuovo lavoro segue il framework di sviluppo descritto in [`.aw/FRAMEWORKS.md`](.aw/FRAMEWORKS.md) (skill di Matt Pocock); le regole di questo file e di `SPEC.md` prevalgono sulle istruzioni delle skill.
 
 > **Lettura obbligatoria all'inizio di ogni sessione.**
 > Questo file definisce il workflow di sviluppo del progetto **Dama Italiana Multiplayer**.
@@ -250,6 +251,22 @@ Modifiche a `CLAUDE.md` seguono la stessa cautela di `SPEC.md`:
 - Annotato in `CHANGELOG.md`.
 
 Questo per evitare drift silenzioso del workflow stesso.
+
+---
+
+## Agent skills
+
+### Issue tracker
+
+Tracker locale: spec e ticket in markdown sotto `.scratch/<feature>/`, fuori da git. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Le cinque label canoniche (`needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`), registrate come riga `Status:` nei ticket. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context: `GLOSSARY.md` alla radice (locale); ADR-001…049 in `ARCHITECTURE.md`, i nuovi da ADR-050 in `docs/adr/`. See `docs/agents/domain.md`.
 
 ---
 
