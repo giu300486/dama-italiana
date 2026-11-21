@@ -1,0 +1,6 @@
+- [Spring UI tests must include context-level resolution](feedback_spring_ui_tests.md) — multi-ctor `@Component` beans without `@Autowired` pass unit tests but fail at `getObject()`
+- [Never add Co-Authored-By Claude trailer to commits](feedback_no_coauthor_trailer.md) — user permanently disabled the trailer in this repo; future commits must omit it
+- [Always ask before moving to the next task](feedback_ask_before_next_task.md) — at the end of each numbered roadmap task, ask the user before starting the next one; do not chain tasks autonomously
+- [Contributor cleanup completed (option A executed)](project_contributor_cleanup.md) — 2026-04-30 history rewrite + force-push removed the trailer from all 114 commits and 4 tags
+- [Phase transition protocol — riparti da CLAUDE.md §7](project_phase_transition_protocol.md) — ad ogni chiusura fase, la fase successiva inizia rieseguendo i 7 passi di "Avvio sessione" prima di scrivere il PLAN
+- [UI restyling constraint — riusare design system F3.5](project_ui_restyling_constraint.md) — tutte le nuove schermate da F6+ DEVONO riusare design system wood premium di F3.5; niente stili ad-hoc

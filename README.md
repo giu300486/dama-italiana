@@ -9,9 +9,9 @@ Applicazione desktop Java per giocare a **Dama Italiana** in tre modalità: cont
 
 ## Stato del progetto
 
-Fase corrente: **Fase 5 — Server centrale skeleton** (vedi [`plans/PLAN-fase-5.md`](plans/PLAN-fase-5.md)).
+Fase corrente: **Fase 5 — Server centrale skeleton** (vedi [`_legacy/sdd4/plans/PLAN-fase-5.md`](_legacy/sdd4/plans/PLAN-fase-5.md)).
 
-Stato runtime corrente: vedi [`AI_CONTEXT.md`](AI_CONTEXT.md).
+Storico dello stato fino al 2026-11-21: [`_legacy/sdd4/AI_CONTEXT.md`](_legacy/sdd4/AI_CONTEXT.md).
 
 ---
 
@@ -227,7 +227,7 @@ Genera `client/target/jpackage/Dama Italiana/` con il `.exe` di lancio + JRE —
 
 > Nota: l'`-DskipTests` è raccomandato perché la phase `package` con il profilo `installer` esegue dep-staging + jpackage, non i test (già coperti da `mvn verify`). Per smoke test pre-build: `mvn -pl client -Pinstaller dependency:copy-dependencies@jpackage-stage-runtime-deps` popola `target/jpackage-input/` senza invocare `jpackage`.
 
-**Demo cliente Win 10/11**: l'MSI è pensato per la consegna come pacchetto autosufficiente. Il cliente riceve il file, fa **doppio-click**, completa l'installer wizard standard Windows (accetta i default, scope per-utente in `%LocalAppData%\Dama Italiana\`), e dal Start menu trova la voce "Dama Italiana" pronta al lancio. **Nessun prerequisito Java** sul target (JRE bundled). Le build successive con stesso `--win-upgrade-uuid` (UUID stabile committato nel POM) fanno upgrade in-place automatico senza disinstallazione manuale. Il flusso è coperto dal manual demo run di Task 3.5.14 (vedi `tests/TEST-PLAN-fase-3.5.md §7`).
+**Demo cliente Win 10/11**: l'MSI è pensato per la consegna come pacchetto autosufficiente. Il cliente riceve il file, fa **doppio-click**, completa l'installer wizard standard Windows (accetta i default, scope per-utente in `%LocalAppData%\Dama Italiana\`), e dal Start menu trova la voce "Dama Italiana" pronta al lancio. **Nessun prerequisito Java** sul target (JRE bundled). Le build successive con stesso `--win-upgrade-uuid` (UUID stabile committato nel POM) fanno upgrade in-place automatico senza disinstallazione manuale. Il flusso è coperto dal manual demo run di Task 3.5.14 (vedi `_legacy/sdd4/tests/TEST-PLAN-fase-3.5.md §7`).
 
 ### Headless / dev mode
 
@@ -283,16 +283,7 @@ Se in futuro si vorrà CI completamente self-hosted (senza dipendere dai runner 
 
 ---
 
-## Workflow Spec-Driven Development
-
-Il progetto adotta un workflow **PIANIFICA → IMPLEMENTA → REVIEW → TEST** descritto in `CLAUDE.md` §2. Ogni fase della roadmap (`SPEC.md` §16) attraversa queste 4 sotto-fasi nell'ordine indicato.
-
-Output di ogni sotto-fase:
-
-- `plans/PLAN-fase-N.md` — output di PIANIFICA.
-- `reviews/REVIEW-fase-N.md` — output di REVIEW.
-- `tests/TEST-PLAN-fase-N.md` — output di TEST.
-- `tests/TRACEABILITY.md` — matrice cumulativa requisito → test.
+Il workflow Spec-Driven Development (metodo SDD-4) è stato ritirato il 2026-11-21: la sua descrizione, i piani, le review e i test plan sono archiviati in [`_legacy/sdd4/`](_legacy/sdd4/README.md).
 
 ---
 
