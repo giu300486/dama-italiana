@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Logging del server centrale (A5.17, NFR-O-02/03).
+  I livelli per logger restano in application*.yml (logging.level.*).
+-->
+<configuration>
+
+  <!-- dev, test (e avvio senza profilo): console standard di Spring Boot, colorata se il terminale lo supporta. -->
+  <springProfile name="!(prod | it)">
+    <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
+    <include resource="org/springframework/boot/logging/logback/console-appender.xml"/>
+    <root level="INFO">
+      <appender-ref ref="CONSOLE"/>
+    </root>
+  </springProfile>
+
+  <!-- prod, it: una riga JSON per evento (logstash-logback-encoder); le chiavi MDC, tra cui correlationId, diventano campi. -->
+  <springProfile name="prod | it">
+    <appender name="JSON_CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+      <encoder class="net.logstash.logback.encoder.LoggingEventCompositeJsonEncoder">
+        <providers>
+          <timestamp/>
+          <logLevel/>
+          <loggerName/>
+          <message/>
+          <mdc/>
+          <stackTrace/>
+        </providers>
+      </encoder>
+    </appender>
+    <root level="INFO">
+      <appender-ref ref="JSON_CONSOLE"/>
+    </root>
+  </springProfile>
+
+</configuration>
