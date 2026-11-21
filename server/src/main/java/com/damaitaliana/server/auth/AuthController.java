@@ -8,6 +8,7 @@ import com.damaitaliana.server.dto.LoginRequest;
 import com.damaitaliana.server.dto.RegisterRequest;
 import com.damaitaliana.server.entity.UserEntity;
 import com.damaitaliana.server.mapper.UserMapper;
+import com.damaitaliana.server.observability.AuthMetrics;
 import com.damaitaliana.server.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -16,6 +17,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import java.util.Optional;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -57,6 +59,7 @@ public class AuthController {
   private final RefreshTokenService refreshTokenService;
   private final JwtService jwtService;
   private final PasswordEncoder passwordEncoder;
+  private final AuthMetrics authMetrics;
   private final long accessTtlSeconds;
 
   public AuthController(
@@ -64,11 +67,13 @@ public class AuthController {
       RefreshTokenService refreshTokenService,
       JwtService jwtService,
       PasswordEncoder passwordEncoder,
+      AuthMetrics authMetrics,
       JwtProperties jwtProperties) {
     this.userService = userService;
     this.refreshTokenService = refreshTokenService;
     this.jwtService = jwtService;
     this.passwordEncoder = passwordEncoder;
+    this.authMetrics = authMetrics;
     this.accessTtlSeconds = jwtProperties.getAccessTtlSeconds();
   }
 
@@ -86,6 +91,7 @@ public class AuthController {
         content = @Content)
   })
   public AuthResponse register(@Valid @RequestBody RegisterRequest request) {
+    authMetrics.registerAttempted();
     UserEntity user = userService.register(request);
     return buildAuthResponse(user);
   }
@@ -105,17 +111,19 @@ public class AuthController {
         content = @Content)
   })
   public AuthResponse login(@Valid @RequestBody LoginRequest request) {
-    UserEntity user =
-        userService
-            .findByUsername(request.username())
-            .orElseThrow(() -> new BadCredentialsException(INVALID_CREDENTIALS));
-    if (!passwordEncoder.matches(request.password(), user.getPasswordHash())) {
+    Optional<UserEntity> found = userService.findByUsername(request.username());
+    if (found.isEmpty()
+        || !passwordEncoder.matches(request.password(), found.get().getPasswordHash())) {
+      authMetrics.loginFailed();
       throw new BadCredentialsException(INVALID_CREDENTIALS);
     }
+    UserEntity user = found.get();
     userService.updateLastLogin(user.getId());
     // Re-read so the response carries the freshly updated lastLoginAt timestamp.
     UserEntity refreshed = userService.findById(user.getId()).orElseThrow();
-    return buildAuthResponse(refreshed);
+    AuthResponse response = buildAuthResponse(refreshed);
+    authMetrics.loginSucceeded();
+    return response;
   }
 
   /**

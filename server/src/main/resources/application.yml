@@ -43,6 +43,12 @@ management:
   endpoint:
     health:
       show-details: when-authorized
+  metrics:
+    distribution:
+      # Bucket dell'istogramma per le latenze HTTP: permettono a Prometheus di calcolare
+      # i percentili (histogram_quantile) aggregando tra istanze (A5.18).
+      percentiles-histogram:
+        http.server.requests: true
 
 springdoc:
   api-docs:
