@@ -1,0 +1,52 @@
+{
+  "permissions": {
+    "deny": [
+      "Read(**/.env)",
+      "Read(**/.env.*)",
+      "Read(//**/.env)",
+      "Read(**/*.p12)",
+      "Read(**/*.pfx)",
+      "Read(**/*.jks)",
+      "Read(**/*.keystore)",
+      "Read(**/*.pem)",
+      "Read(**/*.key)",
+      "Read(~/.ssh/**)",
+      "Read(~/.aws/**)",
+      "Read(~/.git-credentials)",
+      "Read(~/.netrc)",
+      "Edit(**/.env)",
+      "Edit(**/*.p12)",
+      "Edit(**/*.jks)",
+      "Edit(**/*.pem)",
+      "Edit(**/*.key)",
+      "Edit(~/.claude/settings.json)",
+      "Bash(git push)",
+      "Bash(git push *)",
+      "PowerShell(git push)",
+      "PowerShell(git push *)"
+    ],
+    "ask": [
+      "Bash(git commit *)",
+      "PowerShell(git commit *)"
+    ],
+    "allow": [
+      "Bash(aw-state *)",
+      "Bash(aw-close-begin)",
+      "Bash(aw-close-begin *)",
+      "Bash(aw-repos)",
+      "Bash(aw-repos *)",
+      "Bash(aw-scan)",
+      "Bash(aw-scan *)",
+      "Bash(aw-upgrade-scan)",
+      "Bash(aw-upgrade-scan *)",
+      "Bash(aw-allow-audit)",
+      "Bash(aw-allow-audit *)",
+      "Bash(aw-probe-canary)",
+      "Bash(aw-probe-canary *)",
+      "Bash(aw-check)",
+      "Bash(aw-check *)",
+      "Bash(aw-template)",
+      "Bash(aw-template *)"
+    ]
+  }
+}
