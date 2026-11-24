@@ -1,7 +1,7 @@
 ---
 topic: pitfalls
-verified: 2026-11-21
-verifiedAt: { dama-italiana: 0d47711 }
+verified: 2026-11-24
+verifiedAt: { dama-italiana: d167e57 }
 sources: [server/src/test/java/com/damaitaliana/server/config/SecurityConfigSliceTest.java, server/src/main/resources/application-test.yml, pom.xml, server/src/main/java/com/damaitaliana/server/config/JwtProperties.java, server/src/test/java/com/damaitaliana/server/FlywayMigrationMysqlIntegrationTest.java, CLAUDE.md]
 ---
 # Pitfalls: do not reintroduce

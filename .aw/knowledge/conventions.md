@@ -1,7 +1,7 @@
 ---
 topic: conventions
-verified: 2026-11-21
-verifiedAt: { dama-italiana: 0d47711 }
+verified: 2026-11-24
+verifiedAt: { dama-italiana: d167e57 }
 sources: [CLAUDE.md, .editorconfig, .gitattributes]
 ---
 # Conventions
@@ -20,4 +20,7 @@ sources: [CLAUDE.md, .editorconfig, .gitattributes]
   `fix/review-N-F-<id>`, merge `--no-ff`; a fine fase `develop → main` e tag `v0.<fase>.0` sul merge in `main`.
 - **Documenti:** `SPEC.md` solo via change request approvata (`docs(spec): ...` + CHANGELOG); `CLAUDE.md` solo
   dopo discussione (`docs(claude): ...` + CHANGELOG); nuove dipendenze fuori da SPEC §6 solo con approvazione.
+- **Lavoro nuovo:** skill Matt Pocock (`.aw/FRAMEWORKS.md`), ma CLAUDE.md e `SPEC.md` prevalgono; ticket e spec
+  in `.scratch/<feature>/` fuori da git, label canoniche come riga `Status:`; ADR nuovi da ADR-050 in
+  `docs/adr/` (CLAUDE.md "Agent skills").
 - **Ritmo:** chiedere conferma all'utente prima di iniziare ogni nuovo task numerato.
