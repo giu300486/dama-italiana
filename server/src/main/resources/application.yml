@@ -42,6 +42,9 @@ management:
         include: health, info, prometheus
   endpoint:
     health:
+      # Chi chiama senza token (probe di orchestrazione) vede lo stato di ogni componente
+      # (es. db: UP); i dettagli (versione DB, spazio disco) restano solo per gli autorizzati (A5.19).
+      show-components: always
       show-details: when-authorized
   metrics:
     distribution:
