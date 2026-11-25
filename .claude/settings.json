@@ -52,7 +52,9 @@
       "Bash(aw-align)",
       "Bash(aw-align *)",
       "Bash(aw-doctor)",
-      "Bash(aw-doctor *)"
+      "Bash(aw-doctor *)",
+      "Bash(aw-worktree)",
+      "Bash(aw-worktree *)"
     ]
   }
 }
