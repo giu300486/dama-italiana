@@ -514,6 +514,13 @@ Riferimento autoritativo: `SPEC.md` Appendice B.
   - Rotazione JWT secret ogni 90gg + grace 24h (SPEC §15.2): **fuori scope F5** (concern ops/deploy via env var rotation, non Spring config).
   - Test `MultiProfileBootTest` (Task 5.2) asserisce che ciascuno dei 4 profili carica un context Spring valido (eccetto verifica fail-fast `prod` senza env var).
 - **Stato post-implementazione F5 (retro 2026-05-16)**: la decisione 9.4 originale (Testcontainers per `dev` e `it`) è stata **superseded da ADR-049**. I profili `dev` e `it` puntano ora a MySQL nativo locale (`localhost:3306`) con DB dedicati (`dama_italiana_dev`, `dama_italiana_it`); il comando dev è `mvn -pl server spring-boot:run -Dspring-boot.run.profiles=dev` (non più `spring-boot:test-run`). La struttura a 4 profili resta valida; cambia solo la sorgente del datasource per `dev`/`it`. ADR-018 (Docker Compose rimosso) **resta valido e rafforzato**: ora Docker non è più prerequisito di alcun layer del modulo `server` (eccetto eventuale containerizzazione `prod` futura come deploy concern).
+- **Stato post-implementazione F5 (Task 5.15, 2026-11-25)**:
+  - I 4 profili sono realizzati come descritto, con la sorgente dati di `dev`/`it` di ADR-049. `ServerApplication.requireActiveProfile()` interrompe l'avvio se nessun profilo è attivo.
+  - **Fail-fast `prod`**: il meccanismo primario è il placeholder senza default in `application-prod.yml` (`${JWT_SECRET}`, `${SPRING_DATASOURCE_*}`): Spring non risolve il valore e il bootstrap fallisce. `JwtProperties.validate()` resta seconda linea difensiva.
+  - **`MultiProfileBootTest` non realizzato**: il context completo è caricato nei test solo con `test` (`ServerApplicationContextLoadsTest` e integration test H2) e `it` (test `slow` su MySQL). `dev` e `prod` non sono avviati da test automatici; lo switch di logging per profilo è coperto da `LogbackSpringConfigurationTest`.
+  - **Logging**: JSON su una riga (`LoggingEventCompositeJsonEncoder`, con `@timestamp` e chiavi MDC incluso `correlationId`) nei profili `prod` **e `it`**; console standard di Spring Boot in tutti gli altri (`!(prod | it)`), così un avvio senza profilo logga comunque.
+  - **Observability (Task 5.14)**: `web/CorrelationIdFilter` a precedenza massima, prima della security chain, legge o genera `X-Correlation-Id`, lo mette in MDC e lo riscrive nella risposta (anche sui 401 dei filter). Delta dal PLAN: un id del client è accettato solo se rispetta `[A-Za-z0-9._-]{1,64}` (contro la log injection), e nel `finally` si rimuove solo la chiave `correlationId` invece di `MDC.clear()`. Actuator espone `health`, `info`, `prometheus`; `/actuator/health` è pubblico con `show-components: always` (stato `db` visibile alle probe) e `show-details: when-authorized`. Metriche custom in `observability/AuthMetrics` (gauge `users_registered`, non `users_total`: vedi CHANGELOG, Task 5.14).
+  - CORS come deciso: origini da `dama.cors.allowed-origins`, default `http://localhost:8080`.
 
 ---
 
@@ -541,6 +548,13 @@ Riferimento autoritativo: `SPEC.md` Appendice B.
   - `RefreshTokenService.verifyAndRotate(String) → {UserEntity, newAccess, newRefresh}` con transazione + lock pessimistico su `refresh_tokens.id` per evitare race su doppio refresh concorrente.
   - `JwtBootValidationTest`: simula profilo `prod` con env var `JWT_SECRET` assente, asserisce fail-fast all'avvio context.
   - SecurityFilterChain stateless (no HttpSession), `JwtAuthenticationFilter` legge `Authorization: Bearer <jwt>`, popola SecurityContext con `Authentication(userId, [Role])`.
+- **Stato post-implementazione F5 (Task 5.15, 2026-11-25)**:
+  - Realizzati come deciso: HS256 con JJWT 0.12.6, claims e verifica di `type`, hash SHA-256 del refresh token in `refresh_tokens.token_hash` (mai il token in chiaro), lock pessimistico in rotazione (`RefreshTokenRepository.findByTokenHashForUpdate`, `PESSIMISTIC_WRITE`), API `issueAccess`/`issueRefresh`/`parse` e `RefreshTokenService.verifyAndRotate`.
+  - **Delta — `jti` casuale**: ogni token porta un `jti` UUID. Senza, due token dello stesso utente emessi nello stesso secondo (`iat`/`exp` troncati al secondo) avevano lo stesso hash e violavano `UNIQUE(token_hash)` in rotazione.
+  - **Delta — trasporto del refresh token**: `POST /v1/auth/refresh` e `POST /v1/auth/logout` lo leggono da `Authorization: Bearer`, non dal body. Il logout non è idempotente: token sconosciuto o già revocato → 401.
+  - **Delta — token invalido su endpoint pubblico**: `JwtAuthenticationFilter` risponde 401 anche sui path in whitelist se il client invia un Bearer non verificabile.
+  - **Delta — errori stateful**: `JwtVerificationException` (es. access token usato come refresh) e `RefreshTokenInvalidException` (ruotato/revocato) sono mappati a 401 in `GlobalExceptionHandler` con un unico `detail` generico, per non rivelare quale controllo è fallito.
+  - **`JwtBootValidationTest` non realizzato**: il fail-fast `prod` si regge sul placeholder `${JWT_SECRET}` (ADR-044); i rami di `JwtProperties.validate()` (secret assente in `prod`, secret < 32 byte) non hanno un test dedicato. Da valutare nella review di F5.
 
 ---
 
@@ -569,6 +583,11 @@ Riferimento autoritativo: `SPEC.md` Appendice B.
   - F6 PLAN dovrà aggiungere V2 senza toccare V1; F8 PLAN dovrà aggiungere V3 senza toccare V1/V2.
   - SPEC §8.4 v2.4 è la specifica logica del schema completo. Le V1/V2/V3 implementano questa spec incrementalmente. Eventuali divergenze (es. tipi colonne, FK ON DELETE behavior) devono essere CR a SPEC.
   - `enum Role` lato Java centralizzato in `server.entity` package per riuso futuro (auth + future endpoint admin).
+- **Stato post-implementazione F5 (Task 5.15, 2026-11-25)**:
+  - V1 realizzata come deciso (`V1__init_users_and_refresh_tokens.sql`: `users` con CHECK su `role`, `refresh_tokens` con FK `ON DELETE CASCADE`, indice `idx_refresh_tokens_expires`). `ddl-auto: validate` nella configurazione comune; `clean-disabled: true` solo in `prod`, `false` in `dev`/`test`/`it`. Piano V2 (F6) e V3 (F8) invariato.
+  - La conseguenza "Testcontainers ricrea il container" è superata da ADR-049: in `it` l'isolamento viene da `flyway.clean()` + `flyway.migrate()` in `@BeforeEach` di `AbstractMysqlIntegrationTest`.
+  - **Delta — violazione CHECK su MySQL**: `FlywayMigrationMysqlIntegrationTest` si aspetta `DataAccessException` e non `DataIntegrityViolationException`, perché il traduttore di Spring non mappa l'errore MySQL 8 3819 (CHECK violation). Il vincolo è applicato correttamente dal DB; cambia solo il tipo di eccezione Spring.
+  - **Delta — stato H2 condiviso tra classi di test**: il DB H2 in-memory (`DB_CLOSE_DELAY=-1`) e la cache dei context Spring fanno vedere a una classe le righe committate da un'altra. Mitigato con prefissi di username per classe (`reg_*`, `login_*`, `me_*`, …) e query limitate (`username LIKE 'flymig-%'`). Da rivedere nella review di F5.
 
 ---
 
@@ -592,6 +611,13 @@ Riferimento autoritativo: `SPEC.md` Appendice B.
   - `RateLimitIntegrationTest` (`@SpringBootTest` H2): 6 login consecutivi rapidi → 6° è 429 con `Retry-After`; reset dopo TTL.
   - Account lockout (10 tentativi/ora per username, SPEC §15.1) + Redis distributed: **deferred F6** quando esistono utenti reali a rischio.
   - Falso positivo: utenti dietro CGNAT condividono IP — possibile rate limit accidentale su gruppo di utenti; accettabile in v1, da rivalutare se diventa un problema reale.
+- **Stato post-implementazione F5 (Task 5.15, 2026-11-25)**:
+  - **Delta — finestra fissa, non scorrevole**: il contatore Caffeine scade `expireAfterWrite` dopo la prima richiesta della finestra, quindi la finestra è fissa (il punto 2 sopra la chiamava "sliding"). Il picco a cavallo di due finestre descritto tra le alternative è accettato in v1.
+  - **Delta — niente `RateLimitConfig`**: le due cache sono costruite nel costruttore di `auth/RateLimitFilter`, non esposte come bean. Le proprietà sono in `config/RateLimitProperties` con prefisso `dama.ratelimit` (non `dama.rate-limit`) e un flag `enabled`; i default (5/60 s login, 3/3600 s register) sono in `application.yml`.
+  - **Delta — profilo `test`**: `application-test.yml` imposta `dama.ratelimit.enabled: false`, perché gli integration test inviano molte richieste dallo stesso indirizzo di loopback. `RateLimitIntegrationTest` lo riabilita con finestre di 2 s e un `X-Forwarded-For` diverso per test.
+  - **Delta — 429 scritto dal filter**: `RateLimitFilter` è un `@Component` registrato automaticamente (non agganciato a `SecurityConfig`) e scrive da sé il 429 `application/problem+json` con `Retry-After` pari alla durata intera della finestra. Non esistono `RateLimitExceededException` né un handler 429 in `GlobalExceptionHandler`.
+  - **Limite noto, da decidere nella review di F5**: il primo valore di `X-Forwarded-For` è usato senza verificare da chi arriva. Senza un reverse proxy che riscriva l'header, un client può cambiarlo a ogni richiesta e ottenere ogni volta un contatore nuovo, aggirando il limite. Il deploy deve mettere davanti un proxy che imposti l'header, oppure il filter deve fidarsi solo di proxy noti.
+  - Lockout per account (SPEC §15.1) resta rimandato a F6, come deciso.
 
 ---
 
@@ -624,6 +650,12 @@ Riferimento autoritativo: `SPEC.md` Appendice B.
   - Profilo `dev` Testcontainers Spring Boot dev mode (ADR-044) condivide il setup `@ServiceConnection MySQLContainer` con profilo `it` — **identità di stack tra dev runtime e integration test**: se un E2E auth flow funziona in `it` test, funziona in `dev` runtime.
   - SAST SpotBugs 0 High esteso a `server` (NFR-M-04, già richiesto via parent pom).
 - **Stato post-implementazione F5 (retro 2026-05-16)**: il punto 4 della decisione ("Full integration MySQL via Testcontainers `@Tag("slow")`") è stato **superseded da ADR-049**. Sostanza invariata (test slow su MySQL reale, escluso da fast loop), cambia il substrate: `AbstractMysqlIntegrationTest` punta a `localhost:3306/dama_italiana_it` invece che a un container effimero. Isolamento stato garantito via `flyway.clean()` in `@BeforeEach`. Identità di stack `dev`↔`it` preservata (ora entrambi MySQL nativo) — anzi rafforzata da parità prod (stesso stack di runtime in `prod`). Comandi Maven invariati (`-DexcludedGroups=slow` per fast loop, `verify` per full).
+- **Stato post-implementazione F5 (Task 5.15, 2026-11-25)**:
+  - **Esito**: `mvn -pl server verify` verde su `3a97526` (2026-11-24): 96 test, di cui 2 `@Tag("slow")` su MySQL nativo (`FlywayMigrationMysqlIntegrationTest`), Spotless pulito. La suite completa richiede MySQL nativo (ADR-049), non Docker. BCrypt cost 12 mantenuto in tutti i profili.
+  - **Delta — TDD**: dal Task 5.14 i test sono scritti prima del codice con la skill `tdd` di Matt Pocock (`.aw/FRAMEWORKS.md`), un seam HTTP per criterio (es. lo scrape di `/actuator/prometheus`, la `GET /actuator/health`).
+  - **Delta — slice web**: `SecurityConfigSliceTest` (`@WebMvcTest`) raccoglie ogni `@RestController` e ogni `Filter` `@Component` del package; ognuno va escluso con `excludeFilters` (oggi `AuthController`, `UserController`, `RateLimitFilter`), altrimenti lo slice fallisce per dipendenze mancanti.
+  - **Delta — metriche nei test**: `@SpringBootTest` disattiva l'export delle metriche; i test che leggono `/actuator/prometheus` richiedono `@AutoConfigureObservability(tracing = false)`.
+  - **Lacuna aperta — gate JaCoCo del modulo `server` non configurato**: `server/pom.xml` eredita dal POM padre `haltOnFailure=false` e minimo 0.00, quindi il "≥ 70% line+branch" delle Conseguenze non è applicato e le voci CHANGELOG di F5 che dicono "JaCoCo gate met" si riferiscono a quel gate ereditato. Ultimo report (2026-11-24, `3a97526`): linee 88.0%, istruzioni 87.7%, **branch 50.0%** (55/112). Rami meno coperti: `ServerApplication` 0/12, `UserEntity` 1/10, `RefreshTokenEntity` 4/14, `JwtProperties` 5/12, `JwtService` 4/8. Da decidere nella review di F5: configurare il gate (con le esclusioni di CLAUDE.md §2.4.2) e chiudere il divario sui branch.
 
 ---
 
