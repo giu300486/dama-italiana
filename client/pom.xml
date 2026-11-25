@@ -268,7 +268,7 @@
       containing the launcher .exe + bundled JRE — useful for ad-hoc distribution
       as a zip while WiX is being provisioned on the build machine.
 
-      Output: target/jpackage/dama-italiana-0.3.5.msi (or APP_IMAGE folder).
+      Output: target/jpackage/Dama Italiana-0.4.5.msi (or APP_IMAGE folder).
 
       Future optimisation (deferred from PLAN-fase-3.5 Task 3.5.12): pass an
       explicit runtime image built via jlink to shrink the bundled JRE from
@@ -279,7 +279,7 @@
       <id>installer</id>
       <properties>
         <jpackage.type>MSI</jpackage.type>
-        <jpackage.app.version>0.3.5</jpackage.app.version>
+        <jpackage.app.version>0.4.5</jpackage.app.version>
         <!-- Stable UUID required by WiX so upgrade installs replace prior versions
              instead of double-installing. Generated once for this product line; do
              NOT change unless intentionally creating a separate product. -->

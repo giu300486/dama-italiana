@@ -1,0 +1,34 @@
+# Profilo it - integration test full-stack con MySQL nativo locale (ADR-049).
+#
+# Datasource: stesso MySQL 8 nativo locale del profilo dev, ma DB dedicato
+# 'dama_italiana_it' per isolamento dai dati di sviluppo. Setup una tantum
+# via scripts/db/setup-local-mysql.sql (crea entrambi i DB).
+#
+# Comando: mvn -pl server verify (slow inclusi) — esegue tutti i test
+# @Tag("slow") che estendono AbstractMysqlIntegrationTest.
+#
+# Isolamento stato per test class: AbstractMysqlIntegrationTest invoca
+# flyway.clean() + flyway.migrate() in @BeforeEach, garantendo che ogni
+# metodo di test parta da DB pulito allineato a V1.
+
+spring:
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:mysql://localhost:3306/dama_italiana_it?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=UTC}
+    username: ${SPRING_DATASOURCE_USERNAME:dama}
+    password: ${SPRING_DATASOURCE_PASSWORD:dama}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    properties:
+      hibernate:
+        format_sql: false
+  flyway:
+    clean-disabled: false  # necessario per @BeforeEach flyway.clean() in AbstractMysqlIntegrationTest
+
+dama:
+  jwt:
+    # Hardcoded integration test secret >= 32 bytes (HS256 minimum).
+    secret: it-secret-not-for-prod-32bytes-padding-xxxx-padding-padding-xx
+
+logging:
+  level:
+    com.damaitaliana: INFO

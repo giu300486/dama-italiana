@@ -1,0 +1,38 @@
+# Profilo dev - MySQL nativo locale (ADR-049).
+#
+# Datasource: punta al MySQL 8 installato sulla macchina dev, DB 'dama_italiana_dev'.
+# Setup una tantum: scripts/db/setup-local-mysql.sql (crea DB + utente 'dama'@'localhost'
+# con password 'dama'). Vedi README.md §1.a.
+#
+# Comando dev: mvn -pl server spring-boot:run -Dspring-boot.run.profiles=dev
+#
+# Override credenziali via env var SPRING_DATASOURCE_USERNAME / SPRING_DATASOURCE_PASSWORD
+# se l'utente locale 'dama' ha credenziali diverse dal default. URL completo overridabile
+# via SPRING_DATASOURCE_URL.
+#
+# I dati persistono tra restart del server (DB locale, non effimero).
+
+spring:
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:mysql://localhost:3306/dama_italiana_dev?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=UTC}
+    username: ${SPRING_DATASOURCE_USERNAME:dama}
+    password: ${SPRING_DATASOURCE_PASSWORD:dama}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    properties:
+      hibernate:
+        format_sql: true
+  flyway:
+    clean-disabled: false  # consente flyway:clean su DB dev
+
+dama:
+  jwt:
+    # DEV-ONLY default: mai usare in produzione. ADR-045 documenta la strategia
+    # (warning log a runtime + fail-fast in profilo prod). Override con JWT_SECRET
+    # env var se per qualche motivo si vuole un secret stabile in dev.
+    secret: ${JWT_SECRET:dev-only-secret-change-me-32bytes-min-padding-xxxxxx}
+
+logging:
+  level:
+    com.damaitaliana: DEBUG
+    org.hibernate.SQL: DEBUG
