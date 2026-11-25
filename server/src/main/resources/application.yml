@@ -1,34 +1,49 @@
-# Dama Italiana — server centrale
-# Profilo default: ambiente di sviluppo locale. La configurazione di produzione
-# arriva via env var (12-factor) e profilo dedicato (Fase 5+).
+# Dama Italiana - server centrale (Spring Boot)
+#
+# Configurazione COMUNE a tutti i profili. Profilo specifico OBBLIGATORIO via
+# SPRING_PROFILES_ACTIVE (env var) o -Dspring.profiles.active (system property).
+#
+# Profili supportati (vedi ARCHITECTURE.md ADR-044 + ADR-049):
+#   - dev   : sviluppo locale, MySQL nativo localhost:3306/dama_italiana_dev.
+#             Comando: mvn -pl server spring-boot:run -Dspring-boot.run.profiles=dev.
+#   - test  : fast loop unit/slice/integration, H2 in-memory MySQL-compat.
+#             Attivato via @ActiveProfiles("test") nei test.
+#   - it    : integration test full-stack con MySQL nativo localhost:3306/dama_italiana_it
+#             (@Tag("slow")). Attivato via @ActiveProfiles("it") + AbstractMysqlIntegrationTest.
+#   - prod  : deploy reale, MySQL nativo installato sul server, secret via env var
+#             (JWT_SECRET, SPRING_DATASOURCE_*). Fail-fast su env var assente.
+#
+# La datasource e il JWT secret NON sono configurati qui: ogni profilo li dichiara
+# secondo la propria strategia (MySQL nativo locale per dev/it/prod, H2 per test).
 
 spring:
   application:
     name: dama-italiana-server
-  datasource:
-    # Default punta al MySQL locale dell'utente (porta standard 3306).
-    # Override via env var DB_URL/DB_USERNAME/DB_PASSWORD per altri ambienti.
-    # Il database `dama_italiana` deve esistere; lo schema è gestito da Flyway.
-    url: ${DB_URL:jdbc:mysql://localhost:3306/dama_italiana}
-    username: ${DB_USERNAME:dama}
-    # Nessun default: se manca DB_PASSWORD Spring fallisce con messaggio chiaro
-    # ("Could not resolve placeholder 'DB_PASSWORD'") invece di tentare la
-    # connessione con password vuota (errore meno diagnostico).
-    password: ${DB_PASSWORD}
   jpa:
     open-in-view: false
     hibernate:
       ddl-auto: validate
     properties:
       hibernate:
-        format_sql: true
+        format_sql: false
   flyway:
     enabled: true
     locations: classpath:db/migration
     baseline-on-migrate: true
+    fail-on-missing-locations: false
 
 server:
   port: ${SERVER_PORT:8080}
+  # IP del client dietro reverse proxy (ADR-047, review F5): il RemoteIpValve di Tomcat usa
+  # X-Forwarded-For / X-Forwarded-Proto solo se la connessione arriva da un proxy fidato e legge
+  # la catena da destra, fermandosi al primo indirizzo non fidato. Un client che si collega
+  # direttamente non puo' scegliersi l'IP con l'header.
+  forward-headers-strategy: native
+  tomcat:
+    remoteip:
+      # Proxy fidati: solo loopback (proxy sulla stessa macchina). Per un proxy su un altro host
+      # impostare l'env var SERVER_TOMCAT_REMOTEIP_INTERNAL_PROXIES (regex Java).
+      internal-proxies: '127\.\d{1,3}\.\d{1,3}\.\d{1,3}|0:0:0:0:0:0:0:1|::1'
 
 management:
   endpoints:
@@ -37,15 +52,41 @@ management:
         include: health, info, prometheus
   endpoint:
     health:
+      # Chi chiama senza token (probe di orchestrazione) vede lo stato di ogni componente
+      # (es. db: UP); i dettagli (versione DB, spazio disco) restano solo per gli autorizzati (A5.19).
+      show-components: always
       show-details: when-authorized
+  metrics:
+    distribution:
+      # Bucket dell'istogramma per le latenze HTTP: permettono a Prometheus di calcolare
+      # i percentili (histogram_quantile) aggregando tra istanze (A5.18).
+      percentiles-histogram:
+        http.server.requests: true
 
 springdoc:
   api-docs:
     path: /v3/api-docs
+    # Emette OpenAPI 3.1 (NFR-M-03) invece del default 3.0.1 di springdoc.
+    version: openapi_3_1
   swagger-ui:
     path: /swagger-ui
+
+dama:
+  jwt:
+    access-ttl-seconds: 900
+    refresh-ttl-seconds: 604800
+    # secret: dichiarato per profilo (dev=default+warning, test/it=hardcoded yaml,
+    # prod=env var fail-fast). Vedi ADR-045.
+  ratelimit:
+    # Rate limit per-IP sugli endpoint auth non autenticati (NFR-S-04 parte 1, ADR-047).
+    # Default attivo in dev/it/prod; il profilo test lo disabilita (application-test.yml).
+    enabled: true
+    login-max-attempts: 5
+    login-window-seconds: 60
+    register-max-attempts: 3
+    register-window-seconds: 3600
 
 logging:
   level:
     root: INFO
-    com.damaitaliana: DEBUG
+    com.damaitaliana: INFO

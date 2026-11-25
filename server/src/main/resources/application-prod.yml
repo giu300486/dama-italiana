@@ -1,0 +1,31 @@
+# Profilo prod - deploy reale, MySQL nativo installato sul server (no Docker).
+# Tutti i secret e i parametri di connessione DB sono OBBLIGATORI da env var.
+# Spring Boot fail-fast all'avvio se uno dei placeholder ${...} non e' risolto:
+# "Could not resolve placeholder 'JWT_SECRET' in value '${JWT_SECRET}'".
+#
+# Variabili d'ambiente richieste:
+#   - JWT_SECRET                 (>= 32 byte, HS256 minimum)
+#   - SPRING_DATASOURCE_URL      (es. jdbc:mysql://db.example:3306/dama_italiana)
+#   - SPRING_DATASOURCE_USERNAME
+#   - SPRING_DATASOURCE_PASSWORD
+
+spring:
+  datasource:
+    url: ${SPRING_DATASOURCE_URL}
+    username: ${SPRING_DATASOURCE_USERNAME}
+    password: ${SPRING_DATASOURCE_PASSWORD}
+  jpa:
+    properties:
+      hibernate:
+        format_sql: false
+  flyway:
+    clean-disabled: true  # blocca flyway:clean accidentale in prod
+
+dama:
+  jwt:
+    secret: ${JWT_SECRET}
+
+logging:
+  level:
+    root: WARN
+    com.damaitaliana: INFO
