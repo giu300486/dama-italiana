@@ -15,7 +15,10 @@ sources: [server/src/test/java/com/damaitaliana/server/config/SecurityConfigSlic
 - **springdoc vs Spring Boot:** springdoc 2.6.0 va in `NoSuchMethodError` con Boot 3.4.5 appena esiste un
   `@ControllerAdvice` (→ 500 su `/v3/api-docs`); serve la linea 2.8.x (`pom.xml`, `springdoc.version`).
 - **Rate limit nei test:** disattivato nel profilo `test` (`dama.ratelimit.enabled: false`) perché tutti i test
-  arrivano dallo stesso loopback; `RateLimitIntegrationTest` lo riattiva con `X-Forwarded-For` distinti.
+  arrivano dallo stesso loopback; `RateLimitIntegrationTest` lo riattiva con `X-Forwarded-For` distinti, che
+  valgono solo perché loopback è un proxy fidato (`server.tomcat.remoteip.internal-proxies`). Negli header
+  usare IP pubblici di test (TEST-NET `192.0.2.x`, `198.51.100.x`, `203.0.113.x`): un IP che matcha la regex dei
+  proxy fidati viene saltato dal `RemoteIpValve`. `RateLimitFilter` non deve leggere l'header da sé (ADR-047).
 - **`JwtProperties`:** usa `EnvironmentAware` + setter, non constructor injection di `Environment` (senza
   `-parameters` Spring tenta il value-object binding e fallisce).
 - **CHECK su MySQL 8:** l'errore 3819 non è tradotto in `DataIntegrityViolationException`; i test asseriscono

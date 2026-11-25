@@ -26,7 +26,9 @@ import org.springframework.test.context.ActiveProfiles;
  *
  * <p>Each test addresses the limiter from a distinct synthetic {@code X-Forwarded-For} IP so the
  * per-IP buckets stay disjoint regardless of method execution order (the filter bean, and therefore
- * its Caffeine caches, is shared across the class's methods).
+ * its Caffeine caches, is shared across the class's methods). The header is honoured only because
+ * the test client connects from loopback, the trusted proxy of the shared configuration; the IPs it
+ * carries must not match that trusted-proxy regex, or Tomcat's {@code RemoteIpValve} skips them.
  */
 @SpringBootTest(
     webEnvironment = WebEnvironment.RANDOM_PORT,
@@ -91,6 +93,23 @@ class RateLimitIntegrationTest {
     Thread.sleep(3000);
 
     assertThat(login(ip).getStatusCode()).isNotEqualTo(HttpStatus.TOO_MANY_REQUESTS);
+  }
+
+  @Test
+  void login_returns429_whenTheClientRotatesASpoofedLeftmostForwardedForValue() {
+    // A proxy that appends (nginx proxy_add_x_forwarded_for) keeps whatever the client sent on the
+    // left; only the rightmost value is written by the trusted proxy. Rotating the spoofed part
+    // must
+    // not give the client a fresh counter. TEST-NET-3 addresses: public, never a trusted proxy.
+    String realClient = "203.0.113.7";
+
+    for (int i = 0; i < 5; i++) {
+      String chain = "198.51.100." + i + ", " + realClient;
+      assertThat(login(chain).getStatusCode()).isNotEqualTo(HttpStatus.TOO_MANY_REQUESTS);
+    }
+
+    ResponseEntity<String> sixth = login("198.51.100.99, " + realClient);
+    assertThat(sixth.getStatusCode()).isEqualTo(HttpStatus.TOO_MANY_REQUESTS);
   }
 
   private ResponseEntity<String> login(String clientIp) {

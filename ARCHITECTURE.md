@@ -618,6 +618,11 @@ Riferimento autoritativo: `SPEC.md` Appendice B.
   - **Delta — 429 scritto dal filter**: `RateLimitFilter` è un `@Component` registrato automaticamente (non agganciato a `SecurityConfig`) e scrive da sé il 429 `application/problem+json` con `Retry-After` pari alla durata intera della finestra. Non esistono `RateLimitExceededException` né un handler 429 in `GlobalExceptionHandler`.
   - **Limite noto, da decidere nella review di F5**: il primo valore di `X-Forwarded-For` è usato senza verificare da chi arriva. Senza un reverse proxy che riscriva l'header, un client può cambiarlo a ogni richiesta e ottenere ogni volta un contatore nuovo, aggirando il limite. Il deploy deve mettere davanti un proxy che imposti l'header, oppure il filter deve fidarsi solo di proxy noti.
   - Lockout per account (SPEC §15.1) resta rimandato a F6, come deciso.
+- **Esito review F5 (2026-11-25) — IP del client solo da proxy fidati**: il limite noto sopra è chiuso e il punto 4 della decisione è sostituito. Il problema era più ampio: anche dietro un proxy che *accoda* l'IP (nginx `proxy_add_x_forwarded_for`) il primo valore di `X-Forwarded-For` lo sceglie il client. Ora:
+  - `server.forward-headers-strategy: native` in `application.yml` attiva il `RemoteIpValve` di Tomcat: `X-Forwarded-For` (e `X-Forwarded-Proto`) vale solo se la connessione arriva da un proxy fidato, e la catena è letta da destra fino al primo indirizzo non fidato. Nessuna nuova dipendenza.
+  - Proxy fidati (`server.tomcat.remoteip.internal-proxies`): solo loopback, in tutti i profili, cioè proxy sulla stessa macchina. Per un proxy su un altro host si imposta l'env var `SERVER_TOMCAT_REMOTEIP_INTERNAL_PROXIES` (regex Java). Scartato il default di Spring Boot (reti private): fidarsi di ogni host della rete interna è più largo del necessario per un deploy single-instance.
+  - `RateLimitFilter` usa solo `getRemoteAddr()` e non legge più l'header.
+  - Test: `RateLimitIntegrationTest` (client fidato che falsifica il valore di sinistra → 429 al 6° login) e `RateLimitUntrustedPeerIntegrationTest` (client non fidato che cambia `X-Forwarded-For` a ogni richiesta → 429 al 6° login).
 
 ---
 

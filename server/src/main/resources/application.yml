@@ -34,6 +34,16 @@ spring:
 
 server:
   port: ${SERVER_PORT:8080}
+  # IP del client dietro reverse proxy (ADR-047, review F5): il RemoteIpValve di Tomcat usa
+  # X-Forwarded-For / X-Forwarded-Proto solo se la connessione arriva da un proxy fidato e legge
+  # la catena da destra, fermandosi al primo indirizzo non fidato. Un client che si collega
+  # direttamente non puo' scegliersi l'IP con l'header.
+  forward-headers-strategy: native
+  tomcat:
+    remoteip:
+      # Proxy fidati: solo loopback (proxy sulla stessa macchina). Per un proxy su un altro host
+      # impostare l'env var SERVER_TOMCAT_REMOTEIP_INTERNAL_PROXIES (regex Java).
+      internal-proxies: '127\.\d{1,3}\.\d{1,3}\.\d{1,3}|0:0:0:0:0:0:0:1|::1'
 
 management:
   endpoints:

@@ -37,15 +37,19 @@ import org.springframework.web.filter.OncePerRequestFilter;
  * same way {@link JwtAuthenticationEntryPoint} does for 401. {@code Retry-After} is reported as the
  * full window length (a conservative upper bound on the wait), not the exact residual TTL.
  *
- * <p>Client IP honours {@code X-Forwarded-For} (first hop) when present so the limiter keys on the
- * real client behind a reverse proxy, falling back to {@link HttpServletRequest#getRemoteAddr()}.
+ * <p>The client IP is {@link HttpServletRequest#getRemoteAddr()} and nothing else. Behind a reverse
+ * proxy, Tomcat's {@code RemoteIpValve} ({@code server.forward-headers-strategy: native}) has
+ * already replaced it with the client address taken from {@code X-Forwarded-For}, and only when the
+ * connection comes from a trusted proxy ({@code server.tomcat.remoteip.internal-proxies}), reading
+ * the chain from the right. The filter never parses the header itself: a client connecting directly
+ * cannot pick its own bucket, and one behind an appending proxy cannot either by spoofing the
+ * leftmost value (ADR-047, F5 review).
  */
 @Component
 public class RateLimitFilter extends OncePerRequestFilter {
 
   private static final String LOGIN_PATH = "/v1/auth/login";
   private static final String REGISTER_PATH = "/v1/auth/register";
-  private static final String X_FORWARDED_FOR = "X-Forwarded-For";
 
   private final RateLimitProperties properties;
   private final ObjectMapper objectMapper;
@@ -91,21 +95,13 @@ public class RateLimitFilter extends OncePerRequestFilter {
       return;
     }
 
-    String clientIp = clientIp(request);
+    String clientIp = request.getRemoteAddr();
     int attempts = bucket.get(clientIp, key -> new AtomicInteger()).incrementAndGet();
     if (attempts > maxAttempts) {
       writeTooManyRequests(request, response, windowSeconds);
       return;
     }
     chain.doFilter(request, response);
-  }
-
-  private static String clientIp(HttpServletRequest request) {
-    String forwardedFor = request.getHeader(X_FORWARDED_FOR);
-    if (forwardedFor != null && !forwardedFor.isBlank()) {
-      return forwardedFor.split(",")[0].trim();
-    }
-    return request.getRemoteAddr();
   }
 
   private void writeTooManyRequests(
