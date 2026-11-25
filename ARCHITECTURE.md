@@ -555,6 +555,7 @@ Riferimento autoritativo: `SPEC.md` Appendice B.
   - **Delta — token invalido su endpoint pubblico**: `JwtAuthenticationFilter` risponde 401 anche sui path in whitelist se il client invia un Bearer non verificabile.
   - **Delta — errori stateful**: `JwtVerificationException` (es. access token usato come refresh) e `RefreshTokenInvalidException` (ruotato/revocato) sono mappati a 401 in `GlobalExceptionHandler` con un unico `detail` generico, per non rivelare quale controllo è fallito.
   - **`JwtBootValidationTest` non realizzato**: il fail-fast `prod` si regge sul placeholder `${JWT_SECRET}` (ADR-044); i rami di `JwtProperties.validate()` (secret assente in `prod`, secret < 32 byte) non hanno un test dedicato. Da valutare nella review di F5.
+- **Esito review F5 (2026-11-25) — `JwtBootValidationTest` realizzato**: un `ApplicationContextRunner` avvia un context minimo con solo `JwtProperties` (binding reale: `@ConfigurationProperties`, `EnvironmentAware`, `@PostConstruct`; niente web server né DB). 5 casi: `prod` senza secret → avvio fallito con "JWT secret missing in prod profile"; secret da 31 byte in `prod` e in `dev` → avvio fallito; `dev` senza secret → parte con il secret di fallback; `prod` con secret da 32 byte esatti → parte. Codice di produzione invariato. Ogni caso è stato verificato rosso rompendo per un attimo il ramo che protegge. **Resta scoperto** il meccanismo primario, il placeholder `${JWT_SECRET}` senza default in `application-prod.yml`: un avvio completo del profilo `prod` richiederebbe anche la datasource MySQL.
 
 ---
 
