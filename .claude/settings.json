@@ -47,6 +47,8 @@
       "Bash(aw-check *)",
       "Bash(aw-template)",
       "Bash(aw-template *)",
+      "Bash(aw-doc)",
+      "Bash(aw-doc *)",
       "Bash(aw-plugin-review)",
       "Bash(aw-plugin-review *)",
       "Bash(aw-align)",
