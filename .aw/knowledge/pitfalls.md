@@ -29,6 +29,9 @@ sources: [server/src/test/java/com/damaitaliana/server/config/SecurityConfigSlic
   connection" se lanciati dalla sandbox dei comandi, e (verificato il 2026-11-22) anche da Bash o PowerShell con
   `dangerouslyDisableSandbox`. Lanciarli dal pannello Terminale (`run_in_terminal`) o dal terminale dell'utente
   prima di dichiarare la build verde o rossa.
+- **Log di Maven dal Terminale:** in PowerShell 5.1 il redirect `mvn … > file` scrive il log in UTF-16, che Grep e
+  Read non leggono bene. Usare `mvn -l <file>` (log in UTF-8, nello scratchpad); se serve un redirect,
+  `Out-File -Encoding utf8`.
 - **Metriche nei test:** `@SpringBootTest` disattiva l'export delle metriche, quindi `/actuator/prometheus` dà
   404 nei test; serve `@AutoConfigureObservability(tracing = false)` sulla classe (`MetricsIntegrationTest`).
   In produzione l'endpoint è esposto normalmente.
