@@ -56,6 +56,8 @@
     <plugin.jacoco.version>0.8.12</plugin.jacoco.version>
     <plugin.spotbugs.version>4.8.6.4</plugin.spotbugs.version>
     <plugin.javafx.version>0.0.8</plugin.javafx.version>
+    <!-- An imported BOM manages dependencies only, not plugins: pin it to the Boot version. -->
+    <plugin.spring.boot.version>${spring.boot.version}</plugin.spring.boot.version>
 
     <!-- Tooling versions -->
     <google.java.format.version>1.22.0</google.java.format.version>
@@ -304,10 +306,10 @@
           <version>${plugin.javafx.version}</version>
         </plugin>
 
-        <!-- spring-boot-maven-plugin: version managed by Spring Boot BOM -->
         <plugin>
           <groupId>org.springframework.boot</groupId>
           <artifactId>spring-boot-maven-plugin</artifactId>
+          <version>${plugin.spring.boot.version}</version>
         </plugin>
       </plugins>
     </pluginManagement>
