@@ -79,5 +79,8 @@ spotbugsXml.xml
 # --- Docker ---
 .docker-data/
 
+# --- Claude Code ---
+.claude/scheduled_tasks.lock
+
 # --- App runtime data (per dev) ---
 # ~/.dama-italiana è in home utente, non nel repo; niente da escludere qui.

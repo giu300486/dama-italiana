@@ -2,7 +2,7 @@
 topic: pitfalls
 verified: 2026-11-24
 verifiedAt: { dama-italiana: d167e57 }
-sources: [server/src/test/java/com/damaitaliana/server/config/SecurityConfigSliceTest.java, server/src/main/resources/application-test.yml, pom.xml, server/src/main/java/com/damaitaliana/server/config/JwtProperties.java, server/src/test/java/com/damaitaliana/server/FlywayMigrationMysqlIntegrationTest.java, CLAUDE.md]
+sources: [server/src/test/java/com/damaitaliana/server/config/SecurityConfigSliceTest.java, server/src/main/resources/application-test.yml, pom.xml, server/src/main/java/com/damaitaliana/server/config/JwtProperties.java, server/src/test/java/com/damaitaliana/server/FlywayMigrationMysqlIntegrationTest.java, CLAUDE.md, .gitignore]
 ---
 # Pitfalls: do not reintroduce
 
@@ -34,3 +34,6 @@ sources: [server/src/test/java/com/damaitaliana/server/config/SecurityConfigSlic
   In produzione l'endpoint è esposto normalmente.
 - **Controller UI Spring nel client:** un solo costruttore (o `@Autowired` su quello di produzione) e almeno un
   test che risolve il bean dal context reale; i test con `new` + mock non vedono gli errori di wiring.
+- **Lock dei task pianificati di Claude Code:** Claude Code crea `.claude/scheduled_tasks.lock` nella cartella del
+  progetto; prima compariva come non tracciato e andava escluso dai commit a mano. Ora lo ignora il `.gitignore`
+  (sezione `# --- Claude Code ---`, commit `c7264eb`): non togliere la regola e non committare il file.
